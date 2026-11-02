@@ -39,6 +39,9 @@ export class UsersOrmEntity {
 	@Column({ default: false })
 	deleted: boolean;
 
+	@Column({ default: 'Blue_Theme', nullable: true })
+	theme_color: string;
+
 	@CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
 	created_at: Date;
 }

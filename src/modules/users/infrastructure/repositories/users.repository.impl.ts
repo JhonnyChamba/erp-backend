@@ -26,6 +26,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			developer: user.developer,
 			multi_company: user.multi_company,
 			enabled: user.enabled,
+			theme_color: user.theme_color || 'Blue_Theme',
 
 			company: { id: user.companyId },
 		});
@@ -49,25 +50,30 @@ export class UsersRepositoryImpl implements UsersRepository {
 		};
 	}
 
-	async findById(id: number, companyId: number): Promise<Users | null> {
-
-		const user = await this.repo.findOne({
-			where: {
-				id,
-				company: { id: companyId },
-				deleted: false,
-			},
+	async findById(id: number, companyId?: number): Promise<Users | null> {
+		const whereClause: any = { id, deleted: false };
+		if (companyId) {
+			whereClause.company = { id: companyId };
+		}
+		let user = await this.repo.findOne({
+			where: whereClause,
+			relations: ['company'],
 		});
+
+		if (!user && companyId) {
+			user = await this.repo.findOne({
+				where: { id, deleted: false },
+				relations: ['company'],
+			});
+		}
 
 		return user ? this.toDomain(user) : null;
 	}
 
 	async update(user: Users): Promise<Users> {
-
 		await this.repo.update(
 			{
 				id: user.id,
-				company: { id: user.companyId }, // multi-tenant seguro
 			},
 			{
 				num_document: user.num_document,
@@ -78,17 +84,18 @@ export class UsersRepositoryImpl implements UsersRepository {
 				developer: user.developer,
 				multi_company: user.multi_company,
 				enabled: user.enabled,
+				theme_color: user.theme_color || 'Blue_Theme',
 			},
 		);
 
 		const updated = await this.repo.findOne({
 			where: {
 				id: user.id,
-				company: { id: user.companyId },
 			},
+			relations: ['company'],
 		});
 
-		return this.toDomain(updated);
+		return this.toDomain(updated!);
 	}
 
 	async findByEmail(email: string): Promise<Users | null> {
@@ -112,6 +119,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			entity.enabled,
 			entity.deleted,
 			entity.created_at,
+			entity.theme_color || 'Blue_Theme',
 		);
 	}
 }

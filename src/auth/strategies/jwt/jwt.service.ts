@@ -18,6 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       user_name: payload.user_name,
       developer: payload.developer,
       multi_company: payload.multi_company,
+      theme_color: payload.theme_color || 'Blue_Theme',
     };
   }
 }

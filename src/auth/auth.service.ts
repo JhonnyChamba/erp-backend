@@ -32,9 +32,13 @@ export class AuthService {
 			user_id: user.id,
 			user_name: `${user.name_user} ${user.last_name_user}`,
 			developer: user.developer,
-			multi_company: user.multi_company
+			multi_company: user.multi_company,
+			theme_color: user.theme_color || 'Blue_Theme',
 		};
 
-		return { access_token: this.jwtService.sign(payload) };
+		return {
+			access_token: this.jwtService.sign(payload),
+			theme_color: user.theme_color || 'Blue_Theme',
+		};
 	}
 }

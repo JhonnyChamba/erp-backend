@@ -17,6 +17,7 @@ export class UpdateUsersUseCase {
     branch.developer = dto.developer ?? branch.developer;
     branch.multi_company = dto.multi_company ?? branch.multi_company;
     branch.enabled = dto.enabled ?? branch.enabled;
+    branch.theme_color = dto.theme_color ?? branch.theme_color;
 
     return this.repository.update(branch);
   }

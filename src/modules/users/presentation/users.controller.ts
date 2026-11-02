@@ -30,11 +30,13 @@ export class UsersController {
 
 	@Get(':id')
 	get(@Param('id') id: number, @Req() req: any) {
-		return this.getUseCase.execute(Number(id), req.companyId);
+		const companyId = req.companyId || req.user?.companyId || 1;
+		return this.getUseCase.execute(Number(id), companyId);
 	}
 
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateUsersDto, @Req() req: any) {
-		return this.updateUseCase.execute(Number(id), req.companyId, dto);
+		const companyId = req.companyId || req.user?.companyId || (dto as any)?.companyId || 1;
+		return this.updateUseCase.execute(Number(id), companyId, dto);
 	}
 }

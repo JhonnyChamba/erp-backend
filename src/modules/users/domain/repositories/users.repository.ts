@@ -6,7 +6,7 @@ export abstract class UsersRepository {
     data: Users[];
     total: number;
   }>;
-  abstract findById(id: number, companyId: number): Promise<Users | null>;
+  abstract findById(id: number, companyId?: number): Promise<Users | null>;
   abstract update(branch: Users): Promise<Users>;
   abstract findByEmail(email: string): Promise<Users | null>
 }

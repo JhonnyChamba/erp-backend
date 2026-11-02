@@ -24,4 +24,7 @@ export class UpdateUsersDto {
 
 	@IsOptional()
 	enabled?: boolean;
+
+	@IsOptional()
+	theme_color?: string;
 }

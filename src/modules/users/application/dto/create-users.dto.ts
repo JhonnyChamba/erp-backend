@@ -24,4 +24,7 @@ export class CreateUsersDto {
 	@IsString()
 	@IsNotEmpty()
 	password: string;
+
+	@IsString()
+	theme_color?: string;
 }

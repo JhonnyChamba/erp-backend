@@ -19,8 +19,9 @@ export class CreateUsersUseCase {
 			false,
 			false,
 			true,
+			false,
 			undefined,
-			// user.user_id, // 🔥 siempre del token
+			dto.theme_color || 'Blue_Theme',
 		);
 
 		return this.repository.create(branch);

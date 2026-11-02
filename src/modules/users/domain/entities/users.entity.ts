@@ -12,6 +12,6 @@ export class Users {
 		public enabled: boolean,
 		public deleted: boolean,
 		public readonly createdAt?: Date,
-		// public readonly createdById?: number,
+		public theme_color: string = 'Blue_Theme',
 	) { }
 }
