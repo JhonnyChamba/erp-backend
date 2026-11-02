@@ -4,6 +4,7 @@ import { CreateUsersUseCase } from "./application/use-cases/create-users.use-cas
 import { UpdateUsersUseCase } from "./application/use-cases/update-users.use-case";
 import { ListUsersUseCase } from "./application/use-cases/list-users.use-case";
 import { UsersOrmEntity } from "./infrastructure/persistence/users.orm-entity";
+import { UserCompanyOrmEntity } from "../user-company/infrastructure/persistence/user-company.orm-entity";
 import { GetUsersUseCase } from "./application/use-cases/get-users.use-case";
 import { UsersRepository } from "./domain/repositories/users.repository";
 import { UsersController } from "./presentation/users.controller";
@@ -12,7 +13,10 @@ import { Module } from "@nestjs/common";
 import { PasswordModule } from "src/common/password/password.module";
 
 @Module({
-	imports: [PasswordModule, TypeOrmModule.forFeature([UsersOrmEntity])],
+	imports: [
+		PasswordModule,
+		TypeOrmModule.forFeature([UsersOrmEntity, UserCompanyOrmEntity]),
+	],
 	controllers: [UsersController],
 	providers: [
 		CreateUsersUseCase,
@@ -26,8 +30,8 @@ import { PasswordModule } from "src/common/password/password.module";
 		},
 	],
 	exports: [
-		FindUserByEmailUseCase, // 👈 ESTO ES LO QUE FALTA
-		CreateUsersUseCase,     // si lo usas en AuthController
+		FindUserByEmailUseCase,
+		CreateUsersUseCase,
 	],
 })
 

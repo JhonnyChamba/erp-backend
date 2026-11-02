@@ -4,7 +4,8 @@ import { Type } from 'class-transformer';
 export class ListRolesDto {
   @Type(() => Number)
   @IsNumber()
-  companyId: number;
+  @IsOptional()
+  companyId?: number;
 
   @Type(() => Number)
   @IsNumber()

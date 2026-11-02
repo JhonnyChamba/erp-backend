@@ -1,24 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: 'super_secret_key', // debe coincidir con tu JWT_SECRET
+      secretOrKey: configService.get<string>('JWT_SECRET', 'super_secret_key_deskounta_erp_2026'),
     });
   }
 
   async validate(payload: any) {
-    // devuelve exactamente el payload que pusiste al firmar el token
     return {
       user_id: payload.user_id,
       user_name: payload.user_name,
       developer: payload.developer,
+      super_admin: payload.super_admin || payload.developer || false,
       multi_company: payload.multi_company,
       theme_color: payload.theme_color || 'Blue_Theme',
+      company_id: payload.company_id,
     };
   }
 }

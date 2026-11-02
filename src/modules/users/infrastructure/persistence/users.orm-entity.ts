@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
+import { UserCompanyOrmEntity } from 'src/modules/user-company/infrastructure/persistence/user-company.orm-entity';
 
 @Entity('tab_users')
 export class UsersOrmEntity {
@@ -7,10 +8,13 @@ export class UsersOrmEntity {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	// Relación con empresa (genera company_id automáticamente)
-	@ManyToOne(() => CompanyOrmEntity, { nullable: true})
+	// Relación con empresa principal
+	@ManyToOne(() => CompanyOrmEntity, { nullable: true })
 	@JoinColumn({ name: 'company_id' })
 	company: CompanyOrmEntity;
+
+	@OneToMany(() => UserCompanyOrmEntity, (uc) => uc.user)
+	userCompanies: UserCompanyOrmEntity[];
 
 	@Column()
 	num_document: string;
@@ -29,6 +33,9 @@ export class UsersOrmEntity {
 
 	@Column({ default: false })
 	developer: boolean;
+
+	@Column({ default: false })
+	super_admin: boolean;
 
 	@Column({ default: false })
 	multi_company: boolean;

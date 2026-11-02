@@ -13,5 +13,7 @@ export class Users {
 		public deleted: boolean,
 		public readonly createdAt?: Date,
 		public theme_color: string = 'Blue_Theme',
+		public super_admin: boolean = false,
+		public companyIds: number[] = [],
 	) { }
 }

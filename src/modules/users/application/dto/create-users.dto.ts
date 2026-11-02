@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateUsersDto {
 	@IsNumber()
@@ -25,6 +25,23 @@ export class CreateUsersDto {
 	@IsNotEmpty()
 	password: string;
 
+	@IsBoolean()
+	@IsOptional()
+	developer?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	super_admin?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	multi_company?: boolean;
+
+	@IsArray()
+	@IsOptional()
+	companyIds?: number[];
+
 	@IsString()
+	@IsOptional()
 	theme_color?: string;
 }

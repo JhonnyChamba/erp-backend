@@ -11,6 +11,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { AppController } from './app.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { AppService } from './app.service';
 import { Module } from '@nestjs/common';
@@ -19,15 +20,22 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 6364,
-      username: 'postgres',
-      password: '2830798aA.',
-      database: 'db_help_system',
-      autoLoadEntities: true,
-      synchronize: true
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'postgres',
+        host: config.get<string>('DATABASE_HOST', 'localhost'),
+        port: Number(config.get<number>('DATABASE_PORT', 6364)),
+        username: config.get<string>('DATABASE_USER', 'postgres'),
+        password: config.get<string>('DATABASE_PASSWORD', '2830798aA.'),
+        database: config.get<string>('DATABASE_NAME', 'db_help_system'),
+        autoLoadEntities: true,
+        synchronize: config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
+      }),
     }),
     AuthModule,
     UsersModule,
@@ -42,7 +50,7 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
     PlansModule,
     PlansModulesModule,
     SubscriptionsModule,
-    SubscriptionsModuleModule
+    SubscriptionsModuleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

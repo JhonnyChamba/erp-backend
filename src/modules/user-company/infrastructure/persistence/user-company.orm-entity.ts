@@ -8,12 +8,12 @@ export class UserCompanyOrmEntity {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	@ManyToOne(() => UsersOrmEntity)         // Relación con usuario
-	@JoinColumn({ name: 'user_id' })  // La columna en la tabla será user_id
+	@ManyToOne(() => UsersOrmEntity, (u) => u.userCompanies)
+	@JoinColumn({ name: 'user_id' })
 	user: UsersOrmEntity;
 
-	@ManyToOne(() => CompanyOrmEntity)        // Relación con empresa
-	@JoinColumn({ name: 'company_id' }) // La columna en la tabla será company_id
+	@ManyToOne(() => CompanyOrmEntity)
+	@JoinColumn({ name: 'company_id' })
 	company: CompanyOrmEntity;
 
 	@Column({ default: true })

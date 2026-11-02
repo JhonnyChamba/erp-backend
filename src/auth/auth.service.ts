@@ -28,17 +28,23 @@ export class AuthService {
 		if (user.deleted)
 			throw new UnauthorizedException('Usuario Eliminado.');
 
+		const isSuperAdmin = user.super_admin || user.developer || false;
+
 		const payload = {
 			user_id: user.id,
 			user_name: `${user.name_user} ${user.last_name_user}`,
 			developer: user.developer,
+			super_admin: isSuperAdmin,
 			multi_company: user.multi_company,
 			theme_color: user.theme_color || 'Blue_Theme',
+			company_id: user.companyId,
 		};
 
 		return {
 			access_token: this.jwtService.sign(payload),
 			theme_color: user.theme_color || 'Blue_Theme',
+			super_admin: isSuperAdmin,
+			multi_company: user.multi_company,
 		};
 	}
 }

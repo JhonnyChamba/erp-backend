@@ -30,11 +30,13 @@ export class UserCompanyController {
 
 	@Get(':id')
 	get(@Param('id') id: number, @Req() req: any) {
-		return this.getUseCase.execute(Number(id), req.usersId);
+		const userId = req.user?.user_id;
+		return this.getUseCase.execute(Number(id), userId);
 	}
 
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateUserCompanyDto, @Req() req: any) {
-		return this.updateUseCase.execute(Number(id), req.usersId, dto);
+		const userId = req.user?.user_id;
+		return this.updateUseCase.execute(Number(id), userId, dto);
 	}
 }

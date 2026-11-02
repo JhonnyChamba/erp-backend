@@ -4,17 +4,25 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
     UsersModule,
-    JwtModule.register({
-      secret: 'super_secret_key',
-      signOptions: { expiresIn: '1d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET', 'super_secret_key_deskounta_erp_2026'),
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') as any,
+        },
+      }),
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
+  exports: [AuthService],
 })
 
 export class AuthModule { }

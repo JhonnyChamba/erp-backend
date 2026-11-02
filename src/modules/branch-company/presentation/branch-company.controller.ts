@@ -30,12 +30,22 @@ export class BranchCompanyController {
 	}
 
 	@Get(':id')
-	get(@Param('id') id: number, @Req() req: any) {
-		return this.getUseCase.execute(Number(id), req.companyId);
+	get(
+		@Param('id') id: number,
+		@Query('companyId') queryCompanyId: number,
+		@Req() req: any,
+	) {
+		const companyId = req.companyId || queryCompanyId || req.headers['x-company-id'];
+		return this.getUseCase.execute(Number(id), Number(companyId));
 	}
 
 	@Patch(':id')
-	update(@Param('id') id: number, @Body() dto: UpdateBranchCompanyDto, @Req() req: any) {
-		return this.updateUseCase.execute(Number(id), req.companyId, dto);
+	update(
+		@Param('id') id: number,
+		@Body() dto: UpdateBranchCompanyDto,
+		@Req() req: any,
+	) {
+		const companyId = req.companyId || (dto as any)?.companyId || req.headers['x-company-id'];
+		return this.updateUseCase.execute(Number(id), Number(companyId), dto);
 	}
 }
