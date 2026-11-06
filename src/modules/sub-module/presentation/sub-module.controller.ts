@@ -36,6 +36,6 @@ export class subModulesController {
 
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdatesubModulesDto, @Req() req: any) {
-		return this.updateUseCase.execute(Number(id), req.moduleId, dto);
+		return this.updateUseCase.execute(Number(id), dto.moduleId ?? req.moduleId, dto);
 	}
 }

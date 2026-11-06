@@ -15,12 +15,13 @@ const class_transformer_1 = require("class-transformer");
 class ListsubModulesDto {
     moduleId;
     page = 1;
-    limit = 10;
+    limit = 50;
 }
 exports.ListsubModulesDto = ListsubModulesDto;
 __decorate([
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], ListsubModulesDto.prototype, "moduleId", void 0);
 __decorate([

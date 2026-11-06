@@ -1,5 +1,5 @@
 export declare class ListsubModulesDto {
-    moduleId: number;
+    moduleId?: number;
     page: number;
     limit: number;
 }

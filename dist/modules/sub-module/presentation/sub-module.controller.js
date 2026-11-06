@@ -43,7 +43,7 @@ let subModulesController = class subModulesController {
         return this.getUseCase.execute(Number(id), req.moduleId);
     }
     update(id, dto, req) {
-        return this.updateUseCase.execute(Number(id), req.moduleId, dto);
+        return this.updateUseCase.execute(Number(id), dto.moduleId ?? req.moduleId, dto);
     }
 };
 exports.subModulesController = subModulesController;

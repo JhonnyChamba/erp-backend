@@ -27,13 +27,22 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 		});
 
 		const saved = await this.repo.save(entity);
-		return this.toDomain(saved);
+		const reloaded = await this.repo.findOne({
+			where: { id: saved.id },
+			relations: ['module'],
+		});
+		return this.toDomain(reloaded || saved);
 	}
 
 	async findByCompany(moduleId: number, page: number, limit: number): Promise<{ data: subModules[]; total: number }> {
+		const whereClause: any = { deleted: false };
+		if (moduleId) {
+			whereClause.module = { id: moduleId };
+		}
 
 		const [subModulees, total] = await this.repo.findAndCount({
-			where: { module: { id: moduleId }, deleted: false },
+			where: whereClause,
+			relations: ['module'],
 			skip: (page - 1) * limit,
 			take: limit,
 			order: { created_at: 'DESC' },
@@ -46,39 +55,36 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 	}
 
 	async findById(id: number, moduleId: number): Promise<subModules | null> {
+		const whereClause: any = { id, deleted: false };
+		if (moduleId) {
+			whereClause.module = { id: moduleId };
+		}
 
 		const subModule = await this.repo.findOne({
-			where: {
-				id,
-				module: { id: moduleId },
-				deleted: false,
-			},
+			where: whereClause,
+			relations: ['module'],
 		});
 
 		return subModule ? this.toDomain(subModule) : null;
 	}
 
 	async update(subModule: subModules): Promise<subModules> {
+		const updatePayload: any = {
+			code: subModule.code,
+			desc_icon: subModule.desc_icon,
+			description: subModule.description,
+			url_desc: subModule.url_desc,
+			enabled: subModule.enabled,
+		};
+		if (subModule.moduleId) {
+			updatePayload.module = { id: subModule.moduleId };
+		}
 
-		await this.repo.update(
-			{
-				id: subModule.id,
-				module: { id: subModule.moduleId }, // multi-tenant seguro
-			},
-			{
-				code: subModule.code,
-				desc_icon: subModule.desc_icon,
-				description: subModule.description,
-				url_desc: subModule.url_desc,
-				enabled: subModule.enabled,
-			},
-		);
+		await this.repo.update({ id: subModule.id }, updatePayload);
 
 		const updated = await this.repo.findOne({
-			where: {
-				id: subModule.id,
-				module: { id: subModule.moduleId },
-			},
+			where: { id: subModule.id },
+			relations: ['module'],
 		});
 
 		return this.toDomain(updated);
@@ -91,7 +97,7 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 			entity.desc_icon,
 			entity.description,
 			entity.url_desc,
-			entity.module?.id, // ahora viene de relación
+			entity.module?.id,
 			entity.enabled,
 			entity.created_at,
 		);

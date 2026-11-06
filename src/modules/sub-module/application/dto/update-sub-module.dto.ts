@@ -2,6 +2,9 @@ import { IsOptional } from "class-validator";
 
 export class UpdatesubModulesDto {
 	@IsOptional()
+	moduleId?: number;
+
+	@IsOptional()
 	code?: string;
 
 	@IsOptional()

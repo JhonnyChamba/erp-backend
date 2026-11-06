@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdatesubModulesDto = void 0;
 const class_validator_1 = require("class-validator");
 class UpdatesubModulesDto {
+    moduleId;
     code;
     desc_icon;
     description;
@@ -19,6 +20,10 @@ class UpdatesubModulesDto {
     enabled;
 }
 exports.UpdatesubModulesDto = UpdatesubModulesDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdatesubModulesDto.prototype, "moduleId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)

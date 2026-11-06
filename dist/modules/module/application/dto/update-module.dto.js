@@ -12,14 +12,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateModuleDto = void 0;
 const class_validator_1 = require("class-validator");
 class UpdateModuleDto {
+    code;
     desc_icon;
+    description;
     enabled;
 }
 exports.UpdateModuleDto = UpdateModuleDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+], UpdateModuleDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
 ], UpdateModuleDto.prototype, "desc_icon", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateModuleDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)

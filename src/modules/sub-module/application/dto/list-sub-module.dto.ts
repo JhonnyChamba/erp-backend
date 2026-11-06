@@ -4,7 +4,8 @@ import { Type } from 'class-transformer';
 export class ListsubModulesDto {
   @Type(() => Number)
   @IsNumber()
-  moduleId: number;
+  @IsOptional()
+  moduleId?: number;
 
   @Type(() => Number)
   @IsNumber()
@@ -16,5 +17,5 @@ export class ListsubModulesDto {
   @IsNumber()
   @IsOptional()
   @Min(1)
-  limit: number = 10;
+  limit: number = 50;
 }

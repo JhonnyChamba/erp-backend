@@ -9,6 +9,7 @@ export class UpdatesubModulesUseCase {
     const subModule = await this.repository.findById(id, moduleId);
     if (!subModule) throw new Error('subModules not found');
 
+    subModule.moduleId = dto.moduleId ?? subModule.moduleId;
     subModule.code = dto.code ?? subModule.code;
     subModule.desc_icon = dto.desc_icon ?? subModule.desc_icon;
     subModule.description = dto.description ?? subModule.description;
