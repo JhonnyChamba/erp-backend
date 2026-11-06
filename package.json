@@ -22,7 +22,8 @@
     "migration:generate": "npm run typeorm -- migration:generate -d src/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts",
-    "db:init-supabase": "node scripts/init-supabase.js"
+    "db:init-supabase": "node scripts/init-supabase.js",
+    "db:create-local": "node scripts/create-local-db.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
