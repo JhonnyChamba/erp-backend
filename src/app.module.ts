@@ -27,7 +27,11 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const databaseUrl = config.get<string>('DATABASE_URL');
+        let databaseUrl = config.get<string>('DATABASE_URL')?.trim();
+        if (databaseUrl) {
+          // Si el usuario dejó los corchetes [MI_CLAVE] de la plantilla de Supabase, quitarlos automáticamente
+          databaseUrl = databaseUrl.replace(/^(postgresql?:\/\/[^:]+:)\[([^\]]+)\]@/i, '$1$2@');
+        }
         const host = config.get<string>('DATABASE_HOST', 'localhost');
         const useSsl =
           config.get<string>('DATABASE_SSL') === 'true' ||

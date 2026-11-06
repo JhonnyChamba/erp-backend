@@ -39,7 +39,10 @@ exports.AppModule = AppModule = __decorate([
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
                 useFactory: (config) => {
-                    const databaseUrl = config.get('DATABASE_URL');
+                    let databaseUrl = config.get('DATABASE_URL')?.trim();
+                    if (databaseUrl) {
+                        databaseUrl = databaseUrl.replace(/^(postgresql?:\/\/[^:]+:)\[([^\]]+)\]@/i, '$1$2@');
+                    }
                     const host = config.get('DATABASE_HOST', 'localhost');
                     const useSsl = config.get('DATABASE_SSL') === 'true' ||
                         host.includes('supabase.co') ||
