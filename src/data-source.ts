@@ -19,7 +19,7 @@ export const AppDataSource = new DataSource({
         port: Number(process.env.DATABASE_PORT) || 6364,
         username: process.env.DATABASE_USER || 'postgres',
         password: process.env.DATABASE_PASSWORD || '2830798aA.',
-        database: process.env.DATABASE_NAME || 'db_help_system',
+        database: process.env.DATABASE_NAME || 'db_deskounta',
       }),
   ssl: useSsl ? { rejectUnauthorized: false } : false,
   entities: [__dirname + '/**/*.orm-entity{.ts,.js}'],

@@ -44,7 +44,7 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
                 port: Number(config.get<number>('DATABASE_PORT', 6364)),
                 username: config.get<string>('DATABASE_USER', 'postgres'),
                 password: config.get<string>('DATABASE_PASSWORD', '2830798aA.'),
-                database: config.get<string>('DATABASE_NAME', 'db_help_system'),
+                database: config.get<string>('DATABASE_NAME', 'db_deskounta'),
               }),
           ssl: useSsl ? { rejectUnauthorized: false } : false,
           autoLoadEntities: true,
