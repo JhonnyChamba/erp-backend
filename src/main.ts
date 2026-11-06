@@ -42,10 +42,23 @@ if (!process.env.VERCEL) {
 
 // Handler exportado para Vercel Serverless Functions
 export default async function handler(req: any, res: any) {
-  if (!cachedServer) {
-    const app = await createApp();
-    await app.init();
-    cachedServer = app.getHttpAdapter().getInstance();
+  try {
+    if (!cachedServer) {
+      const app = await createApp();
+      await app.init();
+      cachedServer = app.getHttpAdapter().getInstance();
+    }
+    return cachedServer(req, res);
+  } catch (error: any) {
+    console.error('Error initializing NestJS server:', error);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(
+      JSON.stringify({
+        statusCode: 500,
+        message: 'Error al conectar o iniciar NestJS en Vercel',
+        error: error?.message || String(error),
+      }),
+    );
   }
-  return cachedServer(req, res);
 }

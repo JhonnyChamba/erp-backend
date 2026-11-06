@@ -47,6 +47,8 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
                 database: config.get<string>('DATABASE_NAME', 'db_deskounta'),
               }),
           ssl: useSsl ? { rejectUnauthorized: false } : false,
+          retryAttempts: 2,
+          retryDelay: 1000,
           autoLoadEntities: true,
           synchronize: config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
         };
