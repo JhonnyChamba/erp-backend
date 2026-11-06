@@ -20,10 +20,11 @@ let UpdateUsersUseCase = class UpdateUsersUseCase {
         this.repository = repository;
         this.passwordService = passwordService;
     }
-    async execute(id, companyId, dto) {
+    async execute(id, companyId, dto, currentUser) {
         const user = await this.repository.findById(id, companyId);
         if (!user)
             throw new common_1.NotFoundException('User not found');
+        const canGrantSuperAdmin = Boolean(currentUser?.super_admin || currentUser?.developer);
         user.num_document = dto.num_document ?? user.num_document;
         user.name_user = dto.name_user ?? user.name_user;
         user.last_name_user = dto.last_name_user ?? user.last_name_user;
@@ -31,8 +32,10 @@ let UpdateUsersUseCase = class UpdateUsersUseCase {
         if (dto.password) {
             user.password = await this.passwordService.hash(dto.password);
         }
-        user.developer = dto.developer ?? user.developer;
-        user.super_admin = dto.super_admin ?? user.super_admin;
+        if (canGrantSuperAdmin) {
+            user.developer = dto.developer ?? user.developer;
+            user.super_admin = dto.super_admin ?? user.super_admin;
+        }
         user.multi_company = user.super_admin ? false : (dto.multi_company ?? user.multi_company);
         if (user.multi_company) {
             user.super_admin = false;

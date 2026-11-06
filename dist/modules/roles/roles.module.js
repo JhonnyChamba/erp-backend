@@ -12,6 +12,7 @@ const create_roles_use_case_1 = require("./application/use-cases/create-roles.us
 const update_roles_use_case_1 = require("./application/use-cases/update-roles.use-case");
 const list_roles_use_case_1 = require("./application/use-cases/list-roles.use-case");
 const roles_orm_entity_1 = require("./infrastructure/persistence/roles.orm-entity");
+const subscriptions_orm_entity_1 = require("../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
 const get_roles_use_case_1 = require("./application/use-cases/get-roles.use-case");
 const roles_repository_1 = require("./domain/repositories/roles.repository");
 const roles_controller_1 = require("./presentation/roles.controller");
@@ -22,7 +23,7 @@ let RolesModule = class RolesModule {
 exports.RolesModule = RolesModule;
 exports.RolesModule = RolesModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([roles_orm_entity_1.RolesOrmEntity, roles_orm_entity_1.RoleModuleOrmEntity])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([roles_orm_entity_1.RolesOrmEntity, roles_orm_entity_1.RoleModuleOrmEntity, subscriptions_orm_entity_1.SubscriptionsOrmEntity])],
         controllers: [roles_controller_1.RolesController],
         providers: [
             create_roles_use_case_1.CreateRolesUseCase,

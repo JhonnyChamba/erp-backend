@@ -12,6 +12,8 @@ const create_company_use_case_1 = require("./application/use-cases/create-compan
 const update_company_use_case_1 = require("./application/use-cases/update-company.use-case");
 const list_company_use_case_1 = require("./application/use-cases/list-company.use-case");
 const company_orm_entity_1 = require("./infrastructure/persistence/company.orm-entity");
+const roles_orm_entity_1 = require("../roles/infrastructure/persistence/roles.orm-entity");
+const subscriptions_orm_entity_1 = require("../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
 const get_company_use_case_1 = require("./application/use-cases/get-company.use-case");
 const company_repository_1 = require("./domain/repositories/company.repository");
 const company_controller_1 = require("./presentation/company.controller");
@@ -22,7 +24,14 @@ let CompanyModule = class CompanyModule {
 exports.CompanyModule = CompanyModule;
 exports.CompanyModule = CompanyModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([company_orm_entity_1.CompanyOrmEntity])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([
+                company_orm_entity_1.CompanyOrmEntity,
+                roles_orm_entity_1.RolesOrmEntity,
+                roles_orm_entity_1.RoleModuleOrmEntity,
+                subscriptions_orm_entity_1.SubscriptionsOrmEntity,
+            ]),
+        ],
         controllers: [company_controller_1.CompanyController],
         providers: [
             create_company_use_case_1.CreateCompanyUseCase,

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionsRepositoryImpl = void 0;
 const subscriptions_orm_entity_1 = require("../persistence/subscriptions.orm-entity");
 const subscriptions_module_orm_entity_1 = require("../../../subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity");
+const roles_orm_entity_1 = require("../../../roles/infrastructure/persistence/roles.orm-entity");
 const subscriptions_entity_1 = require("../../domain/entities/subscriptions.entity");
 const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
@@ -22,9 +23,13 @@ const typeorm_2 = require("typeorm");
 let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
     repo;
     subModuleRepo;
-    constructor(repo, subModuleRepo) {
+    rolesRepo;
+    roleModuleRepo;
+    constructor(repo, subModuleRepo, rolesRepo, roleModuleRepo) {
         this.repo = repo;
         this.subModuleRepo = subModuleRepo;
+        this.rolesRepo = rolesRepo;
+        this.roleModuleRepo = roleModuleRepo;
     }
     async create(subscriptions) {
         const entity = this.repo.create({
@@ -36,10 +41,7 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
             createdBy: { id: subscriptions.createdById }
         });
         const saved = await this.repo.save(entity);
-        if ((subscriptions.moduleIds && subscriptions.moduleIds.length > 0) ||
-            (subscriptions.subModuleIds && subscriptions.subModuleIds.length > 0)) {
-            await this.syncSubscriptionAccess(saved.id, subscriptions.moduleIds || [], subscriptions.subModuleIds || []);
-        }
+        await this.syncSubscriptionAccess(saved.id, subscriptions.moduleIds || [], subscriptions.subModuleIds || [], subscriptions.companyId);
         const full = await this.findById(saved.id, subscriptions.companyId);
         return full || this.toDomain(saved);
     }
@@ -79,12 +81,12 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
             enabled: subscriptions.enabled,
         });
         if (subscriptions.moduleIds !== undefined || subscriptions.subModuleIds !== undefined) {
-            await this.syncSubscriptionAccess(subscriptions.id, subscriptions.moduleIds || [], subscriptions.subModuleIds || []);
+            await this.syncSubscriptionAccess(subscriptions.id, subscriptions.moduleIds || [], subscriptions.subModuleIds || [], subscriptions.companyId);
         }
         const updated = await this.findById(subscriptions.id, subscriptions.companyId);
         return updated;
     }
-    async syncSubscriptionAccess(subscriptionId, moduleIds, subModuleIds) {
+    async syncSubscriptionAccess(subscriptionId, moduleIds, subModuleIds, companyId) {
         const targetModIds = Array.from(new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
         const targetSubModIds = Array.from(new Set((subModuleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
         await this.subModuleRepo
@@ -113,6 +115,68 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
             });
             await this.subModuleRepo.save(entity);
         }
+        let effectiveCompanyId = companyId;
+        if (!effectiveCompanyId) {
+            const subRow = await this.repo.findOne({
+                where: { id: subscriptionId },
+                relations: ['company'],
+            });
+            effectiveCompanyId = subRow?.company?.id;
+        }
+        if (effectiveCompanyId) {
+            await this.syncAdminRoleWithSubscription(effectiveCompanyId, targetModIds, targetSubModIds);
+        }
+    }
+    async syncAdminRoleWithSubscription(companyId, moduleIds, subModuleIds) {
+        let adminRole = await this.rolesRepo
+            .createQueryBuilder('r')
+            .where('r.company_id = :companyId', { companyId })
+            .andWhere('r.deleted = false')
+            .andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+            .getOne();
+        if (!adminRole) {
+            const existingRoles = await this.rolesRepo.find({
+                where: { company: { id: companyId } },
+                select: ['id', 'code'],
+                order: { id: 'DESC' },
+            });
+            const nextCode = existingRoles.length === 0
+                ? 'ROL-001'
+                : `ROL-${String(existingRoles.length + 1).padStart(3, '0')}`;
+            adminRole = await this.rolesRepo.save(this.rolesRepo.create({
+                code: nextCode,
+                description: 'Administrador',
+                enabled: true,
+                deleted: false,
+                company: { id: companyId },
+            }));
+        }
+        await this.roleModuleRepo
+            .createQueryBuilder()
+            .update(roles_orm_entity_1.RoleModuleOrmEntity)
+            .set({ deleted: true, enabled: false })
+            .where('role_id = :roleId', { roleId: adminRole.id })
+            .execute();
+        for (const modId of moduleIds) {
+            await this.roleModuleRepo.save(this.roleModuleRepo.create({
+                role: { id: adminRole.id },
+                module: { id: modId },
+                subModule: null,
+                has_access: true,
+                enabled: true,
+                deleted: false,
+            }));
+        }
+        for (const subModId of subModuleIds) {
+            await this.roleModuleRepo.save(this.roleModuleRepo.create({
+                role: { id: adminRole.id },
+                module: null,
+                subModule: { id: subModId },
+                has_access: true,
+                enabled: true,
+                deleted: false,
+            }));
+        }
     }
     toDomain(entity) {
         const activeItems = (entity.subscriptionModules || []).filter((sm) => !sm.deleted && sm.enabled !== false);
@@ -130,7 +194,11 @@ exports.SubscriptionsRepositoryImpl = SubscriptionsRepositoryImpl = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(subscriptions_orm_entity_1.SubscriptionsOrmEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(subscriptions_module_orm_entity_1.SubscriptionsModuleOrmEntity)),
+    __param(2, (0, typeorm_1.InjectRepository)(roles_orm_entity_1.RolesOrmEntity)),
+    __param(3, (0, typeorm_1.InjectRepository)(roles_orm_entity_1.RoleModuleOrmEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], SubscriptionsRepositoryImpl);
 //# sourceMappingURL=subscriptions.repository.impl.js.map

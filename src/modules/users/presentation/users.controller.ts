@@ -20,7 +20,7 @@ export class UsersController {
 
 	@Post()
 	create(@Body() dto: CreateUsersDto, @Req() req: any) {
-		return this.createUseCase.execute(dto);	//, req.user
+		return this.createUseCase.execute(dto, req.user);
 	}
 
 	@Get()
@@ -37,6 +37,6 @@ export class UsersController {
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateUsersDto, @Req() req: any) {
 		const companyId = req.companyId || req.user?.companyId || (dto as any)?.companyId || 1;
-		return this.updateUseCase.execute(Number(id), companyId, dto);
+		return this.updateUseCase.execute(Number(id), companyId, dto, req.user);
 	}
 }

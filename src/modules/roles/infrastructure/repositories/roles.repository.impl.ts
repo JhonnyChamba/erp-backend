@@ -1,5 +1,6 @@
 import { RolesRepository } from '../../domain/repositories/roles.repository';
 import { RolesOrmEntity, RoleModuleOrmEntity } from '../persistence/roles.orm-entity';
+import { SubscriptionsOrmEntity } from 'src/modules/subscriptions/infrastructure/persistence/subscriptions.orm-entity';
 import { Roles, RoleAccessDetail } from '../../domain/entities/roles.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
@@ -13,6 +14,8 @@ export class RolesRepositoryImpl implements RolesRepository {
 		private readonly repo: Repository<RolesOrmEntity>,
 		@InjectRepository(RoleModuleOrmEntity)
 		private readonly roleModuleRepo: Repository<RoleModuleOrmEntity>,
+		@InjectRepository(SubscriptionsOrmEntity)
+		private readonly subscriptionsRepo: Repository<SubscriptionsOrmEntity>,
 	) { }
 
 	async create(roles: Roles): Promise<Roles> {
@@ -76,18 +79,84 @@ export class RolesRepositoryImpl implements RolesRepository {
 	}
 
 	async findByCompany(companyId: number, page: number, limit: number): Promise<{ data: Roles[]; total: number }> {
+		if (companyId) {
+			await this.ensureCompanyAdminRoleSynced(companyId);
+		}
+
 		const [branches, total] = await this.repo.findAndCount({
 			where: { company: { id: companyId }, deleted: false },
 			relations: ['company', 'roleModules', 'roleModules.module', 'roleModules.subModule'],
 			skip: (page - 1) * limit,
 			take: limit,
-			order: { created_at: 'DESC' },
+			order: { created_at: 'ASC' },
 		});
 
 		return {
 			data: branches.map(roles => this.toDomain(roles)),
 			total,
 		};
+	}
+
+	private async ensureCompanyAdminRoleSynced(companyId: number): Promise<void> {
+		let adminRole = await this.repo
+			.createQueryBuilder('r')
+			.leftJoinAndSelect('r.roleModules', 'rm', 'rm.deleted = false AND rm.enabled = true')
+			.leftJoinAndSelect('rm.module', 'mod')
+			.leftJoinAndSelect('rm.subModule', 'subMod')
+			.where('r.company_id = :companyId', { companyId })
+			.andWhere('r.deleted = false')
+			.andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+			.getOne();
+
+		if (!adminRole) {
+			const nextCode = await this.generateNextCode(companyId);
+			adminRole = await this.repo.save(
+				this.repo.create({
+					code: nextCode,
+					description: 'Administrador',
+					enabled: true,
+					deleted: false,
+					company: { id: companyId } as any,
+				}),
+			);
+			adminRole.roleModules = [];
+		}
+
+		// Obtener los módulos y submódulos activos de la suscripción de la empresa
+		const activeSubs = await this.subscriptionsRepo.find({
+			where: { company: { id: companyId }, deleted: false, enabled: true },
+			relations: ['subscriptionModules', 'subscriptionModules.module', 'subscriptionModules.subModule'],
+		});
+
+		const subModIds = new Set<number>();
+		const modIds = new Set<number>();
+		for (const sub of activeSubs) {
+			for (const sm of sub.subscriptionModules || []) {
+				if (!sm.deleted && sm.enabled !== false) {
+					if (sm.module?.id) modIds.add(Number(sm.module.id));
+					if (sm.subModule?.id) subModIds.add(Number(sm.subModule.id));
+				}
+			}
+		}
+
+		// Si el rol Administrador aún no tiene sincronizados todos los accesos de la suscripción, sincronizarlo
+		const currentActive = (adminRole.roleModules || []).filter((rm) => !rm.deleted && rm.enabled !== false && rm.has_access);
+		const currentModSet = new Set(currentActive.filter((rm) => rm.module?.id || (rm as any).module_id).map((rm) => Number(rm.module?.id || (rm as any).module_id)));
+		const currentSubModSet = new Set(currentActive.filter((rm) => rm.subModule?.id || (rm as any).sub_module_id).map((rm) => Number(rm.subModule?.id || (rm as any).sub_module_id)));
+
+		const needsSync =
+			(modIds.size > 0 || subModIds.size > 0) &&
+			(currentActive.length === 0 ||
+				Array.from(modIds).some((id) => !currentModSet.has(id)) ||
+				Array.from(subModIds).some((id) => !currentSubModSet.has(id)));
+
+		if (needsSync) {
+			await this.syncRoleAccess(
+				adminRole.id,
+				Array.from(modIds),
+				Array.from(subModIds),
+			);
+		}
 	}
 
 	async findById(id: number, companyId?: number): Promise<Roles | null> {

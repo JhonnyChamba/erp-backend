@@ -4,5 +4,5 @@ import { CreateUsersDto } from '../dto/create-users.dto';
 export declare class CreateUsersUseCase {
     private readonly repository;
     constructor(repository: UsersRepository);
-    execute(dto: CreateUsersDto): Promise<Users>;
+    execute(dto: CreateUsersDto, currentUser?: any): Promise<Users>;
 }

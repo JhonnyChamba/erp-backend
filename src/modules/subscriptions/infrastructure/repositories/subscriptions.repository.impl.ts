@@ -1,6 +1,7 @@
 import { SubscriptionsRepository } from '../../domain/repositories/subscriptions.repository';
 import { SubscriptionsOrmEntity } from '../persistence/subscriptions.orm-entity';
 import { SubscriptionsModuleOrmEntity } from 'src/modules/subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity';
+import { RolesOrmEntity, RoleModuleOrmEntity } from 'src/modules/roles/infrastructure/persistence/roles.orm-entity';
 import { Subscriptions } from '../../domain/entities/subscriptions.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
@@ -14,6 +15,10 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 		private readonly repo: Repository<SubscriptionsOrmEntity>,
 		@InjectRepository(SubscriptionsModuleOrmEntity)
 		private readonly subModuleRepo: Repository<SubscriptionsModuleOrmEntity>,
+		@InjectRepository(RolesOrmEntity)
+		private readonly rolesRepo: Repository<RolesOrmEntity>,
+		@InjectRepository(RoleModuleOrmEntity)
+		private readonly roleModuleRepo: Repository<RoleModuleOrmEntity>,
 	) { }
 
 	async create(subscriptions: Subscriptions): Promise<Subscriptions> {
@@ -29,16 +34,12 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 
 		const saved = await this.repo.save(entity);
 
-		if (
-			(subscriptions.moduleIds && subscriptions.moduleIds.length > 0) ||
-			(subscriptions.subModuleIds && subscriptions.subModuleIds.length > 0)
-		) {
-			await this.syncSubscriptionAccess(
-				saved.id,
-				subscriptions.moduleIds || [],
-				subscriptions.subModuleIds || [],
-			);
-		}
+		await this.syncSubscriptionAccess(
+			saved.id,
+			subscriptions.moduleIds || [],
+			subscriptions.subModuleIds || [],
+			subscriptions.companyId,
+		);
 
 		const full = await this.findById(saved.id, subscriptions.companyId);
 		return full || this.toDomain(saved);
@@ -95,6 +96,7 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 				subscriptions.id!,
 				subscriptions.moduleIds || [],
 				subscriptions.subModuleIds || [],
+				subscriptions.companyId,
 			);
 		}
 
@@ -106,6 +108,7 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 		subscriptionId: number,
 		moduleIds: number[],
 		subModuleIds: number[],
+		companyId?: number,
 	): Promise<void> {
 		const targetModIds = Array.from(
 			new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)),
@@ -144,6 +147,86 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 				deleted: false,
 			});
 			await this.subModuleRepo.save(entity);
+		}
+
+		// Asegurar que el rol "Administrador" de la empresa tenga acceso (true) a todo lo que tiene la suscripción
+		let effectiveCompanyId = companyId;
+		if (!effectiveCompanyId) {
+			const subRow = await this.repo.findOne({
+				where: { id: subscriptionId },
+				relations: ['company'],
+			});
+			effectiveCompanyId = subRow?.company?.id;
+		}
+		if (effectiveCompanyId) {
+			await this.syncAdminRoleWithSubscription(effectiveCompanyId, targetModIds, targetSubModIds);
+		}
+	}
+
+	private async syncAdminRoleWithSubscription(
+		companyId: number,
+		moduleIds: number[],
+		subModuleIds: number[],
+	): Promise<void> {
+		let adminRole = await this.rolesRepo
+			.createQueryBuilder('r')
+			.where('r.company_id = :companyId', { companyId })
+			.andWhere('r.deleted = false')
+			.andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+			.getOne();
+
+		if (!adminRole) {
+			const existingRoles = await this.rolesRepo.find({
+				where: { company: { id: companyId } },
+				select: ['id', 'code'],
+				order: { id: 'DESC' },
+			});
+			const nextCode =
+				existingRoles.length === 0
+					? 'ROL-001'
+					: `ROL-${String(existingRoles.length + 1).padStart(3, '0')}`;
+			adminRole = await this.rolesRepo.save(
+				this.rolesRepo.create({
+					code: nextCode,
+					description: 'Administrador',
+					enabled: true,
+					deleted: false,
+					company: { id: companyId } as any,
+				}),
+			);
+		}
+
+		await this.roleModuleRepo
+			.createQueryBuilder()
+			.update(RoleModuleOrmEntity)
+			.set({ deleted: true, enabled: false })
+			.where('role_id = :roleId', { roleId: adminRole.id })
+			.execute();
+
+		for (const modId of moduleIds) {
+			await this.roleModuleRepo.save(
+				this.roleModuleRepo.create({
+					role: { id: adminRole.id } as any,
+					module: { id: modId } as any,
+					subModule: null as any,
+					has_access: true,
+					enabled: true,
+					deleted: false,
+				}),
+			);
+		}
+
+		for (const subModId of subModuleIds) {
+			await this.roleModuleRepo.save(
+				this.roleModuleRepo.create({
+					role: { id: adminRole.id } as any,
+					module: null as any,
+					subModule: { id: subModId } as any,
+					has_access: true,
+					enabled: true,
+					deleted: false,
+				}),
+			);
 		}
 	}
 

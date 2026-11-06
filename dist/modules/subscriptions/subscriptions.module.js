@@ -13,6 +13,7 @@ const update_subscriptions_use_case_1 = require("./application/use-cases/update-
 const list_subscriptions_use_case_1 = require("./application/use-cases/list-subscriptions.use-case");
 const subscriptions_orm_entity_1 = require("./infrastructure/persistence/subscriptions.orm-entity");
 const subscriptions_module_orm_entity_1 = require("../subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity");
+const roles_orm_entity_1 = require("../roles/infrastructure/persistence/roles.orm-entity");
 const get_subscriptions_use_case_1 = require("./application/use-cases/get-subscriptions.use-case");
 const subscriptions_repository_1 = require("./domain/repositories/subscriptions.repository");
 const subscriptions_controller_1 = require("./presentation/subscriptions.controller");
@@ -23,7 +24,14 @@ let SubscriptionsModule = class SubscriptionsModule {
 exports.SubscriptionsModule = SubscriptionsModule;
 exports.SubscriptionsModule = SubscriptionsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([subscriptions_orm_entity_1.SubscriptionsOrmEntity, subscriptions_module_orm_entity_1.SubscriptionsModuleOrmEntity])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([
+                subscriptions_orm_entity_1.SubscriptionsOrmEntity,
+                subscriptions_module_orm_entity_1.SubscriptionsModuleOrmEntity,
+                roles_orm_entity_1.RolesOrmEntity,
+                roles_orm_entity_1.RoleModuleOrmEntity,
+            ]),
+        ],
         controllers: [subscriptions_controller_1.SubscriptionsController],
         providers: [
             create_subscriptions_use_case_1.CreateSubscriptionsUseCase,

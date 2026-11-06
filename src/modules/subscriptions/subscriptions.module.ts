@@ -4,6 +4,7 @@ import { UpdateSubscriptionsUseCase } from "./application/use-cases/update-subsc
 import { ListSubscriptionsUseCase } from "./application/use-cases/list-subscriptions.use-case";
 import { SubscriptionsOrmEntity } from "./infrastructure/persistence/subscriptions.orm-entity";
 import { SubscriptionsModuleOrmEntity } from "../subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity";
+import { RolesOrmEntity, RoleModuleOrmEntity } from "../roles/infrastructure/persistence/roles.orm-entity";
 import { GetSubscriptionsUseCase } from "./application/use-cases/get-subscriptions.use-case";
 import { SubscriptionsRepository } from "./domain/repositories/subscriptions.repository";
 import { SubscriptionsController } from "./presentation/subscriptions.controller";
@@ -11,7 +12,14 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Module } from "@nestjs/common";
 
 @Module({
-	imports: [TypeOrmModule.forFeature([SubscriptionsOrmEntity, SubscriptionsModuleOrmEntity])],
+	imports: [
+		TypeOrmModule.forFeature([
+			SubscriptionsOrmEntity,
+			SubscriptionsModuleOrmEntity,
+			RolesOrmEntity,
+			RoleModuleOrmEntity,
+		]),
+	],
 	controllers: [SubscriptionsController],
 	providers: [
 		CreateSubscriptionsUseCase,

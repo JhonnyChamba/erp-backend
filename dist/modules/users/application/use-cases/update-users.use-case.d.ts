@@ -5,5 +5,5 @@ export declare class UpdateUsersUseCase {
     private readonly repository;
     private readonly passwordService;
     constructor(repository: UsersRepository, passwordService: PasswordService);
-    execute(id: number, companyId: number, dto: UpdateUsersDto): Promise<import("../../domain/entities/users.entity").Users>;
+    execute(id: number, companyId: number, dto: UpdateUsersDto, currentUser?: any): Promise<import("../../domain/entities/users.entity").Users>;
 }

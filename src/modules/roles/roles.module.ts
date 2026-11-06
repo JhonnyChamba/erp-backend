@@ -3,6 +3,7 @@ import { CreateRolesUseCase } from "./application/use-cases/create-roles.use-cas
 import { UpdateRolesUseCase } from "./application/use-cases/update-roles.use-case";
 import { ListRolesUseCase } from "./application/use-cases/list-roles.use-case";
 import { RolesOrmEntity, RoleModuleOrmEntity } from "./infrastructure/persistence/roles.orm-entity";
+import { SubscriptionsOrmEntity } from "../subscriptions/infrastructure/persistence/subscriptions.orm-entity";
 import { GetRolesUseCase } from "./application/use-cases/get-roles.use-case";
 import { RolesRepository } from "./domain/repositories/roles.repository";
 import { RolesController } from "./presentation/roles.controller";
@@ -10,7 +11,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Module } from "@nestjs/common";
 
 @Module({
-	imports: [TypeOrmModule.forFeature([RolesOrmEntity, RoleModuleOrmEntity])],
+	imports: [TypeOrmModule.forFeature([RolesOrmEntity, RoleModuleOrmEntity, SubscriptionsOrmEntity])],
 	controllers: [RolesController],
 	providers: [
 		CreateRolesUseCase,

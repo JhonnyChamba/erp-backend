@@ -10,9 +10,11 @@ export class UpdateUsersUseCase {
     private readonly passwordService: PasswordService,
   ) {}
 
-  async execute(id: number, companyId: number, dto: UpdateUsersDto) {
+  async execute(id: number, companyId: number, dto: UpdateUsersDto, currentUser?: any) {
     const user = await this.repository.findById(id, companyId);
     if (!user) throw new NotFoundException('User not found');
+
+    const canGrantSuperAdmin = Boolean(currentUser?.super_admin || currentUser?.developer);
 
     user.num_document = dto.num_document ?? user.num_document;
     user.name_user = dto.name_user ?? user.name_user;
@@ -21,8 +23,10 @@ export class UpdateUsersUseCase {
     if (dto.password) {
       user.password = await this.passwordService.hash(dto.password);
     }
-    user.developer = dto.developer ?? user.developer;
-    user.super_admin = dto.super_admin ?? user.super_admin;
+    if (canGrantSuperAdmin) {
+      user.developer = dto.developer ?? user.developer;
+      user.super_admin = dto.super_admin ?? user.super_admin;
+    }
     user.multi_company = user.super_admin ? false : (dto.multi_company ?? user.multi_company);
     if (user.multi_company) {
       user.super_admin = false;

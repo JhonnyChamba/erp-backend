@@ -7,8 +7,9 @@ import { Injectable } from '@nestjs/common';
 export class CreateUsersUseCase {
 	constructor(private readonly repository: UsersRepository) { }
 
-	async execute(dto: CreateUsersDto) {
-		const isSuperAdmin = Boolean(dto.super_admin);
+	async execute(dto: CreateUsersDto, currentUser?: any) {
+		const canGrantSuperAdmin = Boolean(currentUser?.super_admin || currentUser?.developer);
+		const isSuperAdmin = canGrantSuperAdmin ? Boolean(dto.super_admin) : false;
 		const isMultiCompany = isSuperAdmin ? false : Boolean(dto.multi_company);
 
 		const user = new Users(

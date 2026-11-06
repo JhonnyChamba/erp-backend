@@ -34,7 +34,7 @@ let UsersController = class UsersController {
         this.updateUseCase = updateUseCase;
     }
     create(dto, req) {
-        return this.createUseCase.execute(dto);
+        return this.createUseCase.execute(dto, req.user);
     }
     list(query, req) {
         return this.listUseCase.execute(query, req.user);
@@ -45,7 +45,7 @@ let UsersController = class UsersController {
     }
     update(id, dto, req) {
         const companyId = req.companyId || req.user?.companyId || dto?.companyId || 1;
-        return this.updateUseCase.execute(Number(id), companyId, dto);
+        return this.updateUseCase.execute(Number(id), companyId, dto, req.user);
     }
 };
 exports.UsersController = UsersController;

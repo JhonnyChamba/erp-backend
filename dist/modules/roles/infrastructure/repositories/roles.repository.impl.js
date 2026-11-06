@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesRepositoryImpl = void 0;
 const roles_orm_entity_1 = require("../persistence/roles.orm-entity");
+const subscriptions_orm_entity_1 = require("../../../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
 const roles_entity_1 = require("../../domain/entities/roles.entity");
 const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
@@ -21,9 +22,11 @@ const typeorm_2 = require("typeorm");
 let RolesRepositoryImpl = class RolesRepositoryImpl {
     repo;
     roleModuleRepo;
-    constructor(repo, roleModuleRepo) {
+    subscriptionsRepo;
+    constructor(repo, roleModuleRepo, subscriptionsRepo) {
         this.repo = repo;
         this.roleModuleRepo = roleModuleRepo;
+        this.subscriptionsRepo = subscriptionsRepo;
     }
     async create(roles) {
         const finalCode = roles.code?.trim()
@@ -69,17 +72,68 @@ let RolesRepositoryImpl = class RolesRepositoryImpl {
         return candidate;
     }
     async findByCompany(companyId, page, limit) {
+        if (companyId) {
+            await this.ensureCompanyAdminRoleSynced(companyId);
+        }
         const [branches, total] = await this.repo.findAndCount({
             where: { company: { id: companyId }, deleted: false },
             relations: ['company', 'roleModules', 'roleModules.module', 'roleModules.subModule'],
             skip: (page - 1) * limit,
             take: limit,
-            order: { created_at: 'DESC' },
+            order: { created_at: 'ASC' },
         });
         return {
             data: branches.map(roles => this.toDomain(roles)),
             total,
         };
+    }
+    async ensureCompanyAdminRoleSynced(companyId) {
+        let adminRole = await this.repo
+            .createQueryBuilder('r')
+            .leftJoinAndSelect('r.roleModules', 'rm', 'rm.deleted = false AND rm.enabled = true')
+            .leftJoinAndSelect('rm.module', 'mod')
+            .leftJoinAndSelect('rm.subModule', 'subMod')
+            .where('r.company_id = :companyId', { companyId })
+            .andWhere('r.deleted = false')
+            .andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+            .getOne();
+        if (!adminRole) {
+            const nextCode = await this.generateNextCode(companyId);
+            adminRole = await this.repo.save(this.repo.create({
+                code: nextCode,
+                description: 'Administrador',
+                enabled: true,
+                deleted: false,
+                company: { id: companyId },
+            }));
+            adminRole.roleModules = [];
+        }
+        const activeSubs = await this.subscriptionsRepo.find({
+            where: { company: { id: companyId }, deleted: false, enabled: true },
+            relations: ['subscriptionModules', 'subscriptionModules.module', 'subscriptionModules.subModule'],
+        });
+        const subModIds = new Set();
+        const modIds = new Set();
+        for (const sub of activeSubs) {
+            for (const sm of sub.subscriptionModules || []) {
+                if (!sm.deleted && sm.enabled !== false) {
+                    if (sm.module?.id)
+                        modIds.add(Number(sm.module.id));
+                    if (sm.subModule?.id)
+                        subModIds.add(Number(sm.subModule.id));
+                }
+            }
+        }
+        const currentActive = (adminRole.roleModules || []).filter((rm) => !rm.deleted && rm.enabled !== false && rm.has_access);
+        const currentModSet = new Set(currentActive.filter((rm) => rm.module?.id || rm.module_id).map((rm) => Number(rm.module?.id || rm.module_id)));
+        const currentSubModSet = new Set(currentActive.filter((rm) => rm.subModule?.id || rm.sub_module_id).map((rm) => Number(rm.subModule?.id || rm.sub_module_id)));
+        const needsSync = (modIds.size > 0 || subModIds.size > 0) &&
+            (currentActive.length === 0 ||
+                Array.from(modIds).some((id) => !currentModSet.has(id)) ||
+                Array.from(subModIds).some((id) => !currentSubModSet.has(id)));
+        if (needsSync) {
+            await this.syncRoleAccess(adminRole.id, Array.from(modIds), Array.from(subModIds));
+        }
     }
     async findById(id, companyId) {
         const whereClause = { id, deleted: false };
@@ -177,7 +231,9 @@ exports.RolesRepositoryImpl = RolesRepositoryImpl = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(roles_orm_entity_1.RolesOrmEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(roles_orm_entity_1.RoleModuleOrmEntity)),
+    __param(2, (0, typeorm_1.InjectRepository)(subscriptions_orm_entity_1.SubscriptionsOrmEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], RolesRepositoryImpl);
 //# sourceMappingURL=roles.repository.impl.js.map
