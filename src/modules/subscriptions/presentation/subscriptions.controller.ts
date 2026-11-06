@@ -36,6 +36,6 @@ export class SubscriptionsController {
 
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateSubscriptionsDto, @Req() req: any) {
-		return this.updateUseCase.execute(Number(id), req.companyId, dto);
+		return this.updateUseCase.execute(Number(id), dto.companyId ?? req.companyId, dto);
 	}
 }

@@ -12,11 +12,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionsModuleOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const module_orm_entity_1 = require("../../../module/infrastructure/persistence/module.orm-entity");
+const sub_module_orm_entity_1 = require("../../../sub-module/infrastructure/persistence/sub-module.orm-entity");
 const subscriptions_orm_entity_1 = require("../../../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
 let SubscriptionsModuleOrmEntity = class SubscriptionsModuleOrmEntity {
     id;
     subscriptions;
     module;
+    subModule;
+    enabled;
+    deleted;
     created_at;
 };
 exports.SubscriptionsModuleOrmEntity = SubscriptionsModuleOrmEntity;
@@ -25,7 +29,7 @@ __decorate([
     __metadata("design:type", Number)
 ], SubscriptionsModuleOrmEntity.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => subscriptions_orm_entity_1.SubscriptionsOrmEntity, { nullable: true }),
+    (0, typeorm_1.ManyToOne)(() => subscriptions_orm_entity_1.SubscriptionsOrmEntity, (sub) => sub.subscriptionModules, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'subscriptions_id' }),
     __metadata("design:type", subscriptions_orm_entity_1.SubscriptionsOrmEntity)
 ], SubscriptionsModuleOrmEntity.prototype, "subscriptions", void 0);
@@ -34,6 +38,19 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'module_id' }),
     __metadata("design:type", module_orm_entity_1.ModuleOrmEntity)
 ], SubscriptionsModuleOrmEntity.prototype, "module", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => sub_module_orm_entity_1.subModulesOrmEntity, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'sub_module_id' }),
+    __metadata("design:type", sub_module_orm_entity_1.subModulesOrmEntity)
+], SubscriptionsModuleOrmEntity.prototype, "subModule", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: true }),
+    __metadata("design:type", Boolean)
+], SubscriptionsModuleOrmEntity.prototype, "enabled", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], SubscriptionsModuleOrmEntity.prototype, "deleted", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }),
     __metadata("design:type", Date)

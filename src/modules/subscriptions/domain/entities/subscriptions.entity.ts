@@ -8,5 +8,7 @@ export class Subscriptions {
 		public enabled: boolean,
 		public readonly createdAt?: Date,
 		public readonly createdById?: number,
+		public moduleIds?: number[],
+		public subModuleIds?: number[],
 	) { }
 }

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsArray, IsDate, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateSubscriptionsDto {
 	@IsNumber()
@@ -19,4 +19,12 @@ export class CreateSubscriptionsDto {
 	@IsDate()
 	@Type(() => Date)
 	end_date: Date;
+
+	@IsArray()
+	@IsOptional()
+	moduleIds?: number[];
+
+	@IsArray()
+	@IsOptional()
+	subModuleIds?: number[];
 }

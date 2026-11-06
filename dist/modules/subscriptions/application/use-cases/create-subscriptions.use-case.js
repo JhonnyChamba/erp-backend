@@ -19,7 +19,7 @@ let CreateSubscriptionsUseCase = class CreateSubscriptionsUseCase {
         this.repository = repository;
     }
     async execute(dto, user) {
-        const subscriptions = new subscriptions_entity_1.Subscriptions(null, dto.begin_date, dto.end_date, dto.planId, dto.companyId, true, undefined, user.user_id);
+        const subscriptions = new subscriptions_entity_1.Subscriptions(null, dto.begin_date, dto.end_date, dto.planId, dto.companyId, true, undefined, user.user_id, dto.moduleIds || [], dto.subModuleIds || []);
         return this.repository.create(subscriptions);
     }
 };

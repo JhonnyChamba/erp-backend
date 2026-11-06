@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
 import { PlansOrmEntity } from 'src/modules/plans/infrastructure/persistence/plans.orm-entity';
 import { UsersOrmEntity } from 'src/modules/users/infrastructure/persistence/users.orm-entity';
+import { SubscriptionsModuleOrmEntity } from 'src/modules/subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity';
 
 @Entity('tab_subscriptions')
 export class SubscriptionsOrmEntity {
@@ -14,10 +15,13 @@ export class SubscriptionsOrmEntity {
 	@JoinColumn({ name: 'company_id' })
 	company: CompanyOrmEntity;
 
-	// Relación con empresa (genera company_id automáticamente)
+	// Relación con plan
 	@ManyToOne(() => PlansOrmEntity, { nullable: false })
 	@JoinColumn({ name: 'plan_id' })
 	plan: PlansOrmEntity;
+
+	@OneToMany(() => SubscriptionsModuleOrmEntity, (sm) => sm.subscriptions)
+	subscriptionModules: SubscriptionsModuleOrmEntity[];
 
 	@Column({ type: 'date' })
 	begin_date: Date;

@@ -17,6 +17,8 @@ export class CreateSubscriptionsUseCase {
 			true,
 			undefined,
 			user.user_id, // 🔥 siempre del token
+			dto.moduleIds || [],
+			dto.subModuleIds || [],
 		);
 
 		return this.repository.create(subscriptions);

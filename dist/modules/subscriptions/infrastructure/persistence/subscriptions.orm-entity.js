@@ -14,10 +14,12 @@ const typeorm_1 = require("typeorm");
 const company_orm_entity_1 = require("../../../company/infrastructure/persistence/company.orm-entity");
 const plans_orm_entity_1 = require("../../../plans/infrastructure/persistence/plans.orm-entity");
 const users_orm_entity_1 = require("../../../users/infrastructure/persistence/users.orm-entity");
+const subscriptions_module_orm_entity_1 = require("../../../subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity");
 let SubscriptionsOrmEntity = class SubscriptionsOrmEntity {
     id;
     company;
     plan;
+    subscriptionModules;
     begin_date;
     end_date;
     createdBy;
@@ -41,6 +43,10 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'plan_id' }),
     __metadata("design:type", plans_orm_entity_1.PlansOrmEntity)
 ], SubscriptionsOrmEntity.prototype, "plan", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => subscriptions_module_orm_entity_1.SubscriptionsModuleOrmEntity, (sm) => sm.subscriptions),
+    __metadata("design:type", Array)
+], SubscriptionsOrmEntity.prototype, "subscriptionModules", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'date' }),
     __metadata("design:type", Date)

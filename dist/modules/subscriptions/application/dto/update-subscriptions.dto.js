@@ -17,6 +17,9 @@ class UpdateSubscriptionsDto {
     planId;
     begin_date;
     end_date;
+    enabled;
+    moduleIds;
+    subModuleIds;
 }
 exports.UpdateSubscriptionsDto = UpdateSubscriptionsDto;
 __decorate([
@@ -26,19 +29,34 @@ __decorate([
 ], UpdateSubscriptionsDto.prototype, "companyId", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], UpdateSubscriptionsDto.prototype, "planId", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDate)(),
     (0, class_transformer_1.Type)(() => Date),
     __metadata("design:type", Date)
 ], UpdateSubscriptionsDto.prototype, "begin_date", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDate)(),
     (0, class_transformer_1.Type)(() => Date),
     __metadata("design:type", Date)
 ], UpdateSubscriptionsDto.prototype, "end_date", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateSubscriptionsDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateSubscriptionsDto.prototype, "moduleIds", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateSubscriptionsDto.prototype, "subModuleIds", void 0);
 //# sourceMappingURL=update-subscriptions.dto.js.map

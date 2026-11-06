@@ -17,6 +17,8 @@ class CreateSubscriptionsDto {
     planId;
     begin_date;
     end_date;
+    moduleIds;
+    subModuleIds;
 }
 exports.CreateSubscriptionsDto = CreateSubscriptionsDto;
 __decorate([
@@ -41,4 +43,14 @@ __decorate([
     (0, class_transformer_1.Type)(() => Date),
     __metadata("design:type", Date)
 ], CreateSubscriptionsDto.prototype, "end_date", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateSubscriptionsDto.prototype, "moduleIds", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateSubscriptionsDto.prototype, "subModuleIds", void 0);
 //# sourceMappingURL=create-subscriptions.dto.js.map
