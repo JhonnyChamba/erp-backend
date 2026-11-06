@@ -19,7 +19,7 @@ class ListsubModulesDto {
 }
 exports.ListsubModulesDto = ListsubModulesDto;
 __decorate([
-    (0, class_transformer_1.Type)(() => Number),
+    (0, class_transformer_1.Transform)(({ value }) => (value === '' || value === undefined || value === null ? undefined : Number(value))),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)

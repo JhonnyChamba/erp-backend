@@ -1,8 +1,8 @@
 import { IsNumber, IsOptional, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class ListsubModulesDto {
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' || value === undefined || value === null ? undefined : Number(value)))
   @IsNumber()
   @IsOptional()
   moduleId?: number;
