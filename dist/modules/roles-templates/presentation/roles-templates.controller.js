@@ -82,7 +82,7 @@ __decorate([
 ], RolesTemplatesController.prototype, "update", null);
 exports.RolesTemplatesController = RolesTemplatesController = __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
-    (0, common_1.Controller)('roles'),
+    (0, common_1.Controller)('rolesTemplates'),
     __metadata("design:paramtypes", [create_roles_templates_use_case_1.CreateRolesTemplatesUseCase,
         list_roles_templates_use_case_1.ListRolesTemplatesUseCase,
         get_roles_templates_use_case_1.GetRolesTemplatesUseCase,

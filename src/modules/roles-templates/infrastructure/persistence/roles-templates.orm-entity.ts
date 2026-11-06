@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { UsersOrmEntity } from 'src/modules/users/infrastructure/persistence/users.orm-entity';
 
-@Entity('tab_role')
+@Entity('tab_role_template')
 export class RolesTemplatesOrmEntity {
 
 	@PrimaryGeneratedColumn()

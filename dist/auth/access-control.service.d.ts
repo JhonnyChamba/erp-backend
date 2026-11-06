@@ -22,6 +22,7 @@ export interface MenuModuleItem {
 export interface UserCompanyAccessResponse {
     companyId: number;
     isSuperAdmin: boolean;
+    isMultiCompany: boolean;
     roleId: number | null;
     roleCode: string | null;
     roleName: string | null;

@@ -11,6 +11,7 @@ export declare class RolesController {
     private readonly getUseCase;
     private readonly updateUseCase;
     constructor(createUseCase: CreateRolesUseCase, listUseCase: ListRolesUseCase, getUseCase: GetRolesUseCase, updateUseCase: UpdateRolesUseCase);
+    private resolveCompanyId;
     create(dto: CreateRolesDto, req: any): Promise<import("../domain/entities/roles.entity").Roles>;
     list(query: ListRolesDto, req: any): Promise<{
         data: import("../domain/entities/roles.entity").Roles[];

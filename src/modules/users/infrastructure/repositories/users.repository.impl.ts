@@ -1,5 +1,6 @@
 import { UsersRepository } from '../../domain/repositories/users.repository';
 import { PasswordService } from 'src/common/password/password.service';
+import { AccessControlService } from 'src/auth/access-control.service';
 import { UsersOrmEntity } from '../persistence/users.orm-entity';
 import { UserCompanyOrmEntity } from 'src/modules/user-company/infrastructure/persistence/user-company.orm-entity';
 import { Users, UserCompanyRoleItem } from '../../domain/entities/users.entity';
@@ -66,6 +67,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			}
 		}
 
+		AccessControlService.clearCache(undefined, saved.id);
 		const fullUser = await this.findById(saved.id, user.companyId);
 		return fullUser!;
 	}
@@ -160,6 +162,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			);
 		}
 
+		AccessControlService.clearCache(undefined, user.id!);
 		const updated = await this.findById(user.id!, user.companyId);
 		return updated!;
 	}

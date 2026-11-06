@@ -9,7 +9,7 @@ import { ListRolesTemplatesDto } from "../application/dto/list-roles-templates.d
 import { AuthGuard } from "@nestjs/passport";
 
 @UseGuards(AuthGuard('jwt'))
-@Controller('roles')
+@Controller('rolesTemplates')
 export class RolesTemplatesController {
 	constructor(
 		private readonly createUseCase: CreateRolesTemplatesUseCase,

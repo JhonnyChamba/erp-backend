@@ -27,6 +27,7 @@ export interface MenuModuleItem {
 export interface UserCompanyAccessResponse {
 	companyId: number;
 	isSuperAdmin: boolean;
+	isMultiCompany: boolean;
 	roleId: number | null;
 	roleCode: string | null;
 	roleName: string | null;
@@ -88,7 +89,7 @@ export class AccessControlService {
 			}
 		}
 
-		// 1. Verificar usuario actual en BD por si cambió su flag de super_admin después de emitir el token
+		// 1. Verificar usuario actual en BD por si cambió su flag de super_admin o multi_company después de emitir el token
 		const dbUser = userId
 			? await this.usersRepo.findOne({
 					where: { id: userId, deleted: false },
@@ -98,6 +99,9 @@ export class AccessControlService {
 
 		const isSuperAdmin = Boolean(
 			dbUser ? dbUser.super_admin || dbUser.developer : userPayload?.super_admin || userPayload?.developer,
+		);
+		const isMultiCompany = Boolean(
+			dbUser ? dbUser.multi_company : userPayload?.multi_company,
 		);
 
 		// 2. Cargar catálogo activo de Módulos y Submódulos ordenado por ID
@@ -134,6 +138,7 @@ export class AccessControlService {
 			const result: UserCompanyAccessResponse = {
 				companyId: targetCompanyId,
 				isSuperAdmin: true,
+				isMultiCompany: true,
 				roleId: null,
 				roleCode: 'SUPER-ADMIN',
 				roleName: 'Super Admin',
@@ -150,7 +155,7 @@ export class AccessControlService {
 			return result;
 		}
 
-		// CASO 2: USUARIO REGULAR O MULTI-EMPRESA -> Intersección entre Suscripción de la Empresa y Rol en esa Empresa
+		// CASO 2: USUARIO REGULAR O MULTI-EMPRESA -> Intersección entre Suscripción de la Empresa (si existe) y Rol en esa Empresa
 		const activeSubs = await this.subscriptionsRepo.find({
 			where: { company: { id: targetCompanyId }, deleted: false, enabled: true },
 			relations: ['subscriptionModules', 'subscriptionModules.module', 'subscriptionModules.subModule'],
@@ -168,6 +173,8 @@ export class AccessControlService {
 			}
 		}
 
+		const hasSubscriptionRestriction = subscribedModIds.size > 0 || subscribedSubModIds.size > 0;
+
 		// Buscar la relación usuario-empresa para obtener el rol específico en esta empresa
 		const userCompany = userId
 			? await this.userCompanyRepo.findOne({
@@ -181,9 +188,9 @@ export class AccessControlService {
 				})
 			: null;
 
-		let assignedRoleId: number | null =
+		const assignedRoleId: number | null =
 			userCompany?.role?.id ||
-			(dbUser?.company?.id === targetCompanyId && dbUser?.role?.id ? dbUser.role.id : null);
+			(dbUser?.role?.id ? Number(dbUser.role.id) : null);
 
 		let roleEntity: RolesOrmEntity | null = null;
 		if (assignedRoleId) {
@@ -197,6 +204,7 @@ export class AccessControlService {
 			const emptyResult: UserCompanyAccessResponse = {
 				companyId: targetCompanyId,
 				isSuperAdmin: false,
+				isMultiCompany,
 				roleId: null,
 				roleCode: null,
 				roleName: 'Sin Rol Asignado',
@@ -221,9 +229,14 @@ export class AccessControlService {
 		const roleAllowedSubModIds = new Set<number>();
 
 		if (isAdminRole && activeRoleModules.length === 0) {
-			// Si es el rol Administrador de la empresa, tiene acceso a todo lo que tenga la suscripción de la empresa
-			subscribedModIds.forEach((id) => roleAllowedModIds.add(id));
-			subscribedSubModIds.forEach((id) => roleAllowedSubModIds.add(id));
+			// Si es el rol Administrador de la empresa y aún no tiene detalle personalizado, hereda toda la suscripción (o todo el catálogo si no hay restricción de suscripción)
+			if (hasSubscriptionRestriction) {
+				subscribedModIds.forEach((id) => roleAllowedModIds.add(id));
+				subscribedSubModIds.forEach((id) => roleAllowedSubModIds.add(id));
+			} else {
+				allModules.forEach((m) => roleAllowedModIds.add(m.id));
+				allSubModules.forEach((sm) => roleAllowedSubModIds.add(sm.id));
+			}
 		} else {
 			for (const rm of activeRoleModules) {
 				if (rm.module?.id) roleAllowedModIds.add(Number(rm.module.id));
@@ -231,13 +244,16 @@ export class AccessControlService {
 			}
 		}
 
-		// Intersección efectiva: debe estar en la suscripción de la empresa Y permitido en el rol
+		// Intersección efectiva: si la empresa tiene suscripción con módulos específicos, validar ambos; si no, validar por el rol asignado
 		const effectiveSubModules = allSubModules.filter((sm) => {
 			const parentModId = sm.module?.id;
-			const inSubscription =
-				subscribedSubModIds.has(sm.id) ||
-				(subscribedSubModIds.size === 0 && parentModId ? subscribedModIds.has(parentModId) : false);
-			const inRole = roleAllowedSubModIds.has(sm.id);
+			const inSubscription = !hasSubscriptionRestriction
+				? true
+				: subscribedSubModIds.has(sm.id) ||
+					(subscribedSubModIds.size === 0 && parentModId ? subscribedModIds.has(parentModId) : false);
+			const inRole =
+				roleAllowedSubModIds.has(sm.id) ||
+				(roleAllowedSubModIds.size === 0 && parentModId ? roleAllowedModIds.has(parentModId) : false);
 			return inSubscription && inRole;
 		});
 
@@ -246,9 +262,11 @@ export class AccessControlService {
 		);
 
 		const effectiveModules = allModules.filter((mod) => {
-			const inSubscription = subscribedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
+			const inSubscription = !hasSubscriptionRestriction
+				? true
+				: subscribedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
 			const inRole = roleAllowedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-			return inSubscription && inRole;
+			return inSubscription && inRole && effectiveModIdsFromChildren.has(mod.id);
 		});
 
 		const menu: MenuModuleItem[] = effectiveModules.map((mod) => ({
@@ -270,6 +288,7 @@ export class AccessControlService {
 		const result: UserCompanyAccessResponse = {
 			companyId: targetCompanyId,
 			isSuperAdmin: false,
+			isMultiCompany,
 			roleId: roleEntity.id,
 			roleCode: roleEntity.code,
 			roleName: roleEntity.description,
@@ -286,4 +305,3 @@ export class AccessControlService {
 		return result;
 	}
 }
-

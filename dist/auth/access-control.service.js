@@ -72,6 +72,7 @@ let AccessControlService = class AccessControlService {
             })
             : null;
         const isSuperAdmin = Boolean(dbUser ? dbUser.super_admin || dbUser.developer : userPayload?.super_admin || userPayload?.developer);
+        const isMultiCompany = Boolean(dbUser ? dbUser.multi_company : userPayload?.multi_company);
         const [allModules, allSubModules] = await Promise.all([
             this.moduleRepo.find({
                 where: { deleted: false, enabled: true },
@@ -102,6 +103,7 @@ let AccessControlService = class AccessControlService {
             const result = {
                 companyId: targetCompanyId,
                 isSuperAdmin: true,
+                isMultiCompany: true,
                 roleId: null,
                 roleCode: 'SUPER-ADMIN',
                 roleName: 'Super Admin',
@@ -132,6 +134,7 @@ let AccessControlService = class AccessControlService {
                 }
             }
         }
+        const hasSubscriptionRestriction = subscribedModIds.size > 0 || subscribedSubModIds.size > 0;
         const userCompany = userId
             ? await this.userCompanyRepo.findOne({
                 where: {
@@ -143,8 +146,8 @@ let AccessControlService = class AccessControlService {
                 relations: ['role'],
             })
             : null;
-        let assignedRoleId = userCompany?.role?.id ||
-            (dbUser?.company?.id === targetCompanyId && dbUser?.role?.id ? dbUser.role.id : null);
+        const assignedRoleId = userCompany?.role?.id ||
+            (dbUser?.role?.id ? Number(dbUser.role.id) : null);
         let roleEntity = null;
         if (assignedRoleId) {
             roleEntity = await this.rolesRepo.findOne({
@@ -156,6 +159,7 @@ let AccessControlService = class AccessControlService {
             const emptyResult = {
                 companyId: targetCompanyId,
                 isSuperAdmin: false,
+                isMultiCompany,
                 roleId: null,
                 roleCode: null,
                 roleName: 'Sin Rol Asignado',
@@ -175,8 +179,14 @@ let AccessControlService = class AccessControlService {
         const roleAllowedModIds = new Set();
         const roleAllowedSubModIds = new Set();
         if (isAdminRole && activeRoleModules.length === 0) {
-            subscribedModIds.forEach((id) => roleAllowedModIds.add(id));
-            subscribedSubModIds.forEach((id) => roleAllowedSubModIds.add(id));
+            if (hasSubscriptionRestriction) {
+                subscribedModIds.forEach((id) => roleAllowedModIds.add(id));
+                subscribedSubModIds.forEach((id) => roleAllowedSubModIds.add(id));
+            }
+            else {
+                allModules.forEach((m) => roleAllowedModIds.add(m.id));
+                allSubModules.forEach((sm) => roleAllowedSubModIds.add(sm.id));
+            }
         }
         else {
             for (const rm of activeRoleModules) {
@@ -188,16 +198,21 @@ let AccessControlService = class AccessControlService {
         }
         const effectiveSubModules = allSubModules.filter((sm) => {
             const parentModId = sm.module?.id;
-            const inSubscription = subscribedSubModIds.has(sm.id) ||
-                (subscribedSubModIds.size === 0 && parentModId ? subscribedModIds.has(parentModId) : false);
-            const inRole = roleAllowedSubModIds.has(sm.id);
+            const inSubscription = !hasSubscriptionRestriction
+                ? true
+                : subscribedSubModIds.has(sm.id) ||
+                    (subscribedSubModIds.size === 0 && parentModId ? subscribedModIds.has(parentModId) : false);
+            const inRole = roleAllowedSubModIds.has(sm.id) ||
+                (roleAllowedSubModIds.size === 0 && parentModId ? roleAllowedModIds.has(parentModId) : false);
             return inSubscription && inRole;
         });
         const effectiveModIdsFromChildren = new Set(effectiveSubModules.map((sm) => Number(sm.module?.id)).filter(Boolean));
         const effectiveModules = allModules.filter((mod) => {
-            const inSubscription = subscribedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
+            const inSubscription = !hasSubscriptionRestriction
+                ? true
+                : subscribedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
             const inRole = roleAllowedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-            return inSubscription && inRole;
+            return inSubscription && inRole && effectiveModIdsFromChildren.has(mod.id);
         });
         const menu = effectiveModules.map((mod) => ({
             id: mod.id,
@@ -217,6 +232,7 @@ let AccessControlService = class AccessControlService {
         const result = {
             companyId: targetCompanyId,
             isSuperAdmin: false,
+            isMultiCompany,
             roleId: roleEntity.id,
             roleCode: roleEntity.code,
             roleName: roleEntity.description,

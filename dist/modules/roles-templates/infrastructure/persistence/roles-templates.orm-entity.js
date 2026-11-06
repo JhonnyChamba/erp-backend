@@ -50,6 +50,6 @@ __decorate([
     __metadata("design:type", Date)
 ], RolesTemplatesOrmEntity.prototype, "created_at", void 0);
 exports.RolesTemplatesOrmEntity = RolesTemplatesOrmEntity = __decorate([
-    (0, typeorm_1.Entity)('tab_role')
+    (0, typeorm_1.Entity)('tab_role_template')
 ], RolesTemplatesOrmEntity);
 //# sourceMappingURL=roles-templates.orm-entity.js.map

@@ -166,3 +166,4 @@ export class InventoryController {
 		return this.inventoryService.deleteSubcontract(Number(id), companyId);
 	}
 }
+

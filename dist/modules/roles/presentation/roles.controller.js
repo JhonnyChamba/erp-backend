@@ -33,17 +33,25 @@ let RolesController = class RolesController {
         this.getUseCase = getUseCase;
         this.updateUseCase = updateUseCase;
     }
+    resolveCompanyId(req, explicitId) {
+        const headerVal = req?.headers?.['x-company-id'];
+        const candidate = explicitId || Number(headerVal) || Number(req?.companyId) || Number(req?.user?.company_id) || 1;
+        return !Number.isNaN(candidate) && candidate > 0 ? candidate : 1;
+    }
     create(dto, req) {
+        dto.companyId = this.resolveCompanyId(req, dto.companyId);
         return this.createUseCase.execute(dto, req.user);
     }
     list(query, req) {
+        query.companyId = this.resolveCompanyId(req, query.companyId);
         return this.listUseCase.execute(query, req.user);
     }
     get(id, req) {
-        return this.getUseCase.execute(Number(id), req.companyId);
+        return this.getUseCase.execute(Number(id), this.resolveCompanyId(req));
     }
     update(id, dto, req) {
-        return this.updateUseCase.execute(Number(id), dto.companyId ?? req.companyId, dto);
+        const targetCompanyId = this.resolveCompanyId(req, dto.companyId);
+        return this.updateUseCase.execute(Number(id), targetCompanyId, dto);
     }
 };
 exports.RolesController = RolesController;

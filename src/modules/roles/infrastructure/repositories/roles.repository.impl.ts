@@ -80,16 +80,24 @@ export class RolesRepositoryImpl implements RolesRepository {
 	}
 
 	async findByCompany(companyId: number, page: number, limit: number): Promise<{ data: Roles[]; total: number }> {
-		if (companyId) {
-			await this.ensureCompanyAdminRoleSynced(companyId);
-		}
+		const targetCompanyId = Number(companyId) || 1;
+
+		// Normalizar roles previos cuyo company_id quedó en NULL hacia la empresa activa
+		await this.repo
+			.createQueryBuilder()
+			.update(RolesOrmEntity)
+			.set({ company: { id: targetCompanyId } as any })
+			.where('company_id IS NULL')
+			.execute();
+
+		await this.ensureCompanyAdminRoleSynced(targetCompanyId);
 
 		const [branches, total] = await this.repo.findAndCount({
-			where: { company: { id: companyId }, deleted: false },
+			where: { company: { id: targetCompanyId }, deleted: false },
 			relations: ['company', 'roleModules', 'roleModules.module', 'roleModules.subModule'],
 			skip: (page - 1) * limit,
 			take: limit,
-			order: { created_at: 'ASC' },
+			order: { id: 'ASC' },
 		});
 
 		return {
@@ -161,33 +169,30 @@ export class RolesRepositoryImpl implements RolesRepository {
 	}
 
 	async findById(id: number, companyId?: number): Promise<Roles | null> {
-		const whereClause: any = { id, deleted: false };
-		if (companyId) {
-			whereClause.company = { id: companyId };
-		}
-
-		const roles = await this.repo.findOne({
-			where: whereClause,
+		let roles = await this.repo.findOne({
+			where: { id, deleted: false },
 			relations: ['company', 'roleModules', 'roleModules.module', 'roleModules.subModule'],
 		});
+
+		if (roles && !roles.company && companyId) {
+			await this.repo.update({ id }, { company: { id: companyId } as any });
+			roles.company = { id: companyId } as any;
+		}
 
 		return roles ? this.toDomain(roles) : null;
 	}
 
 	async update(roles: Roles): Promise<Roles> {
-		const whereClause: any = { id: roles.id };
+		const updatePayload: any = {
+			code: roles.code,
+			description: roles.description,
+			enabled: roles.enabled,
+		};
 		if (roles.companyId) {
-			whereClause.company = { id: roles.companyId };
+			updatePayload.company = { id: roles.companyId };
 		}
 
-		await this.repo.update(
-			whereClause,
-			{
-				code: roles.code,
-				description: roles.description,
-				enabled: roles.enabled,
-			},
-		);
+		await this.repo.update({ id: roles.id! }, updatePayload);
 
 		if (
 			roles.moduleIds !== undefined ||

@@ -21,3 +21,4 @@ import { InventoryController } from './presentation/inventory.controller';
 	exports: [InventoryService],
 })
 export class InventoryModule {}
+

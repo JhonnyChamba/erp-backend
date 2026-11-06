@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersRepositoryImpl = void 0;
 const password_service_1 = require("../../../../common/password/password.service");
+const access_control_service_1 = require("../../../../auth/access-control.service");
 const users_orm_entity_1 = require("../persistence/users.orm-entity");
 const user_company_orm_entity_1 = require("../../../user-company/infrastructure/persistence/user-company.orm-entity");
 const users_entity_1 = require("../../domain/entities/users.entity");
@@ -63,6 +64,7 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
                 await this.syncUserCompanies(saved.id, [user.companyId], [{ companyId: user.companyId, roleId: primaryRoleId }]);
             }
         }
+        access_control_service_1.AccessControlService.clearCache(undefined, saved.id);
         const fullUser = await this.findById(saved.id, user.companyId);
         return fullUser;
     }
@@ -136,6 +138,7 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
         else {
             await this.syncUserCompanies(user.id, [user.companyId], [{ companyId: user.companyId, roleId: primaryRoleId }]);
         }
+        access_control_service_1.AccessControlService.clearCache(undefined, user.id);
         const updated = await this.findById(user.id, user.companyId);
         return updated;
     }
