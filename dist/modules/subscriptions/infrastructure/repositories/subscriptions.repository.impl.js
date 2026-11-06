@@ -16,6 +16,7 @@ exports.SubscriptionsRepositoryImpl = void 0;
 const subscriptions_orm_entity_1 = require("../persistence/subscriptions.orm-entity");
 const subscriptions_module_orm_entity_1 = require("../../../subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity");
 const roles_orm_entity_1 = require("../../../roles/infrastructure/persistence/roles.orm-entity");
+const access_control_service_1 = require("../../../../auth/access-control.service");
 const subscriptions_entity_1 = require("../../domain/entities/subscriptions.entity");
 const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
@@ -87,6 +88,7 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         return updated;
     }
     async syncSubscriptionAccess(subscriptionId, moduleIds, subModuleIds, companyId) {
+        access_control_service_1.AccessControlService.clearCache(companyId);
         const targetModIds = Array.from(new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
         const targetSubModIds = Array.from(new Set((subModuleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
         await this.subModuleRepo

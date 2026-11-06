@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesRepositoryImpl = void 0;
 const roles_orm_entity_1 = require("../persistence/roles.orm-entity");
 const subscriptions_orm_entity_1 = require("../../../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
+const access_control_service_1 = require("../../../../auth/access-control.service");
 const roles_entity_1 = require("../../domain/entities/roles.entity");
 const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
@@ -165,6 +166,7 @@ let RolesRepositoryImpl = class RolesRepositoryImpl {
         return updated;
     }
     async syncRoleAccess(roleId, moduleIds, subModuleIds, details) {
+        access_control_service_1.AccessControlService.clearCache();
         await this.roleModuleRepo
             .createQueryBuilder()
             .update(roles_orm_entity_1.RoleModuleOrmEntity)

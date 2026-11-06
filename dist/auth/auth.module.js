@@ -8,9 +8,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const users_module_1 = require("../modules/users/users.module");
+const module_orm_entity_1 = require("../modules/module/infrastructure/persistence/module.orm-entity");
+const sub_module_orm_entity_1 = require("../modules/sub-module/infrastructure/persistence/sub-module.orm-entity");
+const subscriptions_orm_entity_1 = require("../modules/subscriptions/infrastructure/persistence/subscriptions.orm-entity");
+const roles_orm_entity_1 = require("../modules/roles/infrastructure/persistence/roles.orm-entity");
+const user_company_orm_entity_1 = require("../modules/user-company/infrastructure/persistence/user-company.orm-entity");
+const users_orm_entity_1 = require("../modules/users/infrastructure/persistence/users.orm-entity");
 const jwt_service_1 = require("./strategies/jwt/jwt.service");
 const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
+const access_control_service_1 = require("./access-control.service");
+const permissions_guard_1 = require("./guards/permissions.guard");
+const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
@@ -21,6 +30,15 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
             users_module_1.UsersModule,
+            typeorm_1.TypeOrmModule.forFeature([
+                module_orm_entity_1.ModuleOrmEntity,
+                sub_module_orm_entity_1.subModulesOrmEntity,
+                subscriptions_orm_entity_1.SubscriptionsOrmEntity,
+                roles_orm_entity_1.RolesOrmEntity,
+                roles_orm_entity_1.RoleModuleOrmEntity,
+                user_company_orm_entity_1.UserCompanyOrmEntity,
+                users_orm_entity_1.UsersOrmEntity,
+            ]),
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
@@ -33,8 +51,8 @@ exports.AuthModule = AuthModule = __decorate([
             }),
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, jwt_service_1.JwtStrategy],
-        exports: [auth_service_1.AuthService],
+        providers: [auth_service_1.AuthService, jwt_service_1.JwtStrategy, access_control_service_1.AccessControlService, permissions_guard_1.PermissionsGuard],
+        exports: [auth_service_1.AuthService, access_control_service_1.AccessControlService, permissions_guard_1.PermissionsGuard],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

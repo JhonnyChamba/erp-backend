@@ -15,19 +15,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const create_users_use_case_1 = require("../modules/users/application/use-cases/create-users.use-case");
 const common_1 = require("@nestjs/common");
+const passport_1 = require("@nestjs/passport");
 const auth_service_1 = require("./auth.service");
+const access_control_service_1 = require("./access-control.service");
 let AuthController = class AuthController {
     authService;
     createUsersUseCase;
-    constructor(authService, createUsersUseCase) {
+    accessControlService;
+    constructor(authService, createUsersUseCase, accessControlService) {
         this.authService = authService;
         this.createUsersUseCase = createUsersUseCase;
+        this.accessControlService = accessControlService;
     }
     async register(body) {
         return this.createUsersUseCase.execute(body);
     }
     async login(body) {
         return this.authService.login(body.email, body.password);
+    }
+    async getAccess(queryCompanyId, headerCompanyId, req) {
+        const companyId = Number(queryCompanyId || headerCompanyId || req.user?.company_id || 1);
+        return this.accessControlService.getUserCompanyAccess(req.user, companyId, true);
     }
 };
 exports.AuthController = AuthController;
@@ -45,9 +53,20 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Get)('access'),
+    __param(0, (0, common_1.Query)('companyId')),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getAccess", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
-        create_users_use_case_1.CreateUsersUseCase])
+        create_users_use_case_1.CreateUsersUseCase,
+        access_control_service_1.AccessControlService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

@@ -2,6 +2,7 @@ import { SubscriptionsRepository } from '../../domain/repositories/subscriptions
 import { SubscriptionsOrmEntity } from '../persistence/subscriptions.orm-entity';
 import { SubscriptionsModuleOrmEntity } from 'src/modules/subscriptions-module/infrastructure/persistence/subscriptions-module.orm-entity';
 import { RolesOrmEntity, RoleModuleOrmEntity } from 'src/modules/roles/infrastructure/persistence/roles.orm-entity';
+import { AccessControlService } from 'src/auth/access-control.service';
 import { Subscriptions } from '../../domain/entities/subscriptions.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
@@ -110,6 +111,7 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 		subModuleIds: number[],
 		companyId?: number,
 	): Promise<void> {
+		AccessControlService.clearCache(companyId);
 		const targetModIds = Array.from(
 			new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)),
 		);

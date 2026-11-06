@@ -1,6 +1,7 @@
 import { RolesRepository } from '../../domain/repositories/roles.repository';
 import { RolesOrmEntity, RoleModuleOrmEntity } from '../persistence/roles.orm-entity';
 import { SubscriptionsOrmEntity } from 'src/modules/subscriptions/infrastructure/persistence/subscriptions.orm-entity';
+import { AccessControlService } from 'src/auth/access-control.service';
 import { Roles, RoleAccessDetail } from '../../domain/entities/roles.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
@@ -211,6 +212,7 @@ export class RolesRepositoryImpl implements RolesRepository {
 		subModuleIds: number[],
 		details?: RoleAccessDetail[],
 	): Promise<void> {
+		AccessControlService.clearCache();
 		await this.roleModuleRepo
 			.createQueryBuilder()
 			.update(RoleModuleOrmEntity)
