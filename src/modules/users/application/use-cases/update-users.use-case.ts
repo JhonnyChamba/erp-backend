@@ -23,11 +23,21 @@ export class UpdateUsersUseCase {
     }
     user.developer = dto.developer ?? user.developer;
     user.super_admin = dto.super_admin ?? user.super_admin;
-    user.multi_company = dto.multi_company ?? user.multi_company;
+    user.multi_company = user.super_admin ? false : (dto.multi_company ?? user.multi_company);
+    if (user.multi_company) {
+      user.super_admin = false;
+      user.developer = false;
+    }
     user.enabled = dto.enabled ?? user.enabled;
     user.theme_color = dto.theme_color ?? user.theme_color;
     if (dto.companyIds !== undefined) {
-      user.companyIds = dto.companyIds;
+      user.companyIds = user.super_admin ? [] : dto.companyIds;
+    }
+    if (dto.roleId !== undefined) {
+      user.roleId = user.super_admin ? null : dto.roleId;
+    }
+    if (dto.companyRoles !== undefined) {
+      user.companyRoles = user.super_admin ? [] : dto.companyRoles;
     }
 
     return this.repository.update(user);

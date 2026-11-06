@@ -19,7 +19,9 @@ let CreateUsersUseCase = class CreateUsersUseCase {
         this.repository = repository;
     }
     async execute(dto) {
-        const user = new users_entity_1.Users(null, dto.num_document, dto.name_user, dto.last_name_user, dto.email, dto.password, dto.companyId, dto.developer ?? false, dto.multi_company ?? false, true, false, undefined, dto.theme_color || 'Blue_Theme', dto.super_admin ?? false, dto.companyIds || []);
+        const isSuperAdmin = Boolean(dto.super_admin);
+        const isMultiCompany = isSuperAdmin ? false : Boolean(dto.multi_company);
+        const user = new users_entity_1.Users(null, dto.num_document, dto.name_user, dto.last_name_user, dto.email, dto.password, dto.companyId, isSuperAdmin, isMultiCompany, true, false, undefined, dto.theme_color || 'Blue_Theme', isSuperAdmin, isSuperAdmin ? [] : dto.companyIds || [], isSuperAdmin ? null : dto.roleId ?? null, null, isSuperAdmin ? [] : dto.companyRoles || []);
         return this.repository.create(user);
     }
 };

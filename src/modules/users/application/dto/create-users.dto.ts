@@ -41,6 +41,14 @@ export class CreateUsersDto {
 	@IsOptional()
 	companyIds?: number[];
 
+	@IsNumber()
+	@IsOptional()
+	roleId?: number | null;
+
+	@IsArray()
+	@IsOptional()
+	companyRoles?: { companyId: number; roleId?: number | null }[];
+
 	@IsString()
 	@IsOptional()
 	theme_color?: string;

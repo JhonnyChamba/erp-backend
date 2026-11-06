@@ -43,7 +43,7 @@ let RolesController = class RolesController {
         return this.getUseCase.execute(Number(id), req.companyId);
     }
     update(id, dto, req) {
-        return this.updateUseCase.execute(Number(id), req.companyId, dto);
+        return this.updateUseCase.execute(Number(id), dto.companyId ?? req.companyId, dto);
     }
 };
 exports.RolesController = RolesController;

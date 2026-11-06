@@ -10,12 +10,15 @@ export class CreateRolesUseCase {
 	async execute(dto: CreateRolesDto, user: any) {
 		const branch = new Roles(
 			null,
-			dto.code,
+			dto.code || '',
 			dto.description,
 			dto.companyId,
 			true,
 			undefined,
 			user.user_id, // 🔥 siempre del token
+			dto.moduleIds || [],
+			dto.subModuleIds || [],
+			dto.details,
 		);
 
 		return this.repository.create(branch);

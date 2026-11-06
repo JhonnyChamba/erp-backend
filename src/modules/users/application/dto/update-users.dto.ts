@@ -41,6 +41,14 @@ export class UpdateUsersDto {
 	@IsOptional()
 	companyIds?: number[];
 
+	@IsNumber()
+	@IsOptional()
+	roleId?: number | null;
+
+	@IsArray()
+	@IsOptional()
+	companyRoles?: { companyId: number; roleId?: number | null }[];
+
 	@IsBoolean()
 	@IsOptional()
 	enabled?: boolean;

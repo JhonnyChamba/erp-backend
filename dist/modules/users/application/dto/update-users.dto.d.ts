@@ -9,6 +9,11 @@ export declare class UpdateUsersDto {
     super_admin?: boolean;
     multi_company?: boolean;
     companyIds?: number[];
+    roleId?: number | null;
+    companyRoles?: {
+        companyId: number;
+        roleId?: number | null;
+    }[];
     enabled?: boolean;
     theme_color?: string;
 }

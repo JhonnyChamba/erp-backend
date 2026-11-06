@@ -35,6 +35,6 @@ export class RolesController {
 
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateRolesDto, @Req() req: any) {
-		return this.updateUseCase.execute(Number(id), req.companyId, dto);
+		return this.updateUseCase.execute(Number(id), dto.companyId ?? req.companyId, dto);
 	}
 }

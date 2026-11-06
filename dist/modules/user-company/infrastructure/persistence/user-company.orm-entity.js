@@ -12,11 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserCompanyOrmEntity = void 0;
 const company_orm_entity_1 = require("../../../company/infrastructure/persistence/company.orm-entity");
 const users_orm_entity_1 = require("../../../users/infrastructure/persistence/users.orm-entity");
+const roles_orm_entity_1 = require("../../../roles/infrastructure/persistence/roles.orm-entity");
 const typeorm_1 = require("typeorm");
 let UserCompanyOrmEntity = class UserCompanyOrmEntity {
     id;
     user;
     company;
+    role;
     enabled;
     deleted;
     created_at;
@@ -36,6 +38,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'company_id' }),
     __metadata("design:type", company_orm_entity_1.CompanyOrmEntity)
 ], UserCompanyOrmEntity.prototype, "company", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => roles_orm_entity_1.RolesOrmEntity, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'role_id' }),
+    __metadata("design:type", roles_orm_entity_1.RolesOrmEntity)
+], UserCompanyOrmEntity.prototype, "role", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)

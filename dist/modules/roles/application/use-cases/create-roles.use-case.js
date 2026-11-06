@@ -19,7 +19,7 @@ let CreateRolesUseCase = class CreateRolesUseCase {
         this.repository = repository;
     }
     async execute(dto, user) {
-        const branch = new roles_entity_1.Roles(null, dto.code, dto.description, dto.companyId, true, undefined, user.user_id);
+        const branch = new roles_entity_1.Roles(null, dto.code || '', dto.description, dto.companyId, true, undefined, user.user_id, dto.moduleIds || [], dto.subModuleIds || [], dto.details);
         return this.repository.create(branch);
     }
 };

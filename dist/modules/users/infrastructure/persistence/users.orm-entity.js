@@ -13,9 +13,11 @@ exports.UsersOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const company_orm_entity_1 = require("../../../company/infrastructure/persistence/company.orm-entity");
 const user_company_orm_entity_1 = require("../../../user-company/infrastructure/persistence/user-company.orm-entity");
+const roles_orm_entity_1 = require("../../../roles/infrastructure/persistence/roles.orm-entity");
 let UsersOrmEntity = class UsersOrmEntity {
     id;
     company;
+    role;
     userCompanies;
     num_document;
     name_user;
@@ -40,6 +42,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'company_id' }),
     __metadata("design:type", company_orm_entity_1.CompanyOrmEntity)
 ], UsersOrmEntity.prototype, "company", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => roles_orm_entity_1.RolesOrmEntity, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'role_id' }),
+    __metadata("design:type", roles_orm_entity_1.RolesOrmEntity)
+], UsersOrmEntity.prototype, "role", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => user_company_orm_entity_1.UserCompanyOrmEntity, (uc) => uc.user),
     __metadata("design:type", Array)

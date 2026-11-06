@@ -22,7 +22,7 @@ let RolesModule = class RolesModule {
 exports.RolesModule = RolesModule;
 exports.RolesModule = RolesModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([roles_orm_entity_1.RolesOrmEntity])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([roles_orm_entity_1.RolesOrmEntity, roles_orm_entity_1.RoleModuleOrmEntity])],
         controllers: [roles_controller_1.RolesController],
         providers: [
             create_roles_use_case_1.CreateRolesUseCase,

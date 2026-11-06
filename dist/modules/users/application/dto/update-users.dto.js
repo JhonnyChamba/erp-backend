@@ -22,6 +22,8 @@ class UpdateUsersDto {
     super_admin;
     multi_company;
     companyIds;
+    roleId;
+    companyRoles;
     enabled;
     theme_color;
 }
@@ -76,6 +78,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Array)
 ], UpdateUsersDto.prototype, "companyIds", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateUsersDto.prototype, "roleId", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateUsersDto.prototype, "companyRoles", void 0);
 __decorate([
     (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),

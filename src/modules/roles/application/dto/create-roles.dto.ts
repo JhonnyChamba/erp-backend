@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateRolesDto {
 	@IsNumber()
@@ -6,8 +6,8 @@ export class CreateRolesDto {
 	companyId: number;
 
 	@IsString()
-	@IsNotEmpty()
-	code: string;
+	@IsOptional()
+	code?: string;
 
 	@IsString()
 	@IsNotEmpty()
@@ -16,4 +16,16 @@ export class CreateRolesDto {
 	@IsString()
 	@IsOptional()
 	address?: string;
+
+	@IsArray()
+	@IsOptional()
+	moduleIds?: number[];
+
+	@IsArray()
+	@IsOptional()
+	subModuleIds?: number[];
+
+	@IsArray()
+	@IsOptional()
+	details?: { moduleId?: number | null; subModuleId?: number | null; hasAccess: boolean }[];
 }

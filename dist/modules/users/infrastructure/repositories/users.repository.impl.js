@@ -31,24 +31,39 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
     }
     async create(user) {
         const hashedPassword = await this.passwordService.hash(user.password);
+        const isSuperAdmin = Boolean(user.super_admin);
+        const isMultiCompany = isSuperAdmin ? false : Boolean(user.multi_company);
+        let primaryRoleId = isSuperAdmin ? null : (user.roleId ?? null);
+        if (isMultiCompany && Array.isArray(user.companyRoles)) {
+            const matchPrimary = user.companyRoles.find((cr) => Number(cr.companyId) === Number(user.companyId));
+            if (matchPrimary?.roleId) {
+                primaryRoleId = Number(matchPrimary.roleId);
+            }
+        }
         const entity = this.repo.create({
             num_document: user.num_document,
             name_user: user.name_user,
             last_name_user: user.last_name_user,
             email: user.email,
             password: hashedPassword,
-            developer: user.developer,
-            super_admin: user.super_admin,
-            multi_company: user.multi_company,
+            developer: isSuperAdmin,
+            super_admin: isSuperAdmin,
+            multi_company: isMultiCompany,
             enabled: user.enabled,
             theme_color: user.theme_color || 'Blue_Theme',
             company: { id: user.companyId },
+            role: primaryRoleId ? { id: primaryRoleId } : null,
         });
         const saved = await this.repo.save(entity);
-        if (user.multi_company && user.companyIds && user.companyIds.length > 0) {
-            await this.syncUserCompanies(saved.id, user.companyIds);
+        if (!isSuperAdmin) {
+            if (isMultiCompany) {
+                await this.syncUserCompanies(saved.id, user.companyIds || [], user.companyRoles || []);
+            }
+            else {
+                await this.syncUserCompanies(saved.id, [user.companyId], [{ companyId: user.companyId, roleId: primaryRoleId }]);
+            }
         }
-        const fullUser = await this.findById(saved.id);
+        const fullUser = await this.findById(saved.id, user.companyId);
         return fullUser;
     }
     async findByCompany(companyId, page, limit) {
@@ -57,13 +72,13 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
                 { company: { id: companyId }, deleted: false },
                 { userCompanies: { company: { id: companyId }, deleted: false, enabled: true } },
             ],
-            relations: ['company', 'userCompanies', 'userCompanies.company'],
+            relations: ['company', 'role', 'userCompanies', 'userCompanies.company', 'userCompanies.role'],
             skip: (page - 1) * limit,
             take: limit,
             order: { created_at: 'DESC' },
         });
         return {
-            data: users.map(user => this.toDomain(user)),
+            data: users.map(user => this.toDomain(user, companyId)),
             total,
         };
     }
@@ -74,59 +89,80 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
         }
         let user = await this.repo.findOne({
             where: whereClause,
-            relations: ['company', 'userCompanies', 'userCompanies.company'],
+            relations: ['company', 'role', 'userCompanies', 'userCompanies.company', 'userCompanies.role'],
         });
         if (!user && companyId) {
             user = await this.repo.findOne({
                 where: { id, deleted: false },
-                relations: ['company', 'userCompanies', 'userCompanies.company'],
+                relations: ['company', 'role', 'userCompanies', 'userCompanies.company', 'userCompanies.role'],
             });
         }
-        return user ? this.toDomain(user) : null;
+        return user ? this.toDomain(user, companyId) : null;
     }
     async update(user) {
+        const isSuperAdmin = Boolean(user.super_admin);
+        const isMultiCompany = isSuperAdmin ? false : Boolean(user.multi_company);
+        let primaryRoleId = isSuperAdmin ? null : (user.roleId ?? null);
+        if (isMultiCompany && Array.isArray(user.companyRoles)) {
+            const matchPrimary = user.companyRoles.find((cr) => Number(cr.companyId) === Number(user.companyId));
+            if (matchPrimary?.roleId !== undefined) {
+                primaryRoleId = matchPrimary.roleId ? Number(matchPrimary.roleId) : null;
+            }
+        }
         await this.repo.update({ id: user.id }, {
             num_document: user.num_document,
             name_user: user.name_user,
             last_name_user: user.last_name_user,
             email: user.email,
             password: user.password,
-            developer: user.developer,
-            super_admin: user.super_admin,
-            multi_company: user.multi_company,
+            developer: isSuperAdmin,
+            super_admin: isSuperAdmin,
+            multi_company: isMultiCompany,
             enabled: user.enabled,
             theme_color: user.theme_color || 'Blue_Theme',
+            role: primaryRoleId ? { id: primaryRoleId } : null,
         });
-        if (user.companyIds !== undefined) {
-            if (user.multi_company) {
-                await this.syncUserCompanies(user.id, user.companyIds);
-            }
-            else {
-                await this.userCompanyRepo
-                    .createQueryBuilder()
-                    .update(user_company_orm_entity_1.UserCompanyOrmEntity)
-                    .set({ deleted: true, enabled: false })
-                    .where('user_id = :userId', { userId: user.id })
-                    .execute();
-            }
+        if (isSuperAdmin) {
+            await this.userCompanyRepo
+                .createQueryBuilder()
+                .update(user_company_orm_entity_1.UserCompanyOrmEntity)
+                .set({ deleted: true, enabled: false })
+                .where('user_id = :userId', { userId: user.id })
+                .execute();
         }
-        const updated = await this.findById(user.id);
+        else if (isMultiCompany) {
+            await this.syncUserCompanies(user.id, user.companyIds || [], user.companyRoles || []);
+        }
+        else {
+            await this.syncUserCompanies(user.id, [user.companyId], [{ companyId: user.companyId, roleId: primaryRoleId }]);
+        }
+        const updated = await this.findById(user.id, user.companyId);
         return updated;
     }
     async findByEmail(email) {
         const user = await this.repo.findOne({
             where: { email },
-            relations: ['company', 'userCompanies', 'userCompanies.company'],
+            relations: ['company', 'role', 'userCompanies', 'userCompanies.company', 'userCompanies.role'],
         });
         if (!user)
             return null;
         return this.toDomain(user);
     }
-    async syncUserCompanies(userId, companyIds) {
-        const targetIds = (companyIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+    async syncUserCompanies(userId, companyIds, companyRoles = []) {
+        const roleMap = new Map();
+        for (const cr of companyRoles || []) {
+            const cId = Number(cr.companyId);
+            if (cId > 0) {
+                roleMap.set(cId, cr.roleId ? Number(cr.roleId) : null);
+            }
+        }
+        const combinedCompanyIds = Array.from(new Set([
+            ...(companyIds || []).map(Number),
+            ...Array.from(roleMap.keys()),
+        ])).filter((id) => !isNaN(id) && id > 0);
         const existing = await this.userCompanyRepo.find({
             where: { user: { id: userId } },
-            relations: ['company'],
+            relations: ['company', 'role'],
         });
         const existingMap = new Map();
         for (const item of existing) {
@@ -136,23 +172,26 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
             }
         }
         for (const [cId, item] of existingMap.entries()) {
-            if (!targetIds.includes(cId)) {
+            if (!combinedCompanyIds.includes(cId)) {
                 item.deleted = true;
                 item.enabled = false;
                 await this.userCompanyRepo.save(item);
             }
         }
-        for (const cId of targetIds) {
+        for (const cId of combinedCompanyIds) {
+            const assignedRoleId = roleMap.get(cId) ?? null;
             const item = existingMap.get(cId);
             if (item) {
                 item.deleted = false;
                 item.enabled = true;
+                item.role = assignedRoleId ? { id: assignedRoleId } : null;
                 await this.userCompanyRepo.save(item);
             }
             else {
                 const newItem = this.userCompanyRepo.create({
                     user: { id: userId },
                     company: { id: cId },
+                    role: assignedRoleId ? { id: assignedRoleId } : null,
                     enabled: true,
                     deleted: false,
                 });
@@ -160,11 +199,22 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
             }
         }
     }
-    toDomain(entity) {
-        const activeCompanyIds = (entity.userCompanies || [])
-            .filter(uc => !uc.deleted && uc.enabled && uc.company?.id)
-            .map(uc => uc.company.id);
-        return new users_entity_1.Users(entity.id, entity.num_document, entity.name_user, entity.last_name_user, entity.email, entity.password, entity.company?.id ?? entity.company_id ?? 1, entity.developer ?? false, entity.multi_company ?? false, entity.enabled ?? true, entity.deleted ?? false, entity.created_at, entity.theme_color || 'Blue_Theme', entity.super_admin ?? false, activeCompanyIds);
+    toDomain(entity, contextCompanyId) {
+        const activeUserCompanies = (entity.userCompanies || []).filter((uc) => !uc.deleted && uc.enabled && uc.company?.id);
+        const activeCompanyIds = activeUserCompanies.map((uc) => Number(uc.company.id));
+        const companyRoles = activeUserCompanies.map((uc) => ({
+            companyId: Number(uc.company.id),
+            roleId: uc.role?.id ? Number(uc.role.id) : null,
+            roleName: uc.role?.description || uc.role?.code || null,
+        }));
+        const targetCompId = contextCompanyId || entity.company?.id || 1;
+        const matchingCompanyRole = companyRoles.find((cr) => Number(cr.companyId) === Number(targetCompId));
+        const effectiveRoleId = matchingCompanyRole?.roleId ?? (entity.role?.id ? Number(entity.role.id) : null);
+        const effectiveRoleName = matchingCompanyRole?.roleName ??
+            entity.role?.description ??
+            entity.role?.code ??
+            null;
+        return new users_entity_1.Users(entity.id, entity.num_document, entity.name_user, entity.last_name_user, entity.email, entity.password, entity.company?.id ?? entity.company_id ?? 1, entity.developer ?? false, entity.multi_company ?? false, entity.enabled ?? true, entity.deleted ?? false, entity.created_at, entity.theme_color || 'Blue_Theme', entity.super_admin ?? false, activeCompanyIds, effectiveRoleId, effectiveRoleName, companyRoles);
     }
 };
 exports.UsersRepositoryImpl = UsersRepositoryImpl;

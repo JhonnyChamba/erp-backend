@@ -16,6 +16,9 @@ class CreateRolesDto {
     code;
     description;
     address;
+    moduleIds;
+    subModuleIds;
+    details;
 }
 exports.CreateRolesDto = CreateRolesDto;
 __decorate([
@@ -25,7 +28,7 @@ __decorate([
 ], CreateRolesDto.prototype, "companyId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateRolesDto.prototype, "code", void 0);
 __decorate([
@@ -38,4 +41,19 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateRolesDto.prototype, "address", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateRolesDto.prototype, "moduleIds", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateRolesDto.prototype, "subModuleIds", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateRolesDto.prototype, "details", void 0);
 //# sourceMappingURL=create-roles.dto.js.map

@@ -9,7 +9,10 @@ class Roles {
     enabled;
     createdAt;
     createdById;
-    constructor(id, code, description, companyId, enabled, createdAt, createdById) {
+    moduleIds;
+    subModuleIds;
+    details;
+    constructor(id, code, description, companyId, enabled, createdAt, createdById, moduleIds, subModuleIds, details) {
         this.id = id;
         this.code = code;
         this.description = description;
@@ -17,6 +20,9 @@ class Roles {
         this.enabled = enabled;
         this.createdAt = createdAt;
         this.createdById = createdById;
+        this.moduleIds = moduleIds;
+        this.subModuleIds = subModuleIds;
+        this.details = details;
     }
 }
 exports.Roles = Roles;

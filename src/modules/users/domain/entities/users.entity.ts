@@ -1,3 +1,9 @@
+export interface UserCompanyRoleItem {
+	companyId: number;
+	roleId?: number | null;
+	roleName?: string | null;
+}
+
 export class Users {
 	constructor(
 		public readonly id: number | null,
@@ -15,5 +21,8 @@ export class Users {
 		public theme_color: string = 'Blue_Theme',
 		public super_admin: boolean = false,
 		public companyIds: number[] = [],
+		public roleId?: number | null,
+		public roleName?: string | null,
+		public companyRoles: UserCompanyRoleItem[] = [],
 	) { }
 }

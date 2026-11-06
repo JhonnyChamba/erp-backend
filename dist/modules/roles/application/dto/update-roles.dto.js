@@ -12,26 +12,60 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateRolesDto = void 0;
 const class_validator_1 = require("class-validator");
 class UpdateRolesDto {
+    companyId;
     code;
+    description;
     name;
     address;
     enabled;
+    moduleIds;
+    subModuleIds;
+    details;
 }
 exports.UpdateRolesDto = UpdateRolesDto;
 __decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateRolesDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateRolesDto.prototype, "code", void 0);
 __decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateRolesDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateRolesDto.prototype, "name", void 0);
 __decorate([
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateRolesDto.prototype, "address", void 0);
 __decorate([
+    (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateRolesDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateRolesDto.prototype, "moduleIds", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateRolesDto.prototype, "subModuleIds", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateRolesDto.prototype, "details", void 0);
 //# sourceMappingURL=update-roles.dto.js.map

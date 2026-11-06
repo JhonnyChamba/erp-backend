@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
 import { UserCompanyOrmEntity } from 'src/modules/user-company/infrastructure/persistence/user-company.orm-entity';
+import { RolesOrmEntity } from 'src/modules/roles/infrastructure/persistence/roles.orm-entity';
 
 @Entity('tab_users')
 export class UsersOrmEntity {
@@ -12,6 +13,11 @@ export class UsersOrmEntity {
 	@ManyToOne(() => CompanyOrmEntity, { nullable: true })
 	@JoinColumn({ name: 'company_id' })
 	company: CompanyOrmEntity;
+
+	// Rol principal del usuario (cuando pertenece a una sola empresa)
+	@ManyToOne(() => RolesOrmEntity, { nullable: true })
+	@JoinColumn({ name: 'role_id' })
+	role: RolesOrmEntity;
 
 	@OneToMany(() => UserCompanyOrmEntity, (uc) => uc.user)
 	userCompanies: UserCompanyOrmEntity[];

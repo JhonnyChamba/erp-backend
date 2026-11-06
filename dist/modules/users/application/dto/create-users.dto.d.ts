@@ -9,5 +9,10 @@ export declare class CreateUsersDto {
     super_admin?: boolean;
     multi_company?: boolean;
     companyIds?: number[];
+    roleId?: number | null;
+    companyRoles?: {
+        companyId: number;
+        roleId?: number | null;
+    }[];
     theme_color?: string;
 }
