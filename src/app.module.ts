@@ -26,16 +26,31 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DATABASE_HOST', 'localhost'),
-        port: Number(config.get<number>('DATABASE_PORT', 6364)),
-        username: config.get<string>('DATABASE_USER', 'postgres'),
-        password: config.get<string>('DATABASE_PASSWORD', '2830798aA.'),
-        database: config.get<string>('DATABASE_NAME', 'db_help_system'),
-        autoLoadEntities: true,
-        synchronize: config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
-      }),
+      useFactory: (config: ConfigService) => {
+        const databaseUrl = config.get<string>('DATABASE_URL');
+        const host = config.get<string>('DATABASE_HOST', 'localhost');
+        const useSsl =
+          config.get<string>('DATABASE_SSL') === 'true' ||
+          host.includes('supabase.co') ||
+          host.includes('supabase.com') ||
+          Boolean(databaseUrl && databaseUrl.includes('supabase'));
+
+        return {
+          type: 'postgres',
+          ...(databaseUrl
+            ? { url: databaseUrl }
+            : {
+                host,
+                port: Number(config.get<number>('DATABASE_PORT', 6364)),
+                username: config.get<string>('DATABASE_USER', 'postgres'),
+                password: config.get<string>('DATABASE_PASSWORD', '2830798aA.'),
+                database: config.get<string>('DATABASE_NAME', 'db_help_system'),
+              }),
+          ssl: useSsl ? { rejectUnauthorized: false } : false,
+          autoLoadEntities: true,
+          synchronize: config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
+        };
+      },
     }),
     AuthModule,
     UsersModule,

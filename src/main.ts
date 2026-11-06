@@ -2,7 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 
-async function bootstrap() {
+let cachedServer: any;
+
+async function createApp() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(
@@ -14,13 +16,36 @@ async function bootstrap() {
     }),
   );
 
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim());
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
+  return app;
+}
+
+async function bootstrap() {
+  const app = await createApp();
   const port = process.env.PORT || 3000;
   await app.listen(port);
 }
-bootstrap();
+
+// Ejecución tradicional en local (no se ejecuta como proceso fijo en Vercel Serverless)
+if (!process.env.VERCEL) {
+  bootstrap();
+}
+
+// Handler exportado para Vercel Serverless Functions
+export default async function handler(req: any, res: any) {
+  if (!cachedServer) {
+    const app = await createApp();
+    await app.init();
+    cachedServer = app.getHttpAdapter().getInstance();
+  }
+  return cachedServer(req, res);
+}
