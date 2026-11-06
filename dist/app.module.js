@@ -26,6 +26,7 @@ const app_service_1 = require("./app.service");
 const common_1 = require("@nestjs/common");
 const subscriptions_module_1 = require("./modules/subscriptions/subscriptions.module");
 const subscriptions_module_module_1 = require("./modules/subscriptions-module/subscriptions-module.module");
+const inventory_module_1 = require("./modules/inventory/inventory.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -81,6 +82,7 @@ exports.AppModule = AppModule = __decorate([
             plans_module_module_1.PlansModulesModule,
             subscriptions_module_1.SubscriptionsModule,
             subscriptions_module_module_1.SubscriptionsModuleModule,
+            inventory_module_1.InventoryModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -17,6 +17,7 @@ import { AppService } from './app.service';
 import { Module } from '@nestjs/common';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscriptions-module.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
     PlansModulesModule,
     SubscriptionsModule,
     SubscriptionsModuleModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
