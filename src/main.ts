@@ -5,7 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 let cachedServer: any;
 
 async function createApp() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { abortOnError: false });
 
   app.useGlobalPipes(
     new ValidationPipe({
