@@ -58,6 +58,7 @@ export default async function handler(req: any, res: any) {
         statusCode: 500,
         message: 'Error al conectar o iniciar NestJS en Vercel',
         error: error?.message || String(error),
+        hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
       }),
     );
   }
