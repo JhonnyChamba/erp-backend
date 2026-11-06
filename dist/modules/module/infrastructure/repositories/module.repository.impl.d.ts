@@ -6,6 +6,7 @@ export declare class ModuleRepositoryImpl implements ModuleRepository {
     private readonly repo;
     constructor(repo: Repository<ModuleOrmEntity>);
     create(modules: Module): Promise<Module>;
+    private generateNextCode;
     findByCompany(page: number, limit: number): Promise<{
         data: Module[];
         total: number;

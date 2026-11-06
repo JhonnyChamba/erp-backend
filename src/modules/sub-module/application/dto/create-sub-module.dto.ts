@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatesubModulesDto {
 	@IsNumber()
@@ -6,8 +6,8 @@ export class CreatesubModulesDto {
 	moduleId: number;
 
 	@IsString()
-	@IsNotEmpty()
-	code: string;
+	@IsOptional()
+	code?: string;
 
 	@IsString()
 	@IsNotEmpty()

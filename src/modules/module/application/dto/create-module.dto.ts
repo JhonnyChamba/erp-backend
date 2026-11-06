@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateModuleDto {
 	@IsString()
-	@IsNotEmpty()
-	code: string;
+	@IsOptional()
+	code?: string;
 
 	@IsString()
 	@IsNotEmpty()

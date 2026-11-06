@@ -14,9 +14,10 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 	) { }
 
 	async create(subModule: subModules): Promise<subModules> {
+		const nextCode = await this.generateNextCode();
 
 		const entity = this.repo.create({
-			code: subModule.code,
+			code: nextCode,
 			desc_icon: subModule.desc_icon,
 			description: subModule.description,
 			url_desc: subModule.url_desc,
@@ -32,6 +33,39 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 			relations: ['module'],
 		});
 		return this.toDomain(reloaded || saved);
+	}
+
+	private async generateNextCode(): Promise<string> {
+		const all = await this.repo.find({
+			select: ['id', 'code'],
+			order: { id: 'DESC' },
+		});
+
+		if (all.length === 0) {
+			return 'SUB-001';
+		}
+
+		const last = all[0];
+		const match = String(last.code || '').trim().match(/^(.*?)(\d+)$/);
+
+		let prefix = 'SUB-';
+		let padLen = 3;
+		let nextNum = (last.id || all.length) + 1;
+
+		if (match) {
+			prefix = match[1];
+			padLen = match[2].length;
+			nextNum = parseInt(match[2], 10) + 1;
+		}
+
+		const existingCodes = new Set(all.map((sm) => String(sm.code || '').toUpperCase()));
+		let candidate = `${prefix}${String(nextNum).padStart(padLen, '0')}`;
+		while (existingCodes.has(candidate.toUpperCase())) {
+			nextNum++;
+			candidate = `${prefix}${String(nextNum).padStart(padLen, '0')}`;
+		}
+
+		return candidate;
 	}
 
 	async findByCompany(moduleId: number, page: number, limit: number): Promise<{ data: subModules[]; total: number }> {

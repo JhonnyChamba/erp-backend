@@ -6,6 +6,7 @@ export declare class subModulesRepositoryImpl implements subModulesRepository {
     private readonly repo;
     constructor(repo: Repository<subModulesOrmEntity>);
     create(subModule: subModules): Promise<subModules>;
+    private generateNextCode;
     findByCompany(moduleId: number, page: number, limit: number): Promise<{
         data: subModules[];
         total: number;
