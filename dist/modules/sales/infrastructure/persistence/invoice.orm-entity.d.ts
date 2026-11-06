@@ -1,0 +1,46 @@
+import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
+export declare class InvoiceOrmEntity {
+    id: number;
+    company: CompanyOrmEntity;
+    establishment: string;
+    emission_point: string;
+    sequential: string;
+    invoice_number: string;
+    issue_date: string;
+    customer_id_type: string;
+    customer_id_number: string;
+    customer_name: string;
+    customer_address: string;
+    customer_email: string;
+    customer_phone: string;
+    payment_method: string;
+    access_key: string;
+    status: string;
+    subtotal_zero_tax: number;
+    subtotal_taxable: number;
+    subtotal: number;
+    discount_total: number;
+    tax_total: number;
+    total: number;
+    notes: string;
+    created_by: number;
+    enabled: boolean;
+    deleted: boolean;
+    details: InvoiceDetailOrmEntity[];
+    created_at: Date;
+}
+export declare class InvoiceDetailOrmEntity {
+    id: number;
+    invoice: InvoiceOrmEntity;
+    item_type: string;
+    item_id: number;
+    code: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    discount: number;
+    tax_rate: number;
+    tax_value: number;
+    subtotal: number;
+    total: number;
+}
