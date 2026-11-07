@@ -131,3 +131,4 @@ export function signXadesBes(xml: string, loaded: LoadedCert): string {
 
 	return xml.replace(/<\/factura>$/, `${signature}</factura>`);
 }
+

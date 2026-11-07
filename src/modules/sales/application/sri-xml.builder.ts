@@ -119,3 +119,4 @@ export function buildInvoiceXml(inv: InvoiceOrmEntity, company: CompanyOrmEntity
 		`<detalles>${detalles}</detalles>${infoAdicional}</factura>`
 	);
 }
+
