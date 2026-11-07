@@ -23,6 +23,9 @@ export declare class InvoiceOrmEntity {
     tax_total: number;
     total: number;
     notes: string;
+    signed_xml: string;
+    signed_at: Date;
+    sign_status: string;
     created_by: number;
     enabled: boolean;
     deleted: boolean;

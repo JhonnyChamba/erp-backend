@@ -5,6 +5,9 @@ import { InvoiceOrmEntity, InvoiceDetailOrmEntity } from '../infrastructure/pers
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InventoryItemOrmEntity } from 'src/modules/inventory/infrastructure/persistence/inventory.orm-entity';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
+import { decryptSecret } from 'src/common/crypto/secret-crypto';
+import { buildInvoiceXml } from './sri-xml.builder';
+import { loadP12, signXadesBes } from './sri-signer';
 
 @Injectable()
 export class InvoiceService {
@@ -85,18 +88,19 @@ export class InvoiceService {
 			throw new BadRequestException('La factura debe tener al menos un ítem o servicio en el detalle.');
 		}
 
-		const establishment = (dto.establishment || '001').padStart(3, '0');
-		const emissionPoint = (dto.emission_point || '001').padStart(3, '0');
+		// Obtener datos de la empresa emisora (RUC, ambiente y serie por defecto)
+		const company = await this.companyRepo.findOne({ where: { id: companyId } });
+		const establishment = (dto.establishment || company?.default_establishment || '001').padStart(3, '0');
+		const emissionPoint = (dto.emission_point || company?.default_emission_point || '001').padStart(3, '0');
 		const sequential = await this.getNextSequential(companyId, establishment, emissionPoint);
 		const invoiceNumber = `${establishment}-${emissionPoint}-${sequential}`;
 
 		const issueDate = dto.issue_date || new Date().toISOString().slice(0, 10);
-
-		// Obtener RUC de la empresa emisora para la clave de acceso SRI
-		const company = await this.companyRepo.findOne({ where: { id: companyId } });
 		const companyRuc = company?.ruc || '1790012345001';
 
-		const accessKey = this.generateSRIAccessKey(issueDate, companyRuc, establishment, emissionPoint, sequential);
+		const accessKey = this.generateSRIAccessKey(
+			issueDate, companyRuc, establishment, emissionPoint, sequential, company?.sri_environment || '1',
+		);
 
 		// Calcular totales conforme al SRI
 		let subtotalZero = 0;
@@ -208,6 +212,54 @@ export class InvoiceService {
 		const invoice = await this.findOne(id, companyId);
 		invoice.status = 'CANCELED';
 		return this.invoiceRepo.save(invoice);
+	}
+
+	/** Genera el XML del SRI, lo firma con el .p12 de la empresa y lo guarda. */
+	async sign(id: number, companyId: number) {
+		const invoice = await this.findOne(id, companyId);
+		if (invoice.status === 'CANCELED') {
+			throw new BadRequestException('No se puede firmar una factura anulada.');
+		}
+
+		const company = await this.companyRepo
+			.createQueryBuilder('c')
+			.addSelect(['c.cert_p12_base64', 'c.cert_password_enc'])
+			.where('c.id = :companyId', { companyId })
+			.getOne();
+		if (!company) throw new NotFoundException('Empresa no encontrada.');
+		if (!company.cert_p12_base64 || !company.cert_password_enc) {
+			throw new BadRequestException(
+				'La empresa no tiene firma electrónica. Cárgala en Configuración > Empresas > Firma electrónica.',
+			);
+		}
+
+		try {
+			const xml = buildInvoiceXml(invoice, company);
+			const loaded = loadP12(company.cert_p12_base64, decryptSecret(company.cert_password_enc));
+			if (loaded.notAfter.getTime() < Date.now()) {
+				throw new Error(`La firma electrónica caducó el ${loaded.notAfter.toISOString().slice(0, 10)}.`);
+			}
+			const signed = signXadesBes(xml, loaded);
+
+			await this.invoiceRepo.update(
+				{ id },
+				{ signed_xml: signed, signed_at: new Date(), sign_status: 'SIGNED' },
+			);
+			return { id, sign_status: 'SIGNED', file_name: `${invoice.access_key}.xml` };
+		} catch (e: any) {
+			throw new BadRequestException(e?.message || 'No se pudo firmar la factura.');
+		}
+	}
+
+	async getSignedXml(id: number, companyId: number) {
+		const invoice = await this.invoiceRepo
+			.createQueryBuilder('i')
+			.addSelect('i.signed_xml')
+			.where('i.id = :id AND i.company_id = :companyId AND i.deleted = false', { id, companyId })
+			.getOne();
+		if (!invoice) throw new NotFoundException('Factura no encontrada.');
+		if (!invoice.signed_xml) throw new BadRequestException('La factura aún no está firmada.');
+		return { file_name: `${invoice.access_key}.xml`, xml: invoice.signed_xml };
 	}
 }
 

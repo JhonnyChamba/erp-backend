@@ -19,6 +19,9 @@ const typeorm_2 = require("typeorm");
 const invoice_orm_entity_1 = require("../infrastructure/persistence/invoice.orm-entity");
 const inventory_orm_entity_1 = require("../../inventory/infrastructure/persistence/inventory.orm-entity");
 const company_orm_entity_1 = require("../../company/infrastructure/persistence/company.orm-entity");
+const secret_crypto_1 = require("../../../common/crypto/secret-crypto");
+const sri_xml_builder_1 = require("./sri-xml.builder");
+const sri_signer_1 = require("./sri-signer");
 let InvoiceService = class InvoiceService {
     invoiceRepo;
     detailRepo;
@@ -77,14 +80,14 @@ let InvoiceService = class InvoiceService {
         if (!dto.details || dto.details.length === 0) {
             throw new common_1.BadRequestException('La factura debe tener al menos un ítem o servicio en el detalle.');
         }
-        const establishment = (dto.establishment || '001').padStart(3, '0');
-        const emissionPoint = (dto.emission_point || '001').padStart(3, '0');
+        const company = await this.companyRepo.findOne({ where: { id: companyId } });
+        const establishment = (dto.establishment || company?.default_establishment || '001').padStart(3, '0');
+        const emissionPoint = (dto.emission_point || company?.default_emission_point || '001').padStart(3, '0');
         const sequential = await this.getNextSequential(companyId, establishment, emissionPoint);
         const invoiceNumber = `${establishment}-${emissionPoint}-${sequential}`;
         const issueDate = dto.issue_date || new Date().toISOString().slice(0, 10);
-        const company = await this.companyRepo.findOne({ where: { id: companyId } });
         const companyRuc = company?.ruc || '1790012345001';
-        const accessKey = this.generateSRIAccessKey(issueDate, companyRuc, establishment, emissionPoint, sequential);
+        const accessKey = this.generateSRIAccessKey(issueDate, companyRuc, establishment, emissionPoint, sequential, company?.sri_environment || '1');
         let subtotalZero = 0;
         let subtotalTaxable = 0;
         let subtotalGross = 0;
@@ -182,6 +185,47 @@ let InvoiceService = class InvoiceService {
         const invoice = await this.findOne(id, companyId);
         invoice.status = 'CANCELED';
         return this.invoiceRepo.save(invoice);
+    }
+    async sign(id, companyId) {
+        const invoice = await this.findOne(id, companyId);
+        if (invoice.status === 'CANCELED') {
+            throw new common_1.BadRequestException('No se puede firmar una factura anulada.');
+        }
+        const company = await this.companyRepo
+            .createQueryBuilder('c')
+            .addSelect(['c.cert_p12_base64', 'c.cert_password_enc'])
+            .where('c.id = :companyId', { companyId })
+            .getOne();
+        if (!company)
+            throw new common_1.NotFoundException('Empresa no encontrada.');
+        if (!company.cert_p12_base64 || !company.cert_password_enc) {
+            throw new common_1.BadRequestException('La empresa no tiene firma electrónica. Cárgala en Configuración > Empresas > Firma electrónica.');
+        }
+        try {
+            const xml = (0, sri_xml_builder_1.buildInvoiceXml)(invoice, company);
+            const loaded = (0, sri_signer_1.loadP12)(company.cert_p12_base64, (0, secret_crypto_1.decryptSecret)(company.cert_password_enc));
+            if (loaded.notAfter.getTime() < Date.now()) {
+                throw new Error(`La firma electrónica caducó el ${loaded.notAfter.toISOString().slice(0, 10)}.`);
+            }
+            const signed = (0, sri_signer_1.signXadesBes)(xml, loaded);
+            await this.invoiceRepo.update({ id }, { signed_xml: signed, signed_at: new Date(), sign_status: 'SIGNED' });
+            return { id, sign_status: 'SIGNED', file_name: `${invoice.access_key}.xml` };
+        }
+        catch (e) {
+            throw new common_1.BadRequestException(e?.message || 'No se pudo firmar la factura.');
+        }
+    }
+    async getSignedXml(id, companyId) {
+        const invoice = await this.invoiceRepo
+            .createQueryBuilder('i')
+            .addSelect('i.signed_xml')
+            .where('i.id = :id AND i.company_id = :companyId AND i.deleted = false', { id, companyId })
+            .getOne();
+        if (!invoice)
+            throw new common_1.NotFoundException('Factura no encontrada.');
+        if (!invoice.signed_xml)
+            throw new common_1.BadRequestException('La factura aún no está firmada.');
+        return { file_name: `${invoice.access_key}.xml`, xml: invoice.signed_xml };
     }
 };
 exports.InvoiceService = InvoiceService;

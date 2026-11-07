@@ -36,6 +36,9 @@ let InvoiceOrmEntity = class InvoiceOrmEntity {
     tax_total;
     total;
     notes;
+    signed_xml;
+    signed_at;
+    sign_status;
     created_by;
     enabled;
     deleted;
@@ -136,6 +139,18 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], InvoiceOrmEntity.prototype, "notes", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true, select: false }),
+    __metadata("design:type", String)
+], InvoiceOrmEntity.prototype, "signed_xml", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], InvoiceOrmEntity.prototype, "signed_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 20, default: 'NOT_SIGNED' }),
+    __metadata("design:type", String)
+], InvoiceOrmEntity.prototype, "sign_status", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)

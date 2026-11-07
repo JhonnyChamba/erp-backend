@@ -92,6 +92,16 @@ export class InvoiceOrmEntity {
 	@Column({ type: 'text', nullable: true })
 	notes: string;
 
+	// XML firmado (XAdES-BES) listo para enviar al SRI
+	@Column({ type: 'text', nullable: true, select: false })
+	signed_xml: string;
+
+	@Column({ type: 'timestamp', nullable: true })
+	signed_at: Date;
+
+	@Column({ type: 'varchar', length: 20, default: 'NOT_SIGNED' })
+	sign_status: string; // NOT_SIGNED | SIGNED
+
 	@Column({ nullable: true })
 	created_by: number;
 

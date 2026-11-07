@@ -43,6 +43,14 @@ let InvoiceController = class InvoiceController {
         const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
         return this.invoiceService.cancel(Number(id), companyId);
     }
+    sign(id, companyIdQuery, req) {
+        const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+        return this.invoiceService.sign(Number(id), companyId);
+    }
+    xml(id, companyIdQuery, req) {
+        const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+        return this.invoiceService.getSignedXml(Number(id), companyId);
+    }
 };
 exports.InvoiceController = InvoiceController;
 __decorate([
@@ -79,6 +87,24 @@ __decorate([
     __metadata("design:paramtypes", [Number, String, Object]),
     __metadata("design:returntype", void 0)
 ], InvoiceController.prototype, "cancel", null);
+__decorate([
+    (0, common_1.Post)(':id/sign'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String, Object]),
+    __metadata("design:returntype", void 0)
+], InvoiceController.prototype, "sign", null);
+__decorate([
+    (0, common_1.Get)(':id/xml'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String, Object]),
+    __metadata("design:returntype", void 0)
+], InvoiceController.prototype, "xml", null);
 exports.InvoiceController = InvoiceController = __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     (0, common_1.Controller)('sales/invoices'),

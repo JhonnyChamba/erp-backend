@@ -37,5 +37,17 @@ export class InvoiceController {
 		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
 		return this.invoiceService.cancel(Number(id), companyId);
 	}
+
+	@Post(':id/sign')
+	sign(@Param('id') id: number, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+		return this.invoiceService.sign(Number(id), companyId);
+	}
+
+	@Get(':id/xml')
+	xml(@Param('id') id: number, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+		return this.invoiceService.getSignedXml(Number(id), companyId);
+	}
 }
 

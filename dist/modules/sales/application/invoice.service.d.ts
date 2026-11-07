@@ -15,4 +15,13 @@ export declare class InvoiceService {
     findAll(companyId: number): Promise<InvoiceOrmEntity[]>;
     findOne(id: number, companyId: number): Promise<InvoiceOrmEntity>;
     cancel(id: number, companyId: number): Promise<InvoiceOrmEntity>;
+    sign(id: number, companyId: number): Promise<{
+        id: number;
+        sign_status: string;
+        file_name: string;
+    }>;
+    getSignedXml(id: number, companyId: number): Promise<{
+        file_name: string;
+        xml: string;
+    }>;
 }
