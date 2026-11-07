@@ -100,3 +100,4 @@ export class CreateInvoiceDto {
 	@Type(() => CreateInvoiceDetailDto)
 	details: CreateInvoiceDetailDto[];
 }
+

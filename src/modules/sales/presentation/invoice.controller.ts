@@ -38,3 +38,4 @@ export class InvoiceController {
 		return this.invoiceService.cancel(Number(id), companyId);
 	}
 }
+

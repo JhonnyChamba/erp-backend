@@ -151,3 +151,4 @@ export class InvoiceDetailOrmEntity {
 	@Column('numeric', { precision: 12, scale: 2, default: 0 })
 	total: number; // subtotal + tax_value
 }
+

@@ -11,7 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateCompanyDto = void 0;
 const class_validator_1 = require("class-validator");
-class UpdateCompanyDto {
+const company_extra_dto_1 = require("./company-extra.dto");
+class UpdateCompanyDto extends company_extra_dto_1.CompanyExtraDto {
     ruc;
     description;
     business_name;
@@ -21,22 +22,27 @@ class UpdateCompanyDto {
 exports.UpdateCompanyDto = UpdateCompanyDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateCompanyDto.prototype, "ruc", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateCompanyDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateCompanyDto.prototype, "business_name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateCompanyDto.prototype, "trade_name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], UpdateCompanyDto.prototype, "enabled", void 0);
 //# sourceMappingURL=update-company.dto.js.map

@@ -20,3 +20,4 @@ import { CompanyOrmEntity } from '../company/infrastructure/persistence/company.
 	exports: [InvoiceService],
 })
 export class SalesModule {}
+

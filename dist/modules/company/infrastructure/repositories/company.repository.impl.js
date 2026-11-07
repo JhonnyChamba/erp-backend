@@ -17,6 +17,7 @@ const company_orm_entity_1 = require("../persistence/company.orm-entity");
 const roles_orm_entity_1 = require("../../../roles/infrastructure/persistence/roles.orm-entity");
 const subscriptions_orm_entity_1 = require("../../../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
 const company_entity_1 = require("../../domain/entities/company.entity");
+const secret_crypto_1 = require("../../../../common/crypto/secret-crypto");
 const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
 const typeorm_2 = require("typeorm");
@@ -31,6 +32,36 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
         this.roleModuleRepo = roleModuleRepo;
         this.subscriptionsRepo = subscriptionsRepo;
     }
+    buildExtraColumns(company) {
+        const f = company.fiscal || {};
+        const s = company.secrets || {};
+        const cols = {};
+        for (const k of [
+            'address_matriz', 'phone', 'email', 'obligated_accounting', 'special_taxpayer', 'tax_regime',
+            'sri_environment', 'default_establishment', 'default_emission_point', 'cert_file_name',
+            'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_from_name', 'smtp_from_email',
+        ]) {
+            if (f[k] !== undefined)
+                cols[k] = f[k] === '' ? null : f[k];
+        }
+        if (f.cert_expires_at !== undefined)
+            cols.cert_expires_at = f.cert_expires_at || null;
+        if (s.remove_certificate) {
+            cols.cert_p12_base64 = null;
+            cols.cert_password_enc = null;
+            cols.cert_file_name = null;
+            cols.cert_expires_at = null;
+        }
+        if (s.cert_p12_base64)
+            cols.cert_p12_base64 = s.cert_p12_base64;
+        if (s.cert_password)
+            cols.cert_password_enc = (0, secret_crypto_1.encryptSecret)(s.cert_password);
+        if (s.smtp_password) {
+            cols.smtp_password_enc = (0, secret_crypto_1.encryptSecret)(s.smtp_password);
+            cols.smtp_has_password = true;
+        }
+        return cols;
+    }
     async create(company) {
         const entity = this.repo.create({
             ruc: company.ruc,
@@ -39,7 +70,8 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
             trade_name: company.trade_name,
             enabled: company.enabled,
             created_name: company.created_name,
-            createdBy: { id: company.createdById }
+            createdBy: { id: company.createdById },
+            ...this.buildExtraColumns(company),
         });
         const saved = await this.repo.save(entity);
         await this.ensureDefaultAdminRole(saved.id, company.createdById);
@@ -141,12 +173,33 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
             business_name: company.business_name,
             trade_name: company.trade_name,
             enabled: company.enabled,
+            ...this.buildExtraColumns(company),
         });
         const updated = await this.repo.findOne({ where: { id: company.id } });
         return this.toDomain(updated);
     }
     toDomain(entity) {
-        return new company_entity_1.Company(entity.id, entity.ruc, entity.description, entity.business_name, entity.trade_name, entity.enabled, entity.deleted, entity.created_name, entity.createdAt);
+        return new company_entity_1.Company(entity.id, entity.ruc, entity.description, entity.business_name, entity.trade_name, entity.enabled, entity.deleted, entity.created_name, entity.createdAt, undefined, {
+            address_matriz: entity.address_matriz ?? '',
+            phone: entity.phone ?? '',
+            email: entity.email ?? '',
+            obligated_accounting: entity.obligated_accounting ?? false,
+            special_taxpayer: entity.special_taxpayer ?? '',
+            tax_regime: entity.tax_regime ?? 'GENERAL',
+            sri_environment: entity.sri_environment ?? '1',
+            default_establishment: entity.default_establishment ?? '001',
+            default_emission_point: entity.default_emission_point ?? '001',
+            cert_file_name: entity.cert_file_name ?? '',
+            cert_expires_at: entity.cert_expires_at ?? '',
+            has_certificate: Boolean(entity.cert_file_name),
+            smtp_host: entity.smtp_host ?? '',
+            smtp_port: entity.smtp_port ?? 587,
+            smtp_secure: entity.smtp_secure ?? true,
+            smtp_user: entity.smtp_user ?? '',
+            has_smtp_password: Boolean(entity.smtp_has_password),
+            smtp_from_name: entity.smtp_from_name ?? '',
+            smtp_from_email: entity.smtp_from_email ?? '',
+        });
     }
 };
 exports.CompanyRepositoryImpl = CompanyRepositoryImpl;

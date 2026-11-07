@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsString } from 'class-validator';
+import { CompanyExtraDto } from './company-extra.dto';
 
-export class CreateCompanyDto {
+export class CreateCompanyDto extends CompanyExtraDto {
 	@IsString()
 	@IsNotEmpty()
 	ruc: string;

@@ -11,7 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateCompanyDto = void 0;
 const class_validator_1 = require("class-validator");
-class CreateCompanyDto {
+const company_extra_dto_1 = require("./company-extra.dto");
+class CreateCompanyDto extends company_extra_dto_1.CompanyExtraDto {
     ruc;
     description;
     business_name;

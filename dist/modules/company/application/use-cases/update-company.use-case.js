@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateCompanyUseCase = void 0;
 const company_repository_1 = require("../../domain/repositories/company.repository");
 const common_1 = require("@nestjs/common");
+const company_extra_util_1 = require("../company-extra.util");
 let UpdateCompanyUseCase = class UpdateCompanyUseCase {
     repository;
     constructor(repository) {
@@ -20,12 +21,15 @@ let UpdateCompanyUseCase = class UpdateCompanyUseCase {
     async execute(id, dto) {
         const company = await this.repository.findById(id);
         if (!company)
-            throw new Error('Company not found');
+            throw new common_1.NotFoundException('Empresa no encontrada');
         company.ruc = dto.ruc ?? company.ruc;
         company.description = dto.description ?? company.description;
         company.business_name = dto.business_name ?? company.business_name;
         company.trade_name = dto.trade_name ?? company.trade_name;
         company.enabled = dto.enabled ?? company.enabled;
+        const { fiscal, secrets } = (0, company_extra_util_1.splitCompanyExtra)(dto);
+        company.fiscal = { ...company.fiscal, ...fiscal };
+        company.secrets = secrets;
         return this.repository.update(company);
     }
 };

@@ -12,7 +12,9 @@ class Company {
     created_name;
     createdAt;
     createdById;
-    constructor(id, ruc, description, business_name, trade_name, enabled, deleted, created_name, createdAt, createdById) {
+    fiscal;
+    secrets;
+    constructor(id, ruc, description, business_name, trade_name, enabled, deleted, created_name, createdAt, createdById, fiscal = {}, secrets = {}) {
         this.id = id;
         this.ruc = ruc;
         this.description = description;
@@ -23,6 +25,8 @@ class Company {
         this.created_name = created_name;
         this.createdAt = createdAt;
         this.createdById = createdById;
+        this.fiscal = fiscal;
+        this.secrets = secrets;
     }
 }
 exports.Company = Company;

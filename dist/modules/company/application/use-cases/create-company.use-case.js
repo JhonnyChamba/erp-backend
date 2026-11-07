@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateCompanyUseCase = void 0;
 const company_repository_1 = require("../../domain/repositories/company.repository");
 const company_entity_1 = require("../../domain/entities/company.entity");
+const company_extra_util_1 = require("../company-extra.util");
 const common_1 = require("@nestjs/common");
 let CreateCompanyUseCase = class CreateCompanyUseCase {
     repository;
@@ -19,7 +20,8 @@ let CreateCompanyUseCase = class CreateCompanyUseCase {
         this.repository = repository;
     }
     async execute(dto, user) {
-        const company = new company_entity_1.Company(null, dto.ruc, dto.description, dto.business_name, dto.trade_name, true, undefined, user.user_name, user.user_id);
+        const { fiscal, secrets } = (0, company_extra_util_1.splitCompanyExtra)(dto);
+        const company = new company_entity_1.Company(null, dto.ruc, dto.description, dto.business_name, dto.trade_name, true, undefined, user.user_name, user.user_id, undefined, fiscal, secrets);
         return this.repository.create(company);
     }
 };

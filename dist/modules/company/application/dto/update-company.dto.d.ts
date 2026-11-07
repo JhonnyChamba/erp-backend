@@ -1,4 +1,5 @@
-export declare class UpdateCompanyDto {
+import { CompanyExtraDto } from "./company-extra.dto";
+export declare class UpdateCompanyDto extends CompanyExtraDto {
     ruc?: string;
     description?: string;
     business_name?: string;

@@ -3,6 +3,7 @@ import { CompanyOrmEntity } from '../persistence/company.orm-entity';
 import { RolesOrmEntity, RoleModuleOrmEntity } from 'src/modules/roles/infrastructure/persistence/roles.orm-entity';
 import { SubscriptionsOrmEntity } from 'src/modules/subscriptions/infrastructure/persistence/subscriptions.orm-entity';
 import { Company } from '../../domain/entities/company.entity';
+import { encryptSecret } from 'src/common/crypto/secret-crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
@@ -21,6 +22,34 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 		private readonly subscriptionsRepo: Repository<SubscriptionsOrmEntity>,
 	) { }
 
+	private buildExtraColumns(company: Company): Record<string, any> {
+		const f: any = company.fiscal || {};
+		const s = company.secrets || {};
+		const cols: Record<string, any> = {};
+		for (const k of [
+			'address_matriz', 'phone', 'email', 'obligated_accounting', 'special_taxpayer', 'tax_regime',
+			'sri_environment', 'default_establishment', 'default_emission_point', 'cert_file_name',
+			'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_from_name', 'smtp_from_email',
+		]) {
+			if (f[k] !== undefined) cols[k] = f[k] === '' ? null : f[k];
+		}
+		if (f.cert_expires_at !== undefined) cols.cert_expires_at = f.cert_expires_at || null;
+
+		if (s.remove_certificate) {
+			cols.cert_p12_base64 = null;
+			cols.cert_password_enc = null;
+			cols.cert_file_name = null;
+			cols.cert_expires_at = null;
+		}
+		if (s.cert_p12_base64) cols.cert_p12_base64 = s.cert_p12_base64;
+		if (s.cert_password) cols.cert_password_enc = encryptSecret(s.cert_password);
+		if (s.smtp_password) {
+			cols.smtp_password_enc = encryptSecret(s.smtp_password);
+			cols.smtp_has_password = true;
+		}
+		return cols;
+	}
+
 	async create(company: Company): Promise<Company> {
 		const entity = this.repo.create({
 			ruc: company.ruc,
@@ -29,7 +58,8 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 			trade_name: company.trade_name,
 			enabled: company.enabled,
 			created_name: company.created_name,
-			createdBy: { id: company.createdById }
+			createdBy: { id: company.createdById },
+			...this.buildExtraColumns(company),
 		});
 
 		const saved = await this.repo.save(entity);
@@ -156,6 +186,7 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 				business_name: company.business_name,
 				trade_name: company.trade_name,
 				enabled: company.enabled,
+				...this.buildExtraColumns(company),
 			},
 		);
 
@@ -175,6 +206,28 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 			entity.deleted,
 			entity.created_name,
 			entity.createdAt,
+			undefined,
+			{
+				address_matriz: entity.address_matriz ?? '',
+				phone: entity.phone ?? '',
+				email: entity.email ?? '',
+				obligated_accounting: entity.obligated_accounting ?? false,
+				special_taxpayer: entity.special_taxpayer ?? '',
+				tax_regime: entity.tax_regime ?? 'GENERAL',
+				sri_environment: entity.sri_environment ?? '1',
+				default_establishment: entity.default_establishment ?? '001',
+				default_emission_point: entity.default_emission_point ?? '001',
+				cert_file_name: entity.cert_file_name ?? '',
+				cert_expires_at: entity.cert_expires_at ?? '',
+				has_certificate: Boolean(entity.cert_file_name),
+				smtp_host: entity.smtp_host ?? '',
+				smtp_port: entity.smtp_port ?? 587,
+				smtp_secure: entity.smtp_secure ?? true,
+				smtp_user: entity.smtp_user ?? '',
+				has_smtp_password: Boolean(entity.smtp_has_password),
+				smtp_from_name: entity.smtp_from_name ?? '',
+				smtp_from_email: entity.smtp_from_email ?? '',
+			},
 		);
 	}
 }

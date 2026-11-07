@@ -10,6 +10,7 @@ export declare class CompanyRepositoryImpl implements CompanyRepository {
     private readonly roleModuleRepo;
     private readonly subscriptionsRepo;
     constructor(repo: Repository<CompanyOrmEntity>, rolesRepo: Repository<RolesOrmEntity>, roleModuleRepo: Repository<RoleModuleOrmEntity>, subscriptionsRepo: Repository<SubscriptionsOrmEntity>);
+    private buildExtraColumns;
     create(company: Company): Promise<Company>;
     private ensureDefaultAdminRole;
     findByCompany(page: number, limit: number): Promise<{
