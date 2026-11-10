@@ -20,7 +20,8 @@ class Users {
     roleId;
     roleName;
     companyRoles;
-    constructor(id, num_document, name_user, last_name_user, email, password, companyId, developer, multi_company, enabled, deleted, createdAt, theme_color = 'Blue_Theme', super_admin = false, companyIds = [], roleId, roleName, companyRoles = []) {
+    birth_date;
+    constructor(id, num_document, name_user, last_name_user, email, password, companyId, developer, multi_company, enabled, deleted, createdAt, theme_color = 'Blue_Theme', super_admin = false, companyIds = [], roleId, roleName, companyRoles = [], birth_date = null) {
         this.id = id;
         this.num_document = num_document;
         this.name_user = name_user;
@@ -39,6 +40,7 @@ class Users {
         this.roleId = roleId;
         this.roleName = roleName;
         this.companyRoles = companyRoles;
+        this.birth_date = birth_date;
     }
 }
 exports.Users = Users;

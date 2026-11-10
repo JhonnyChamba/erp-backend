@@ -17,6 +17,8 @@ let InvoiceOrmEntity = class InvoiceOrmEntity {
     company;
     establishment;
     emission_point;
+    branch_id;
+    branch_address;
     sequential;
     invoice_number;
     issue_date;
@@ -64,11 +66,19 @@ __decorate([
     __metadata("design:type", String)
 ], InvoiceOrmEntity.prototype, "emission_point", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], InvoiceOrmEntity.prototype, "branch_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 300, nullable: true }),
+    __metadata("design:type", String)
+], InvoiceOrmEntity.prototype, "branch_address", void 0);
+__decorate([
     (0, typeorm_1.Column)({ length: 9 }),
     __metadata("design:type", String)
 ], InvoiceOrmEntity.prototype, "sequential", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 25, unique: true }),
+    (0, typeorm_1.Column)({ length: 25 }),
     __metadata("design:type", String)
 ], InvoiceOrmEntity.prototype, "invoice_number", void 0);
 __decorate([
@@ -172,6 +182,7 @@ __decorate([
     __metadata("design:type", Date)
 ], InvoiceOrmEntity.prototype, "created_at", void 0);
 exports.InvoiceOrmEntity = InvoiceOrmEntity = __decorate([
+    (0, typeorm_1.Index)(['company', 'invoice_number'], { unique: true }),
     (0, typeorm_1.Entity)('tab_invoice')
 ], InvoiceOrmEntity);
 let InvoiceDetailOrmEntity = class InvoiceDetailOrmEntity {

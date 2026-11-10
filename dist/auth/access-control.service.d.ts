@@ -41,7 +41,10 @@ export declare class AccessControlService {
     private readonly usersRepo;
     private static cache;
     private static readonly CACHE_TTL_MS;
+    private static membershipCache;
     constructor(moduleRepo: Repository<ModuleOrmEntity>, subModuleRepo: Repository<subModulesOrmEntity>, subscriptionsRepo: Repository<SubscriptionsOrmEntity>, rolesRepo: Repository<RolesOrmEntity>, roleModuleRepo: Repository<RoleModuleOrmEntity>, userCompanyRepo: Repository<UserCompanyOrmEntity>, usersRepo: Repository<UsersOrmEntity>);
     static clearCache(companyId?: number, userId?: number): void;
+    getAccessibleCompanyIds(userPayload: any): Promise<number[] | null>;
+    canAccessCompany(userPayload: any, companyId: number): Promise<boolean>;
     getUserCompanyAccess(userPayload: any, companyId: number, forceRefresh?: boolean): Promise<UserCompanyAccessResponse>;
 }

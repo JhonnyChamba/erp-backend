@@ -1,3 +1,4 @@
+import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { CreateRolesTemplatesUseCase } from "../application/use-cases/create-roles-templates.use-case";
 import { UpdateRolesTemplatesUseCase } from "../application/use-cases/update-roles-templates.use-case";
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
@@ -8,7 +9,7 @@ import { UpdateRolesTemplatesDto } from "../application/dto/update-roles-templat
 import { ListRolesTemplatesDto } from "../application/dto/list-roles-templates.dto";
 import { AuthGuard } from "@nestjs/passport";
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('rolesTemplates')
 export class RolesTemplatesController {
 	constructor(

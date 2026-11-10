@@ -6,9 +6,12 @@ import {
 	ManyToOne,
 	OneToMany,
 	JoinColumn,
+	Index,
 } from 'typeorm';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
 
+// El número de factura es único POR EMPRESA (dos empresas pueden tener 001-001-000000001).
+@Index(['company', 'invoice_number'], { unique: true })
 @Entity('tab_invoice')
 export class InvoiceOrmEntity {
 	@PrimaryGeneratedColumn()
@@ -25,10 +28,17 @@ export class InvoiceOrmEntity {
 	@Column({ length: 3, default: '001' })
 	emission_point: string; // Punto de emisión
 
+	// Sucursal con la que se emitió y la dirección del establecimiento al momento de emitir (dirEstablecimiento del SRI)
+	@Column({ type: 'int', nullable: true })
+	branch_id: number | null;
+
+	@Column({ type: 'varchar', length: 300, nullable: true })
+	branch_address: string | null;
+
 	@Column({ length: 9 })
 	sequential: string; // 9 dígitos secuenciales
 
-	@Column({ length: 25, unique: true })
+	@Column({ length: 25 })
 	invoice_number: string; // 001-001-000000001
 
 	@Column({ type: 'date' })

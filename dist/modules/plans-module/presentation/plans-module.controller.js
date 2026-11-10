@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlansModulesController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const create_plans_module_use_case_1 = require("../application/use-cases/create-plans-module.use-case");
 const update_plans_module_use_case_1 = require("../application/use-cases/update-plans-module.use-case");
 const common_1 = require("@nestjs/common");
@@ -81,7 +82,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], PlansModulesController.prototype, "update", null);
 exports.PlansModulesController = PlansModulesController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('plansModules'),
     __metadata("design:paramtypes", [create_plans_module_use_case_1.CreatePlansModulesUseCase,
         list_plans_module_use_case_1.ListPlansModulesUseCase,

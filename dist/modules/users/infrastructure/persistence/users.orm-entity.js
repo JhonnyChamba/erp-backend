@@ -30,6 +30,7 @@ let UsersOrmEntity = class UsersOrmEntity {
     enabled;
     deleted;
     theme_color;
+    birth_date;
     created_at;
 };
 exports.UsersOrmEntity = UsersOrmEntity;
@@ -95,6 +96,10 @@ __decorate([
     (0, typeorm_1.Column)({ default: 'Blue_Theme', nullable: true }),
     __metadata("design:type", String)
 ], UsersOrmEntity.prototype, "theme_color", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    __metadata("design:type", String)
+], UsersOrmEntity.prototype, "birth_date", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }),
     __metadata("design:type", Date)

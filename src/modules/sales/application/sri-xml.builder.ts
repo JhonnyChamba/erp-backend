@@ -84,7 +84,7 @@ export function buildInvoiceXml(inv: InvoiceOrmEntity, company: CompanyOrmEntity
 	const isFinal = inv.customer_id_type === '07';
 	const infoFactura =
 		`<infoFactura>${tag('fechaEmision', ddmmyyyy(inv.issue_date))}` +
-		`${tag('dirEstablecimiento', company.address_matriz)}` +
+		`${tag('dirEstablecimiento', inv.branch_address || company.address_matriz)}` +
 		(company.special_taxpayer ? tag('contribuyenteEspecial', company.special_taxpayer) : '') +
 		`${tag('obligadoContabilidad', company.obligated_accounting ? 'SI' : 'NO')}` +
 		`${tag('tipoIdentificacionComprador', inv.customer_id_type)}` +

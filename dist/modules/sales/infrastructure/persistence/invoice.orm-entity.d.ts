@@ -4,6 +4,8 @@ export declare class InvoiceOrmEntity {
     company: CompanyOrmEntity;
     establishment: string;
     emission_point: string;
+    branch_id: number | null;
+    branch_address: string | null;
     sequential: string;
     invoice_number: string;
     issue_date: string;

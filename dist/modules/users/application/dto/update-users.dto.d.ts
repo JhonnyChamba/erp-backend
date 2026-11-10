@@ -16,4 +16,5 @@ export declare class UpdateUsersDto {
     }[];
     enabled?: boolean;
     theme_color?: string;
+    birth_date?: string | null;
 }

@@ -1,3 +1,4 @@
+import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import {
 	Body,
 	Controller,
@@ -22,7 +23,7 @@ import {
 	UpdateInventorySubcontractDto,
 } from '../application/dto/inventory.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('inventory')
 export class InventoryController {
 	constructor(private readonly inventoryService: InventoryService) {}

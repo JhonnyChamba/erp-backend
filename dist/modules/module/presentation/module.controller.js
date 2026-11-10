@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModuleController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const create_module_use_case_1 = require("../application/use-cases/create-module.use-case");
 const update_module_use_case_1 = require("../application/use-cases/update-module.use-case");
 const list_module_use_case_1 = require("../application/use-cases/list-module.use-case");
@@ -81,7 +82,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ModuleController.prototype, "update", null);
 exports.ModuleController = ModuleController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('module'),
     __metadata("design:paramtypes", [create_module_use_case_1.CreateModuleUseCase,
         list_module_use_case_1.ListModuleUseCase,

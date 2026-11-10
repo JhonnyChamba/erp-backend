@@ -19,6 +19,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscriptions-module.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SalesModule } from './modules/sales/sales.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
 
 @Module({
   imports: [
@@ -47,16 +48,17 @@ import { SalesModule } from './modules/sales/sales.module';
             ? { url: databaseUrl }
             : {
                 host,
-                port: Number(config.get<number>('DATABASE_PORT', 6364)),
+                port: Number(config.get<number>('DATABASE_PORT', 5432)),
                 username: config.get<string>('DATABASE_USER', 'postgres'),
-                password: config.get<string>('DATABASE_PASSWORD', '2830798aA.'),
+                password: config.getOrThrow<string>('DATABASE_PASSWORD'),
                 database: config.get<string>('DATABASE_NAME', 'db_deskounta'),
               }),
           ssl: useSsl ? { rejectUnauthorized: false } : false,
           retryAttempts: 2,
           retryDelay: 1000,
           autoLoadEntities: true,
-          synchronize: config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
+          // En producción no se sincroniza el esquema salvo que DATABASE_SYNCHRONIZE=true se indique de forma explícita.
+          synchronize: config.get<string>('DATABASE_SYNCHRONIZE', config.get<string>('NODE_ENV') === 'production' ? 'false' : 'true') === 'true',
         };
       },
     }),
@@ -76,6 +78,7 @@ import { SalesModule } from './modules/sales/sales.module';
     SubscriptionsModuleModule,
     InventoryModule,
     SalesModule,
+    ContactsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

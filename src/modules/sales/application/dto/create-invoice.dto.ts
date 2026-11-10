@@ -51,9 +51,11 @@ export class CreateInvoiceDto {
 	@IsOptional()
 	companyId?: number;
 
-	@IsString()
-	@IsOptional()
-	establishment?: string;
+	// Sucursal (establecimiento) con la que se emite: obligatoria. Define el establecimiento, el punto de emisión por defecto y la dirección.
+	@Type(() => Number)
+	@IsNumber({}, { message: 'Debes seleccionar la sucursal (establecimiento) con la que se emite la factura' })
+	@IsNotEmpty({ message: 'Debes seleccionar la sucursal (establecimiento) con la que se emite la factura' })
+	branchId: number;
 
 	@IsString()
 	@IsOptional()

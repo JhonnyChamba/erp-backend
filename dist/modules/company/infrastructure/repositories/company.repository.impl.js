@@ -145,9 +145,9 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
             }
         }
     }
-    async findByCompany(page, limit) {
+    async findByCompany(page, limit, companyIds) {
         const [branches, total] = await this.repo.findAndCount({
-            where: { deleted: false },
+            where: companyIds ? { deleted: false, id: (0, typeorm_2.In)(companyIds) } : { deleted: false },
             skip: (page - 1) * limit,
             take: limit,
             order: { createdAt: 'DESC' },

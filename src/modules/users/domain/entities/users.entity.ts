@@ -24,5 +24,6 @@ export class Users {
 		public roleId?: number | null,
 		public roleName?: string | null,
 		public companyRoles: UserCompanyRoleItem[] = [],
+		public birth_date: string | null = null,
 	) { }
 }

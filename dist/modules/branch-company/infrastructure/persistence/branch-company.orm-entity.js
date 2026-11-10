@@ -17,6 +17,10 @@ let BranchCompanyOrmEntity = class BranchCompanyOrmEntity {
     code;
     name;
     address;
+    emission_point;
+    phone;
+    email;
+    is_matrix;
     company;
     created_by;
     enabled;
@@ -37,9 +41,25 @@ __decorate([
     __metadata("design:type", String)
 ], BranchCompanyOrmEntity.prototype, "name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 250 }),
+    (0, typeorm_1.Column)({ length: 300 }),
     __metadata("design:type", String)
 ], BranchCompanyOrmEntity.prototype, "address", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 3, default: '001' }),
+    __metadata("design:type", String)
+], BranchCompanyOrmEntity.prototype, "emission_point", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 30, nullable: true }),
+    __metadata("design:type", String)
+], BranchCompanyOrmEntity.prototype, "phone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 150, nullable: true }),
+    __metadata("design:type", String)
+], BranchCompanyOrmEntity.prototype, "email", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], BranchCompanyOrmEntity.prototype, "is_matrix", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => company_orm_entity_1.CompanyOrmEntity, { nullable: false }),
     (0, typeorm_1.JoinColumn)({ name: 'company_id' }),
@@ -62,6 +82,7 @@ __decorate([
     __metadata("design:type", Date)
 ], BranchCompanyOrmEntity.prototype, "created_at", void 0);
 exports.BranchCompanyOrmEntity = BranchCompanyOrmEntity = __decorate([
+    (0, typeorm_1.Index)('UQ_branch_company_one_matrix', ['company'], { unique: true, where: '"is_matrix" = true AND "deleted" = false' }),
     (0, typeorm_1.Entity)('tab_branch_company')
 ], BranchCompanyOrmEntity);
 //# sourceMappingURL=branch-company.orm-entity.js.map

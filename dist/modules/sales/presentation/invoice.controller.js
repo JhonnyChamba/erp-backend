@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvoiceController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const invoice_service_1 = require("../application/invoice.service");
@@ -31,9 +32,10 @@ let InvoiceController = class InvoiceController {
         const companyId = this.resolveCompanyId(req, dto.companyId);
         return this.invoiceService.create(dto, companyId, req.user?.user_id);
     }
-    findAll(companyIdQuery, req) {
+    findAll(companyIdQuery, branchIdQuery, req) {
         const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
-        return this.invoiceService.findAll(companyId);
+        const branchId = Number(branchIdQuery);
+        return this.invoiceService.findAll(companyId, Number.isInteger(branchId) && branchId > 0 ? branchId : undefined);
     }
     findOne(id, companyIdQuery, req) {
         const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
@@ -64,9 +66,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('companyId')),
-    __param(1, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('branchId')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", void 0)
 ], InvoiceController.prototype, "findAll", null);
 __decorate([
@@ -106,7 +109,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], InvoiceController.prototype, "xml", null);
 exports.InvoiceController = InvoiceController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('sales/invoices'),
     __metadata("design:paramtypes", [invoice_service_1.InvoiceService])
 ], InvoiceController);

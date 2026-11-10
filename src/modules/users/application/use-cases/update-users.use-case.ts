@@ -34,6 +34,7 @@ export class UpdateUsersUseCase {
     }
     user.enabled = dto.enabled ?? user.enabled;
     user.theme_color = dto.theme_color ?? user.theme_color;
+    if (dto.birth_date !== undefined) user.birth_date = dto.birth_date || null;
     if (dto.companyIds !== undefined) {
       user.companyIds = user.super_admin ? [] : dto.companyIds;
     }

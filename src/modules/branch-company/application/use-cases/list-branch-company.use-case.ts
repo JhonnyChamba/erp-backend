@@ -9,7 +9,7 @@ export class ListBranchCompanyUseCase {
 	) { }
 
 	async execute(dto: ListBranchCompanyDto, user: any) {
-		const result = await this.repository.findByCompany(dto.companyId, dto.page, dto.limit);
+		const result = await this.repository.findByCompany(dto.companyId!, dto.page, dto.limit, Boolean(dto.onlyEnabled));
 		return {
 			data: result.data,
 			meta: {

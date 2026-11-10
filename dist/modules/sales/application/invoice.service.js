@@ -16,8 +16,10 @@ exports.InvoiceService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const crypto_1 = require("crypto");
 const invoice_orm_entity_1 = require("../infrastructure/persistence/invoice.orm-entity");
 const inventory_orm_entity_1 = require("../../inventory/infrastructure/persistence/inventory.orm-entity");
+const branch_company_orm_entity_1 = require("../../branch-company/infrastructure/persistence/branch-company.orm-entity");
 const company_orm_entity_1 = require("../../company/infrastructure/persistence/company.orm-entity");
 const secret_crypto_1 = require("../../../common/crypto/secret-crypto");
 const sri_xml_builder_1 = require("./sri-xml.builder");
@@ -27,11 +29,13 @@ let InvoiceService = class InvoiceService {
     detailRepo;
     inventoryItemRepo;
     companyRepo;
-    constructor(invoiceRepo, detailRepo, inventoryItemRepo, companyRepo) {
+    dataSource;
+    constructor(invoiceRepo, detailRepo, inventoryItemRepo, companyRepo, dataSource) {
         this.invoiceRepo = invoiceRepo;
         this.detailRepo = detailRepo;
         this.inventoryItemRepo = inventoryItemRepo;
         this.companyRepo = companyRepo;
+        this.dataSource = dataSource;
     }
     generateSRIAccessKey(issueDate, ruc, establishment, emissionPoint, sequential, environment = '1') {
         const cleanDate = issueDate.replace(/-/g, '');
@@ -41,7 +45,7 @@ let InvoiceService = class InvoiceService {
         const paddedRuc = ruc.padEnd(13, '0').slice(0, 13);
         const serie = `${establishment.padStart(3, '0')}${emissionPoint.padStart(3, '0')}`;
         const seq = sequential.padStart(9, '0');
-        const numericCode = '12345678';
+        const numericCode = String((0, crypto_1.randomInt)(0, 100_000_000)).padStart(8, '0');
         const emissionType = '1';
         const raw48 = `${ddmmyyyy}${docType}${paddedRuc}${environment}${serie}${seq}${numericCode}${emissionType}`;
         let factor = 2;
@@ -58,8 +62,8 @@ let InvoiceService = class InvoiceService {
             verifier = '1';
         return `${raw48}${verifier}`;
     }
-    async getNextSequential(companyId, establishment, emissionPoint) {
-        const last = await this.invoiceRepo.findOne({
+    async getNextSequential(manager, companyId, establishment, emissionPoint) {
+        const last = await manager.getRepository(invoice_orm_entity_1.InvoiceOrmEntity).findOne({
             where: {
                 company: { id: companyId },
                 establishment,
@@ -80,14 +84,34 @@ let InvoiceService = class InvoiceService {
         if (!dto.details || dto.details.length === 0) {
             throw new common_1.BadRequestException('La factura debe tener al menos un ítem o servicio en el detalle.');
         }
-        const company = await this.companyRepo.findOne({ where: { id: companyId } });
-        const establishment = (dto.establishment || company?.default_establishment || '001').padStart(3, '0');
-        const emissionPoint = (dto.emission_point || company?.default_emission_point || '001').padStart(3, '0');
-        const sequential = await this.getNextSequential(companyId, establishment, emissionPoint);
+        return this.dataSource.transaction((manager) => this.createInTransaction(manager, dto, companyId, userId));
+    }
+    async createInTransaction(manager, dto, companyId, userId) {
+        const invoiceRepo = manager.getRepository(invoice_orm_entity_1.InvoiceOrmEntity);
+        const detailRepo = manager.getRepository(invoice_orm_entity_1.InvoiceDetailOrmEntity);
+        const inventoryItemRepo = manager.getRepository(inventory_orm_entity_1.InventoryItemOrmEntity);
+        await manager.query('SELECT id FROM tab_company WHERE id = $1 FOR UPDATE', [companyId]);
+        const company = await manager.getRepository(company_orm_entity_1.CompanyOrmEntity).findOne({ where: { id: companyId } });
+        if (!company)
+            throw new common_1.NotFoundException('Empresa no encontrada.');
+        if (!company.ruc || !/^[0-9]{13}$/.test(company.ruc.trim())) {
+            throw new common_1.BadRequestException('La empresa emisora no tiene un RUC válido de 13 dígitos. Configúralo antes de facturar.');
+        }
+        const branch = await manager.getRepository(branch_company_orm_entity_1.BranchCompanyOrmEntity).findOne({ where: { id: dto.branchId, company: { id: companyId }, deleted: false } });
+        if (!branch)
+            throw new common_1.BadRequestException('La sucursal indicada no existe en esta empresa.');
+        if (!branch.enabled)
+            throw new common_1.BadRequestException(`La sucursal ${branch.code} - ${branch.name} está deshabilitada.`);
+        const establishment = branch.code.padStart(3, '0');
+        const emissionPoint = (dto.emission_point || branch.emission_point || '001').padStart(3, '0');
+        if (!/^[0-9]{3}$/.test(establishment) || !/^[0-9]{3}$/.test(emissionPoint)) {
+            throw new common_1.BadRequestException('El establecimiento y el punto de emisión deben tener 3 dígitos (corrige el código de la sucursal).');
+        }
+        const sequential = await this.getNextSequential(manager, companyId, establishment, emissionPoint);
         const invoiceNumber = `${establishment}-${emissionPoint}-${sequential}`;
         const issueDate = dto.issue_date || new Date().toISOString().slice(0, 10);
-        const companyRuc = company?.ruc || '1790012345001';
-        const accessKey = this.generateSRIAccessKey(issueDate, companyRuc, establishment, emissionPoint, sequential, company?.sri_environment || '1');
+        const companyRuc = company.ruc.trim();
+        const accessKey = this.generateSRIAccessKey(issueDate, companyRuc, establishment, emissionPoint, sequential, company.sri_environment || '1');
         let subtotalZero = 0;
         let subtotalTaxable = 0;
         let subtotalGross = 0;
@@ -111,7 +135,7 @@ let InvoiceService = class InvoiceService {
             subtotalGross += qty * unitPrice;
             discountTotal += discount;
             taxTotal += rowTax;
-            const detail = this.detailRepo.create({
+            const detail = detailRepo.create({
                 item_type: d.item_type || 'ITEM',
                 item_id: d.item_id,
                 code: d.code || '',
@@ -126,18 +150,20 @@ let InvoiceService = class InvoiceService {
             });
             detailEntities.push(detail);
             if (d.item_type === 'ITEM' && d.item_id) {
-                const item = await this.inventoryItemRepo.findOne({ where: { id: d.item_id, company: { id: companyId } } });
+                const item = await inventoryItemRepo.findOne({ where: { id: d.item_id, company: { id: companyId } } });
                 if (item) {
                     item.stock_current = Math.max(0, Number(item.stock_current || 0) - qty);
-                    await this.inventoryItemRepo.save(item);
+                    await inventoryItemRepo.save(item);
                 }
             }
         }
         const total = Number((subtotalTaxable + subtotalZero + taxTotal).toFixed(2));
-        const invoice = this.invoiceRepo.create({
+        const invoice = invoiceRepo.create({
             company: { id: companyId },
             establishment,
             emission_point: emissionPoint,
+            branch_id: branch.id,
+            branch_address: branch.address,
             sequential,
             invoice_number: invoiceNumber,
             issue_date: issueDate,
@@ -162,12 +188,12 @@ let InvoiceService = class InvoiceService {
             deleted: false,
             details: detailEntities,
         });
-        const saved = await this.invoiceRepo.save(invoice);
+        const saved = await invoiceRepo.save(invoice);
         return saved;
     }
-    async findAll(companyId) {
+    async findAll(companyId, branchId) {
         return this.invoiceRepo.find({
-            where: { company: { id: companyId }, deleted: false },
+            where: { company: { id: companyId }, deleted: false, ...(branchId ? { branch_id: branchId } : {}) },
             relations: ['details'],
             order: { id: 'DESC' },
         });
@@ -183,8 +209,22 @@ let InvoiceService = class InvoiceService {
     }
     async cancel(id, companyId) {
         const invoice = await this.findOne(id, companyId);
-        invoice.status = 'CANCELED';
-        return this.invoiceRepo.save(invoice);
+        if (invoice.status === 'CANCELED')
+            return invoice;
+        return this.dataSource.transaction(async (manager) => {
+            const itemRepo = manager.getRepository(inventory_orm_entity_1.InventoryItemOrmEntity);
+            for (const d of invoice.details || []) {
+                if (d.item_type === 'ITEM' && d.item_id) {
+                    const item = await itemRepo.findOne({ where: { id: d.item_id, company: { id: companyId } } });
+                    if (item) {
+                        item.stock_current = Number(item.stock_current || 0) + Number(d.quantity || 0);
+                        await itemRepo.save(item);
+                    }
+                }
+            }
+            invoice.status = 'CANCELED';
+            return manager.getRepository(invoice_orm_entity_1.InvoiceOrmEntity).save(invoice);
+        });
     }
     async sign(id, companyId) {
         const invoice = await this.findOne(id, companyId);
@@ -235,9 +275,11 @@ exports.InvoiceService = InvoiceService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(invoice_orm_entity_1.InvoiceDetailOrmEntity)),
     __param(2, (0, typeorm_1.InjectRepository)(inventory_orm_entity_1.InventoryItemOrmEntity)),
     __param(3, (0, typeorm_1.InjectRepository)(company_orm_entity_1.CompanyOrmEntity)),
+    __param(4, (0, typeorm_1.InjectDataSource)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        typeorm_2.DataSource])
 ], InvoiceService);
 //# sourceMappingURL=invoice.service.js.map

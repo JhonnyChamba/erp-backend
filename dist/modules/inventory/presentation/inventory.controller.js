@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const inventory_service_1 = require("../application/inventory.service");
@@ -190,7 +191,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "deleteSubcontract", null);
 exports.InventoryController = InventoryController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('inventory'),
     __metadata("design:paramtypes", [inventory_service_1.InventoryService])
 ], InventoryController);

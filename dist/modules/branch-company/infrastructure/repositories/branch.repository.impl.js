@@ -29,33 +29,53 @@ let BranchCompanyRepositoryImpl = class BranchCompanyRepositoryImpl {
             name: branch.name,
             address: branch.address,
             enabled: branch.enabled,
+            emission_point: branch.emissionPoint,
+            phone: branch.phone,
+            email: branch.email,
+            is_matrix: branch.isMatrix,
             company: { id: branch.companyId },
-            created_by: branch.createdById
+            created_by: branch.createdById,
         });
         const saved = await this.repo.save(entity);
         return this.toDomain(saved);
     }
-    async findByCompany(companyId, page, limit) {
+    async findByCompany(companyId, page, limit, onlyEnabled = false) {
         const [branches, total] = await this.repo.findAndCount({
-            where: { company: { id: companyId }, deleted: false },
+            where: { company: { id: companyId }, deleted: false, ...(onlyEnabled ? { enabled: true } : {}) },
             skip: (page - 1) * limit,
             take: limit,
-            order: { created_at: 'DESC' },
+            order: { code: 'ASC', id: 'ASC' },
         });
         return {
-            data: branches.map(branch => this.toDomain(branch)),
+            data: branches.map(branch => this.toDomain(branch, companyId)),
             total,
         };
     }
     async findById(id, companyId) {
         const branch = await this.repo.findOne({
-            where: {
-                id,
-                company: { id: companyId },
-                deleted: false,
-            },
+            where: { id, company: { id: companyId }, deleted: false },
         });
-        return branch ? this.toDomain(branch) : null;
+        return branch ? this.toDomain(branch, companyId) : null;
+    }
+    async findByCode(companyId, code) {
+        const branch = await this.repo.findOne({
+            where: { company: { id: companyId }, code, deleted: false },
+        });
+        return branch ? this.toDomain(branch, companyId) : null;
+    }
+    async countByCompany(companyId) {
+        return this.repo.count({ where: { company: { id: companyId }, deleted: false } });
+    }
+    async findMatrix(companyId) {
+        const branch = await this.repo.findOne({ where: { company: { id: companyId }, is_matrix: true, deleted: false } });
+        return branch ? this.toDomain(branch, companyId) : null;
+    }
+    async setMatrix(companyId, id) {
+        await this.repo.manager.transaction(async (manager) => {
+            const repo = manager.getRepository(branch_company_orm_entity_1.BranchCompanyOrmEntity);
+            await repo.update({ company: { id: companyId }, deleted: false, is_matrix: true }, { is_matrix: false });
+            await repo.update({ id, company: { id: companyId }, deleted: false }, { is_matrix: true });
+        });
     }
     async update(branch) {
         await this.repo.update({
@@ -66,17 +86,21 @@ let BranchCompanyRepositoryImpl = class BranchCompanyRepositoryImpl {
             name: branch.name,
             address: branch.address,
             enabled: branch.enabled,
+            emission_point: branch.emissionPoint,
+            phone: branch.phone,
+            email: branch.email,
+            is_matrix: branch.isMatrix,
         });
         const updated = await this.repo.findOne({
-            where: {
-                id: branch.id,
-                company: { id: branch.companyId },
-            },
+            where: { id: branch.id, company: { id: branch.companyId } },
         });
-        return this.toDomain(updated);
+        return this.toDomain(updated, branch.companyId);
     }
-    toDomain(entity) {
-        return new branch_company_entity_1.BranchCompany(entity.id, entity.code, entity.name, entity.address, entity.company?.id, entity.enabled, entity.created_at);
+    async softDelete(id, companyId) {
+        await this.repo.update({ id, company: { id: companyId } }, { deleted: true, enabled: false, is_matrix: false });
+    }
+    toDomain(entity, companyId) {
+        return new branch_company_entity_1.BranchCompany(entity.id, entity.code, entity.name, entity.address, entity.company?.id ?? companyId, entity.enabled, entity.created_at, undefined, entity.emission_point || '001', entity.phone ?? null, entity.email ?? null, Boolean(entity.is_matrix));
     }
 };
 exports.BranchCompanyRepositoryImpl = BranchCompanyRepositoryImpl;

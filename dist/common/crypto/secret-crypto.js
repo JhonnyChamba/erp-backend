@@ -3,9 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.encryptSecret = encryptSecret;
 exports.decryptSecret = decryptSecret;
 const crypto_1 = require("crypto");
-const getKey = () => (0, crypto_1.createHash)('sha256')
-    .update(process.env.SECRETS_KEY || process.env.JWT_SECRET || 'deskounta-dev-secret')
-    .digest();
+const getKey = () => {
+    const secret = process.env.SECRETS_KEY || process.env.JWT_SECRET;
+    if (!secret)
+        throw new Error('Falta SECRETS_KEY (o JWT_SECRET) para cifrar/descifrar los secretos guardados.');
+    return (0, crypto_1.createHash)('sha256').update(secret).digest();
+};
 function encryptSecret(plain) {
     const iv = (0, crypto_1.randomBytes)(12);
     const cipher = (0, crypto_1.createCipheriv)('aes-256-gcm', getKey(), iv);

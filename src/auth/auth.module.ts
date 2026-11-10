@@ -10,11 +10,14 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AccessControlService } from './access-control.service';
 import { PermissionsGuard } from './guards/permissions.guard';
+import { CompanyAccessGuard } from './guards/company-access.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+// Global: AccessControlService y CompanyAccessGuard se usan en los controladores de todos los módulos.
+@Global()
 @Module({
   imports: [
     UsersModule,
@@ -31,7 +34,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'super_secret_key_deskounta_erp_2026'),
+        secret: config.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') as any,
         },
@@ -39,8 +42,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, AccessControlService, PermissionsGuard],
-  exports: [AuthService, AccessControlService, PermissionsGuard],
+  providers: [AuthService, JwtStrategy, AccessControlService, PermissionsGuard, CompanyAccessGuard],
+  exports: [AuthService, AccessControlService, PermissionsGuard, CompanyAccessGuard],
 })
 
 export class AuthModule { }

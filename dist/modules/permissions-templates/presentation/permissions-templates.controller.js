@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermissionsTemplatesController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const create_permissions_templates_use_case_1 = require("../application/use-cases/create-permissions-templates.use-case");
 const update_permissions_templates_use_case_1 = require("../application/use-cases/update-permissions-templates.use-case");
 const list_permissions_templates_use_case_1 = require("../application/use-cases/list-permissions-templates.use-case");
@@ -81,7 +82,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], PermissionsTemplatesController.prototype, "update", null);
 exports.PermissionsTemplatesController = PermissionsTemplatesController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('permissionsTemplates'),
     __metadata("design:paramtypes", [create_permissions_templates_use_case_1.CreatePermissionsTemplatesUseCase,
         list_permissions_templates_use_case_1.ListPermissionsTemplatesUseCase,

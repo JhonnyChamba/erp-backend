@@ -68,7 +68,7 @@ __decorate([
 ], CreateInvoiceDetailDto.prototype, "tax_rate", void 0);
 class CreateInvoiceDto {
     companyId;
-    establishment;
+    branchId;
     emission_point;
     issue_date;
     customer_id_type;
@@ -89,10 +89,11 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateInvoiceDto.prototype, "companyId", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateInvoiceDto.prototype, "establishment", void 0);
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)({}, { message: 'Debes seleccionar la sucursal (establecimiento) con la que se emite la factura' }),
+    (0, class_validator_1.IsNotEmpty)({ message: 'Debes seleccionar la sucursal (establecimiento) con la que se emite la factura' }),
+    __metadata("design:type", Number)
+], CreateInvoiceDto.prototype, "branchId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

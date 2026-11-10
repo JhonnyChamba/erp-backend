@@ -12,26 +12,66 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateBranchCompanyDto = void 0;
 const class_validator_1 = require("class-validator");
 class UpdateBranchCompanyDto {
+    companyId;
     code;
     name;
     address;
+    emission_point;
+    phone;
+    email;
+    is_matrix;
     enabled;
 }
 exports.UpdateBranchCompanyDto = UpdateBranchCompanyDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateBranchCompanyDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[0-9]{3}$/, { message: 'code debe ser el número de establecimiento de 3 dígitos (ej. 001)' }),
     __metadata("design:type", String)
 ], UpdateBranchCompanyDto.prototype, "code", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(150),
     __metadata("design:type", String)
 ], UpdateBranchCompanyDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(300),
     __metadata("design:type", String)
 ], UpdateBranchCompanyDto.prototype, "address", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[0-9]{3}$/, { message: 'emission_point debe ser el punto de emisión de 3 dígitos (ej. 001)' }),
+    __metadata("design:type", String)
+], UpdateBranchCompanyDto.prototype, "emission_point", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(30),
+    __metadata("design:type", String)
+], UpdateBranchCompanyDto.prototype, "phone", void 0);
+__decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.email !== undefined && o.email !== null && o.email !== ''),
+    (0, class_validator_1.IsEmail)({}, { message: 'email no es un correo válido' }),
+    (0, class_validator_1.MaxLength)(150),
+    __metadata("design:type", String)
+], UpdateBranchCompanyDto.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateBranchCompanyDto.prototype, "is_matrix", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], UpdateBranchCompanyDto.prototype, "enabled", void 0);
 //# sourceMappingURL=update-branch-company.dto.js.map

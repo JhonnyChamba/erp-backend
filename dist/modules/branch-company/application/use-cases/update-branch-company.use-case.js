@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateBranchCompanyUseCase = void 0;
 const branch_company_repository_1 = require("../../domain/repositories/branch-company.repository");
 const common_1 = require("@nestjs/common");
+const branch_matrix_util_1 = require("./branch-matrix.util");
 let UpdateBranchCompanyUseCase = class UpdateBranchCompanyUseCase {
     repository;
     constructor(repository) {
@@ -20,12 +21,42 @@ let UpdateBranchCompanyUseCase = class UpdateBranchCompanyUseCase {
     async execute(id, companyId, dto) {
         const branch = await this.repository.findById(id, companyId);
         if (!branch)
-            throw new Error('BranchCompany not found');
-        branch.code = dto.code ?? branch.code;
-        branch.name = dto.name ?? branch.name;
-        branch.address = dto.address ?? branch.address;
+            throw new common_1.NotFoundException('Sucursal no encontrada');
+        if (dto.code !== undefined && dto.code.trim() !== branch.code) {
+            const duplicated = await this.repository.findByCode(companyId, dto.code.trim());
+            if (duplicated && duplicated.id !== branch.id) {
+                throw new common_1.ConflictException(`Ya existe una sucursal con el establecimiento ${dto.code.trim()} en esta empresa.`);
+            }
+        }
+        if (dto.is_matrix === true && !branch.isMatrix) {
+            const matrix = await this.repository.findMatrix(companyId);
+            if (matrix) {
+                throw new common_1.ConflictException(`La empresa ya tiene una sucursal matriz (${matrix.code} - ${matrix.name}). Para cambiarla usa la opción "Marcar como matriz" en esta sucursal.`);
+            }
+        }
+        if (branch.isMatrix && dto.is_matrix === false) {
+            throw new common_1.BadRequestException('La matriz no puede quedar sin marcar. Para cambiarla, marca otra sucursal como matriz.');
+        }
+        if (branch.isMatrix && dto.enabled === false) {
+            throw new common_1.BadRequestException('La sucursal matriz no se puede deshabilitar. Marca otra sucursal como matriz primero.');
+        }
+        branch.code = dto.code !== undefined ? dto.code.trim() : branch.code;
+        branch.name = dto.name !== undefined ? dto.name.trim() : branch.name;
+        branch.address = dto.address !== undefined ? dto.address.trim() : branch.address;
+        branch.emissionPoint = dto.emission_point ?? branch.emissionPoint;
+        if (dto.phone !== undefined)
+            branch.phone = dto.phone?.trim() || null;
+        if (dto.email !== undefined)
+            branch.email = dto.email?.trim() || null;
         branch.enabled = dto.enabled ?? branch.enabled;
-        return this.repository.update(branch);
+        if (dto.is_matrix === true)
+            branch.isMatrix = true;
+        try {
+            return await this.repository.update(branch);
+        }
+        catch (error) {
+            (0, branch_matrix_util_1.mapMatrixConflict)(error);
+        }
     }
 };
 exports.UpdateBranchCompanyUseCase = UpdateBranchCompanyUseCase;

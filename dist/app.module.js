@@ -28,6 +28,7 @@ const subscriptions_module_1 = require("./modules/subscriptions/subscriptions.mo
 const subscriptions_module_module_1 = require("./modules/subscriptions-module/subscriptions-module.module");
 const inventory_module_1 = require("./modules/inventory/inventory.module");
 const sales_module_1 = require("./modules/sales/sales.module");
+const contacts_module_1 = require("./modules/contacts/contacts.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -56,16 +57,16 @@ exports.AppModule = AppModule = __decorate([
                             ? { url: databaseUrl }
                             : {
                                 host,
-                                port: Number(config.get('DATABASE_PORT', 6364)),
+                                port: Number(config.get('DATABASE_PORT', 5432)),
                                 username: config.get('DATABASE_USER', 'postgres'),
-                                password: config.get('DATABASE_PASSWORD', '2830798aA.'),
+                                password: config.getOrThrow('DATABASE_PASSWORD'),
                                 database: config.get('DATABASE_NAME', 'db_deskounta'),
                             }),
                         ssl: useSsl ? { rejectUnauthorized: false } : false,
                         retryAttempts: 2,
                         retryDelay: 1000,
                         autoLoadEntities: true,
-                        synchronize: config.get('DATABASE_SYNCHRONIZE', 'true') === 'true',
+                        synchronize: config.get('DATABASE_SYNCHRONIZE', config.get('NODE_ENV') === 'production' ? 'false' : 'true') === 'true',
                     };
                 },
             }),
@@ -85,6 +86,7 @@ exports.AppModule = AppModule = __decorate([
             subscriptions_module_module_1.SubscriptionsModuleModule,
             inventory_module_1.InventoryModule,
             sales_module_1.SalesModule,
+            contacts_module_1.ContactsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

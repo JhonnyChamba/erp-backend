@@ -1,3 +1,4 @@
+import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { CreatePlansUseCase } from "../application/use-cases/create-plans.use-case";
 import { UpdatePlansUseCase } from "../application/use-cases/update-plans.use-case";
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
@@ -8,7 +9,7 @@ import { UpdatePlansDto } from "../application/dto/update-plans.dto";
 import { ListPlansDto } from "../application/dto/list-plans.dto";
 import { AuthGuard } from "@nestjs/passport";
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('plans')
 export class PlansController {
 

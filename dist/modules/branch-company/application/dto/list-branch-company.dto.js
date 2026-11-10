@@ -16,6 +16,7 @@ class ListBranchCompanyDto {
     companyId;
     page = 1;
     limit = 10;
+    onlyEnabled;
 }
 exports.ListBranchCompanyDto = ListBranchCompanyDto;
 __decorate([
@@ -38,4 +39,10 @@ __decorate([
     (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], ListBranchCompanyDto.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => value === true || value === 'true'),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], ListBranchCompanyDto.prototype, "onlyEnabled", void 0);
 //# sourceMappingURL=list-branch-company.dto.js.map

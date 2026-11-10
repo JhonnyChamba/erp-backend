@@ -18,7 +18,7 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
     constructor(configService) {
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: configService.get('JWT_SECRET', 'super_secret_key_deskounta_erp_2026'),
+            secretOrKey: configService.getOrThrow('JWT_SECRET'),
         });
     }
     async validate(payload) {

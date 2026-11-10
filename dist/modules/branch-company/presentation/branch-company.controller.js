@@ -13,9 +13,12 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BranchCompanyController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const create_branch_company_use_case_1 = require("../application/use-cases/create-branch-company.use-case");
 const update_branch_company_use_case_1 = require("../application/use-cases/update-branch-company.use-case");
 const common_1 = require("@nestjs/common");
+const set_matrix_branch_company_use_case_1 = require("../application/use-cases/set-matrix-branch-company.use-case");
+const delete_branch_company_use_case_1 = require("../application/use-cases/delete-branch-company.use-case");
 const list_branch_company_use_case_1 = require("../application/use-cases/list-branch-company.use-case");
 const get_branch_company_use_case_1 = require("../application/use-cases/get-branch-company.use-case");
 const create_branch_company_dto_1 = require("../application/dto/create-branch-company.dto");
@@ -27,16 +30,21 @@ let BranchCompanyController = class BranchCompanyController {
     listUseCase;
     getUseCase;
     updateUseCase;
-    constructor(createUseCase, listUseCase, getUseCase, updateUseCase) {
+    deleteUseCase;
+    setMatrixUseCase;
+    constructor(createUseCase, listUseCase, getUseCase, updateUseCase, deleteUseCase, setMatrixUseCase) {
         this.createUseCase = createUseCase;
         this.listUseCase = listUseCase;
         this.getUseCase = getUseCase;
         this.updateUseCase = updateUseCase;
+        this.deleteUseCase = deleteUseCase;
+        this.setMatrixUseCase = setMatrixUseCase;
     }
     create(dto, req) {
         return this.createUseCase.execute(dto, req.user);
     }
     list(query, req) {
+        query.companyId = query.companyId ?? Number(req.companyId);
         return this.listUseCase.execute(query, req.user);
     }
     get(id, queryCompanyId, req) {
@@ -46,6 +54,12 @@ let BranchCompanyController = class BranchCompanyController {
     update(id, dto, req) {
         const companyId = req.companyId || dto?.companyId || req.headers['x-company-id'];
         return this.updateUseCase.execute(Number(id), Number(companyId), dto);
+    }
+    setMatrix(id, req) {
+        return this.setMatrixUseCase.execute(Number(id), Number(req.companyId));
+    }
+    remove(id, req) {
+        return this.deleteUseCase.execute(Number(id), Number(req.companyId));
     }
 };
 exports.BranchCompanyController = BranchCompanyController;
@@ -83,12 +97,30 @@ __decorate([
     __metadata("design:paramtypes", [Number, update_branch_company_dto_1.UpdateBranchCompanyDto, Object]),
     __metadata("design:returntype", void 0)
 ], BranchCompanyController.prototype, "update", null);
+__decorate([
+    (0, common_1.Patch)(':id/set-matrix'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], BranchCompanyController.prototype, "setMatrix", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], BranchCompanyController.prototype, "remove", null);
 exports.BranchCompanyController = BranchCompanyController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('branchCompany'),
     __metadata("design:paramtypes", [create_branch_company_use_case_1.CreateBranchCompanyUseCase,
         list_branch_company_use_case_1.ListBranchCompanyUseCase,
         get_branch_company_use_case_1.GetBranchCompanyUseCase,
-        update_branch_company_use_case_1.UpdateBranchCompanyUseCase])
+        update_branch_company_use_case_1.UpdateBranchCompanyUseCase,
+        delete_branch_company_use_case_1.DeleteBranchCompanyUseCase,
+        set_matrix_branch_company_use_case_1.SetMatrixBranchCompanyUseCase])
 ], BranchCompanyController);
 //# sourceMappingURL=branch-company.controller.js.map

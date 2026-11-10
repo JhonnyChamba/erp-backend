@@ -19,6 +19,7 @@ const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
 const access_control_service_1 = require("./access-control.service");
 const permissions_guard_1 = require("./guards/permissions.guard");
+const company_access_guard_1 = require("./guards/company-access.guard");
 const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
@@ -27,6 +28,7 @@ let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
+    (0, common_1.Global)(),
     (0, common_1.Module)({
         imports: [
             users_module_1.UsersModule,
@@ -43,7 +45,7 @@ exports.AuthModule = AuthModule = __decorate([
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
                 useFactory: (config) => ({
-                    secret: config.get('JWT_SECRET', 'super_secret_key_deskounta_erp_2026'),
+                    secret: config.getOrThrow('JWT_SECRET'),
                     signOptions: {
                         expiresIn: config.get('JWT_EXPIRES_IN', '1d'),
                     },
@@ -51,8 +53,8 @@ exports.AuthModule = AuthModule = __decorate([
             }),
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, jwt_service_1.JwtStrategy, access_control_service_1.AccessControlService, permissions_guard_1.PermissionsGuard],
-        exports: [auth_service_1.AuthService, access_control_service_1.AccessControlService, permissions_guard_1.PermissionsGuard],
+        providers: [auth_service_1.AuthService, jwt_service_1.JwtStrategy, access_control_service_1.AccessControlService, permissions_guard_1.PermissionsGuard, company_access_guard_1.CompanyAccessGuard],
+        exports: [auth_service_1.AuthService, access_control_service_1.AccessControlService, permissions_guard_1.PermissionsGuard, company_access_guard_1.CompanyAccessGuard],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

@@ -2,6 +2,12 @@ import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+const requiredEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value) throw new Error(`Falta la variable de entorno ${name}`);
+  return value;
+};
+
 const databaseUrl = process.env.DATABASE_URL;
 const host = process.env.DATABASE_HOST || 'localhost';
 const useSsl =
@@ -16,9 +22,9 @@ export const AppDataSource = new DataSource({
     ? { url: databaseUrl }
     : {
         host,
-        port: Number(process.env.DATABASE_PORT) || 6364,
+        port: Number(process.env.DATABASE_PORT) || 5432,
         username: process.env.DATABASE_USER || 'postgres',
-        password: process.env.DATABASE_PASSWORD || '2830798aA.',
+        password: requiredEnv('DATABASE_PASSWORD'),
         database: process.env.DATABASE_NAME || 'db_deskounta',
       }),
   ssl: useSsl ? { rejectUnauthorized: false } : false,

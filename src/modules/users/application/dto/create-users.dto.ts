@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateUsersDto {
 	@IsNumber()
@@ -52,4 +52,8 @@ export class CreateUsersDto {
 	@IsString()
 	@IsOptional()
 	theme_color?: string;
+
+	@IsDateString({}, { message: 'birth_date debe tener formato AAAA-MM-DD' })
+	@IsOptional()
+	birth_date?: string | null;
 }

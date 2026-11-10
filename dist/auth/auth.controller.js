@@ -13,8 +13,12 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
+const company_access_guard_1 = require("./guards/company-access.guard");
 const create_users_use_case_1 = require("../modules/users/application/use-cases/create-users.use-case");
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const users_orm_entity_1 = require("../modules/users/infrastructure/persistence/users.orm-entity");
 const passport_1 = require("@nestjs/passport");
 const auth_service_1 = require("./auth.service");
 const access_control_service_1 = require("./access-control.service");
@@ -22,16 +26,43 @@ let AuthController = class AuthController {
     authService;
     createUsersUseCase;
     accessControlService;
-    constructor(authService, createUsersUseCase, accessControlService) {
+    usersRepo;
+    constructor(authService, createUsersUseCase, accessControlService, usersRepo) {
         this.authService = authService;
         this.createUsersUseCase = createUsersUseCase;
         this.accessControlService = accessControlService;
+        this.usersRepo = usersRepo;
     }
     async register(body) {
         return this.createUsersUseCase.execute(body);
     }
     async login(body) {
         return this.authService.login(body.email, body.password);
+    }
+    async me(req) {
+        const user = await this.usersRepo.findOne({
+            where: { id: Number(req.user?.user_id), deleted: false },
+            relations: ['company'],
+        });
+        if (!user)
+            throw new common_1.NotFoundException('Usuario no encontrado');
+        const access = await this.accessControlService.getUserCompanyAccess(req.user, Number(user.company?.id || req.user?.company_id || 1));
+        const isSuperAdmin = Boolean(user.super_admin || user.developer);
+        return {
+            id: user.id,
+            num_document: user.num_document,
+            name_user: user.name_user,
+            last_name_user: user.last_name_user,
+            full_name: `${user.name_user} ${user.last_name_user}`.trim(),
+            email: user.email,
+            birth_date: user.birth_date ?? null,
+            enabled: user.enabled,
+            super_admin: isSuperAdmin,
+            multi_company: !isSuperAdmin && Boolean(user.multi_company),
+            role_name: access.roleName,
+            company_name: user.company?.trade_name || user.company?.business_name || null,
+            created_at: user.created_at,
+        };
     }
     async getAccess(queryCompanyId, headerCompanyId, req) {
         const companyId = Number(queryCompanyId || headerCompanyId || req.user?.company_id || 1);
@@ -55,6 +86,14 @@ __decorate([
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Get)('me'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "me", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Get)('access'),
     __param(0, (0, common_1.Query)('companyId')),
     __param(1, (0, common_1.Headers)('x-company-id')),
@@ -65,8 +104,10 @@ __decorate([
 ], AuthController.prototype, "getAccess", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
+    __param(3, (0, typeorm_1.InjectRepository)(users_orm_entity_1.UsersOrmEntity)),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         create_users_use_case_1.CreateUsersUseCase,
-        access_control_service_1.AccessControlService])
+        access_control_service_1.AccessControlService,
+        typeorm_2.Repository])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

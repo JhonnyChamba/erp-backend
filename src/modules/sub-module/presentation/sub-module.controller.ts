@@ -1,3 +1,4 @@
+import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { CreatesubModulesUseCase } from "../application/use-cases/create-sub-module.use-case";
 import { UpdatesubModulesUseCase } from "../application/use-cases/update-sub-module.use-case";
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
@@ -8,7 +9,7 @@ import { UpdatesubModulesDto } from "../application/dto/update-sub-module.dto";
 import { ListsubModulesDto } from "../application/dto/list-sub-module.dto";
 import { AuthGuard } from "@nestjs/passport";
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('subModule')
 export class subModulesController {
 

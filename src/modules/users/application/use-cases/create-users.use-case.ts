@@ -31,6 +31,7 @@ export class CreateUsersUseCase {
 			isSuperAdmin ? null : dto.roleId ?? null,
 			null,
 			isSuperAdmin ? [] : dto.companyRoles || [],
+			dto.birth_date || null,
 		);
 
 		return this.repository.create(user);

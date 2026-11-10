@@ -13,7 +13,7 @@ export declare class CompanyRepositoryImpl implements CompanyRepository {
     private buildExtraColumns;
     create(company: Company): Promise<Company>;
     private ensureDefaultAdminRole;
-    findByCompany(page: number, limit: number): Promise<{
+    findByCompany(page: number, limit: number, companyIds?: number[] | null): Promise<{
         data: Company[];
         total: number;
     }>;

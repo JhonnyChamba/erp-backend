@@ -8,5 +8,9 @@ export class BranchCompany {
 		public enabled: boolean,
 		public readonly createdAt?: Date,
 		public readonly createdById?: number,
+		public emissionPoint: string = '001',
+		public phone: string | null = null,
+		public email: string | null = null,
+		public isMatrix: boolean = false,
 	) { }
 }

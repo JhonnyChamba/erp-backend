@@ -42,6 +42,7 @@ export class AccessControlService {
 	// Caché ligera en memoria por (userId:companyId) para no sobrecargar el token ni la base de datos
 	private static cache = new Map<string, { expiresAt: number; data: UserCompanyAccessResponse }>();
 	private static readonly CACHE_TTL_MS = 15_000; // 15 segundos
+	private static membershipCache = new Map<string, { expiresAt: number; allowed: boolean }>();
 
 	constructor(
 		@InjectRepository(ModuleOrmEntity)
@@ -61,6 +62,7 @@ export class AccessControlService {
 	) {}
 
 	static clearCache(companyId?: number, userId?: number) {
+		AccessControlService.membershipCache.clear();
 		if (!companyId && !userId) {
 			AccessControlService.cache.clear();
 			return;
@@ -71,6 +73,50 @@ export class AccessControlService {
 				AccessControlService.cache.delete(key);
 			}
 		}
+	}
+
+	/** Ids de empresas a las que pertenece el usuario. null = todas (super admin / developer). */
+	async getAccessibleCompanyIds(userPayload: any): Promise<number[] | null> {
+		const userId = Number(userPayload?.user_id || 0);
+		if (!userId) return [];
+		const dbUser = await this.usersRepo.findOne({ where: { id: userId, deleted: false, enabled: true }, relations: ['company'] });
+		if (!dbUser) return [];
+		if (dbUser.super_admin || dbUser.developer) return null;
+		const links = await this.userCompanyRepo.find({ where: { user: { id: userId }, deleted: false, enabled: true }, relations: ['company'] });
+		const ids = new Set<number>();
+		if (dbUser.company?.id) ids.add(Number(dbUser.company.id));
+		for (const l of links) if (l.company?.id) ids.add(Number(l.company.id));
+		return [...ids];
+	}
+
+	/**
+	 * Indica si el usuario puede operar sobre la empresa indicada: super admin / developer, empresa propia
+	 * (la asignada en su ficha) o una empresa en la que tenga una relación usuario-empresa activa.
+	 * Se consulta la BD (no solo el token) para respetar cambios posteriores a la emisión del token.
+	 */
+	async canAccessCompany(userPayload: any, companyId: number): Promise<boolean> {
+		const userId = Number(userPayload?.user_id || 0);
+		const targetCompanyId = Number(companyId);
+		if (!userId || !Number.isInteger(targetCompanyId) || targetCompanyId <= 0) return false;
+
+		const cacheKey = `${userId}:${targetCompanyId}`;
+		const cached = AccessControlService.membershipCache.get(cacheKey);
+		if (cached && cached.expiresAt > Date.now()) return cached.allowed;
+
+		const dbUser = await this.usersRepo.findOne({ where: { id: userId, deleted: false, enabled: true }, relations: ['company'] });
+		let allowed = false;
+		if (dbUser) {
+			if (dbUser.super_admin || dbUser.developer || Number(dbUser.company?.id) === targetCompanyId) {
+				allowed = true;
+			} else {
+				allowed = await this.userCompanyRepo.exist({
+					where: { user: { id: userId }, company: { id: targetCompanyId }, deleted: false, enabled: true },
+				});
+			}
+		}
+
+		AccessControlService.membershipCache.set(cacheKey, { expiresAt: Date.now() + AccessControlService.CACHE_TTL_MS, allowed });
+		return allowed;
 	}
 
 	async getUserCompanyAccess(

@@ -1,9 +1,10 @@
+import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { Controller, Get, Post, Body, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { InvoiceService } from '../application/invoice.service';
 import { CreateInvoiceDto } from '../application/dto/create-invoice.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('sales/invoices')
 export class InvoiceController {
 	constructor(private readonly invoiceService: InvoiceService) {}
@@ -21,9 +22,10 @@ export class InvoiceController {
 	}
 
 	@Get()
-	findAll(@Query('companyId') companyIdQuery: string, @Req() req: any) {
+	findAll(@Query('companyId') companyIdQuery: string, @Query('branchId') branchIdQuery: string, @Req() req: any) {
 		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
-		return this.invoiceService.findAll(companyId);
+		const branchId = Number(branchIdQuery);
+		return this.invoiceService.findAll(companyId, Number.isInteger(branchId) && branchId > 0 ? branchId : undefined);
 	}
 
 	@Get(':id')

@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const create_roles_use_case_1 = require("../application/use-cases/create-roles.use-case");
 const update_roles_use_case_1 = require("../application/use-cases/update-roles.use-case");
 const common_1 = require("@nestjs/common");
@@ -89,7 +90,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "update", null);
 exports.RolesController = RolesController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('roles'),
     __metadata("design:paramtypes", [create_roles_use_case_1.CreateRolesUseCase,
         list_roles_use_case_1.ListRolesUseCase,

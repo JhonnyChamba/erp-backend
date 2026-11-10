@@ -17,5 +17,6 @@ export declare class UsersOrmEntity {
     enabled: boolean;
     deleted: boolean;
     theme_color: string;
+    birth_date: string | null;
     created_at: Date;
 }

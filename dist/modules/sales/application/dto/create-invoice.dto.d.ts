@@ -10,7 +10,7 @@ export declare class CreateInvoiceDetailDto {
 }
 export declare class CreateInvoiceDto {
     companyId?: number;
-    establishment?: string;
+    branchId: number;
     emission_point?: string;
     issue_date?: string;
     customer_id_type: string;

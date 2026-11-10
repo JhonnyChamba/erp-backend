@@ -1,10 +1,11 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
 
 // Cifrado AES-256-GCM para secretos guardados en BD (clave de .p12, clave SMTP)
-const getKey = () =>
-	createHash('sha256')
-		.update(process.env.SECRETS_KEY || process.env.JWT_SECRET || 'deskounta-dev-secret')
-		.digest();
+const getKey = () => {
+	const secret = process.env.SECRETS_KEY || process.env.JWT_SECRET;
+	if (!secret) throw new Error('Falta SECRETS_KEY (o JWT_SECRET) para cifrar/descifrar los secretos guardados.');
+	return createHash('sha256').update(secret).digest();
+};
 
 export function encryptSecret(plain: string): string {
 	const iv = randomBytes(12);

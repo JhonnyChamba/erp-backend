@@ -45,6 +45,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			multi_company: isMultiCompany,
 			enabled: user.enabled,
 			theme_color: user.theme_color || 'Blue_Theme',
+			birth_date: user.birth_date || null,
 			company: { id: user.companyId },
 			role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
 		});
@@ -137,6 +138,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 				multi_company: isMultiCompany,
 				enabled: user.enabled,
 				theme_color: user.theme_color || 'Blue_Theme',
+				birth_date: user.birth_date || null,
 				role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
 			},
 		);
@@ -286,6 +288,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			effectiveRoleId,
 			effectiveRoleName,
 			companyRoles,
+			entity.birth_date ?? null,
 		);
 	}
 }

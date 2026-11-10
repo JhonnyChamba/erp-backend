@@ -1,3 +1,4 @@
+import { AccessControlService } from "src/auth/access-control.service";
 import { CreateCompanyUseCase } from "../application/use-cases/create-company.use-case";
 import { UpdateCompanyUseCase } from "../application/use-cases/update-company.use-case";
 import { ListCompanyUseCase } from "../application/use-cases/list-company.use-case";
@@ -10,7 +11,9 @@ export declare class CompanyController {
     private readonly listUseCase;
     private readonly getUseCase;
     private readonly updateUseCase;
-    constructor(createUseCase: CreateCompanyUseCase, listUseCase: ListCompanyUseCase, getUseCase: GetCompanyUseCase, updateUseCase: UpdateCompanyUseCase);
+    private readonly accessControlService;
+    constructor(createUseCase: CreateCompanyUseCase, listUseCase: ListCompanyUseCase, getUseCase: GetCompanyUseCase, updateUseCase: UpdateCompanyUseCase, accessControlService: AccessControlService);
+    private assertCompanyAccess;
     create(dto: CreateCompanyDto, req: any): Promise<import("../domain/entities/company.entity").Company>;
     list(query: ListCompanyDto, req: any): Promise<{
         data: import("../domain/entities/company.entity").Company[];

@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserCompanyController = void 0;
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
 const common_1 = require("@nestjs/common");
 const create_user_company_use_case_1 = require("../application/use-cases/create-user-company.use-case");
 const update_user_company_use_case_1 = require("../application/use-cases/update-user-company.use-case");
@@ -83,7 +84,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], UserCompanyController.prototype, "update", null);
 exports.UserCompanyController = UserCompanyController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('userCompany'),
     __metadata("design:paramtypes", [create_user_company_use_case_1.CreateUserCompanyUseCase,
         list_user_company_use_case_1.ListUserCompanyUseCase,

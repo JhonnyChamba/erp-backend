@@ -12,6 +12,8 @@ const create_branch_company_use_case_1 = require("./application/use-cases/create
 const update_branch_company_use_case_1 = require("./application/use-cases/update-branch-company.use-case");
 const list_branch_company_use_case_1 = require("./application/use-cases/list-branch-company.use-case");
 const branch_company_orm_entity_1 = require("./infrastructure/persistence/branch-company.orm-entity");
+const set_matrix_branch_company_use_case_1 = require("./application/use-cases/set-matrix-branch-company.use-case");
+const delete_branch_company_use_case_1 = require("./application/use-cases/delete-branch-company.use-case");
 const get_branch_company_use_case_1 = require("./application/use-cases/get-branch-company.use-case");
 const branch_company_repository_1 = require("./domain/repositories/branch-company.repository");
 const branch_company_controller_1 = require("./presentation/branch-company.controller");
@@ -29,6 +31,8 @@ exports.BranchCompanyModule = BranchCompanyModule = __decorate([
             list_branch_company_use_case_1.ListBranchCompanyUseCase,
             get_branch_company_use_case_1.GetBranchCompanyUseCase,
             update_branch_company_use_case_1.UpdateBranchCompanyUseCase,
+            delete_branch_company_use_case_1.DeleteBranchCompanyUseCase,
+            set_matrix_branch_company_use_case_1.SetMatrixBranchCompanyUseCase,
             {
                 provide: branch_company_repository_1.BranchCompanyRepository,
                 useClass: branch_repository_impl_1.BranchCompanyRepositoryImpl,

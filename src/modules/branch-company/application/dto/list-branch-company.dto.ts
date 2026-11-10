@@ -1,5 +1,5 @@
-import { IsNumber, IsOptional, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsBoolean, IsNumber, IsOptional, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class ListBranchCompanyDto {
   @Type(() => Number)
@@ -18,4 +18,10 @@ export class ListBranchCompanyDto {
   @IsOptional()
   @Min(1)
   limit: number = 10;
+
+  // true: solo sucursales habilitadas (selección de sucursal, facturación)
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  onlyEnabled?: boolean;
 }

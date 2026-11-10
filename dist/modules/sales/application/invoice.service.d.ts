@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { InvoiceOrmEntity, InvoiceDetailOrmEntity } from '../infrastructure/persistence/invoice.orm-entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InventoryItemOrmEntity } from 'src/modules/inventory/infrastructure/persistence/inventory.orm-entity';
@@ -8,11 +8,13 @@ export declare class InvoiceService {
     private readonly detailRepo;
     private readonly inventoryItemRepo;
     private readonly companyRepo;
-    constructor(invoiceRepo: Repository<InvoiceOrmEntity>, detailRepo: Repository<InvoiceDetailOrmEntity>, inventoryItemRepo: Repository<InventoryItemOrmEntity>, companyRepo: Repository<CompanyOrmEntity>);
+    private readonly dataSource;
+    constructor(invoiceRepo: Repository<InvoiceOrmEntity>, detailRepo: Repository<InvoiceDetailOrmEntity>, inventoryItemRepo: Repository<InventoryItemOrmEntity>, companyRepo: Repository<CompanyOrmEntity>, dataSource: DataSource);
     private generateSRIAccessKey;
     private getNextSequential;
     create(dto: CreateInvoiceDto, companyId: number, userId?: number): Promise<InvoiceOrmEntity>;
-    findAll(companyId: number): Promise<InvoiceOrmEntity[]>;
+    private createInTransaction;
+    findAll(companyId: number, branchId?: number): Promise<InvoiceOrmEntity[]>;
     findOne(id: number, companyId: number): Promise<InvoiceOrmEntity>;
     cancel(id: number, companyId: number): Promise<InvoiceOrmEntity>;
     sign(id: number, companyId: number): Promise<{

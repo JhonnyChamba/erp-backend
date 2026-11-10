@@ -25,6 +25,7 @@ class CreateUsersDto {
     roleId;
     companyRoles;
     theme_color;
+    birth_date;
 }
 exports.CreateUsersDto = CreateUsersDto;
 __decorate([
@@ -92,4 +93,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateUsersDto.prototype, "theme_color", void 0);
+__decorate([
+    (0, class_validator_1.IsDateString)({}, { message: 'birth_date debe tener formato AAAA-MM-DD' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUsersDto.prototype, "birth_date", void 0);
 //# sourceMappingURL=create-users.dto.js.map

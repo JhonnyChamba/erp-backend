@@ -6,7 +6,7 @@ import { Company } from '../../domain/entities/company.entity';
 import { encryptSecret } from 'src/common/crypto/secret-crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class CompanyRepositoryImpl implements CompanyRepository {
@@ -149,10 +149,11 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 		}
 	}
 
-	async findByCompany(page: number, limit: number): Promise<{ data: Company[]; total: number }> {
+	async findByCompany(page: number, limit: number, companyIds?: number[] | null): Promise<{ data: Company[]; total: number }> {
 
 		const [branches, total] = await this.repo.findAndCount({
-			where: { deleted: false },
+			// companyIds: null/undefined = sin restricción (super admin); lista = solo esas empresas
+			where: companyIds ? { deleted: false, id: In(companyIds) } : { deleted: false },
 			skip: (page - 1) * limit,
 			take: limit,
 			order: { createdAt: 'DESC' },

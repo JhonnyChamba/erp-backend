@@ -5,7 +5,7 @@ export declare class InvoiceController {
     constructor(invoiceService: InvoiceService);
     private resolveCompanyId;
     create(dto: CreateInvoiceDto, req: any): Promise<import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity>;
-    findAll(companyIdQuery: string, req: any): Promise<import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity[]>;
+    findAll(companyIdQuery: string, branchIdQuery: string, req: any): Promise<import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity[]>;
     findOne(id: number, companyIdQuery: string, req: any): Promise<import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity>;
     cancel(id: number, companyIdQuery: string, req: any): Promise<import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity>;
     sign(id: number, companyIdQuery: string, req: any): Promise<{

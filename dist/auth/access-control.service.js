@@ -34,6 +34,7 @@ let AccessControlService = class AccessControlService {
     usersRepo;
     static cache = new Map();
     static CACHE_TTL_MS = 15_000;
+    static membershipCache = new Map();
     constructor(moduleRepo, subModuleRepo, subscriptionsRepo, rolesRepo, roleModuleRepo, userCompanyRepo, usersRepo) {
         this.moduleRepo = moduleRepo;
         this.subModuleRepo = subModuleRepo;
@@ -44,6 +45,7 @@ let AccessControlService = class AccessControlService {
         this.usersRepo = usersRepo;
     }
     static clearCache(companyId, userId) {
+        AccessControlService_1.membershipCache.clear();
         if (!companyId && !userId) {
             AccessControlService_1.cache.clear();
             return;
@@ -54,6 +56,48 @@ let AccessControlService = class AccessControlService {
                 AccessControlService_1.cache.delete(key);
             }
         }
+    }
+    async getAccessibleCompanyIds(userPayload) {
+        const userId = Number(userPayload?.user_id || 0);
+        if (!userId)
+            return [];
+        const dbUser = await this.usersRepo.findOne({ where: { id: userId, deleted: false, enabled: true }, relations: ['company'] });
+        if (!dbUser)
+            return [];
+        if (dbUser.super_admin || dbUser.developer)
+            return null;
+        const links = await this.userCompanyRepo.find({ where: { user: { id: userId }, deleted: false, enabled: true }, relations: ['company'] });
+        const ids = new Set();
+        if (dbUser.company?.id)
+            ids.add(Number(dbUser.company.id));
+        for (const l of links)
+            if (l.company?.id)
+                ids.add(Number(l.company.id));
+        return [...ids];
+    }
+    async canAccessCompany(userPayload, companyId) {
+        const userId = Number(userPayload?.user_id || 0);
+        const targetCompanyId = Number(companyId);
+        if (!userId || !Number.isInteger(targetCompanyId) || targetCompanyId <= 0)
+            return false;
+        const cacheKey = `${userId}:${targetCompanyId}`;
+        const cached = AccessControlService_1.membershipCache.get(cacheKey);
+        if (cached && cached.expiresAt > Date.now())
+            return cached.allowed;
+        const dbUser = await this.usersRepo.findOne({ where: { id: userId, deleted: false, enabled: true }, relations: ['company'] });
+        let allowed = false;
+        if (dbUser) {
+            if (dbUser.super_admin || dbUser.developer || Number(dbUser.company?.id) === targetCompanyId) {
+                allowed = true;
+            }
+            else {
+                allowed = await this.userCompanyRepo.exist({
+                    where: { user: { id: userId }, company: { id: targetCompanyId }, deleted: false, enabled: true },
+                });
+            }
+        }
+        AccessControlService_1.membershipCache.set(cacheKey, { expiresAt: Date.now() + AccessControlService_1.CACHE_TTL_MS, allowed });
+        return allowed;
     }
     async getUserCompanyAccess(userPayload, companyId, forceRefresh = false) {
         const userId = Number(userPayload?.user_id || 0);

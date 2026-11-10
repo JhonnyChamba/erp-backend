@@ -18,7 +18,7 @@ let ListBranchCompanyUseCase = class ListBranchCompanyUseCase {
         this.repository = repository;
     }
     async execute(dto, user) {
-        const result = await this.repository.findByCompany(dto.companyId, dto.page, dto.limit);
+        const result = await this.repository.findByCompany(dto.companyId, dto.page, dto.limit, Boolean(dto.onlyEnabled));
         return {
             data: result.data,
             meta: {

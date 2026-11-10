@@ -5,9 +5,10 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 async function createLocalDb() {
   const host = process.env.DATABASE_HOST || 'localhost';
-  const port = Number(process.env.DATABASE_PORT) || 6364;
+  const port = Number(process.env.DATABASE_PORT) || 5432;
   const user = process.env.DATABASE_USER || 'postgres';
-  const password = process.env.DATABASE_PASSWORD || '2830798aA.';
+  const password = process.env.DATABASE_PASSWORD;
+  if (!password) throw new Error('Falta la variable de entorno DATABASE_PASSWORD (defínela en erp-backend/.env).');
   const dbName = process.env.DATABASE_NAME || 'db_deskounta';
 
   // 1. Conectar a la base por defecto 'postgres' para crear db_deskounta si no existe
