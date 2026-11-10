@@ -112,6 +112,28 @@ export class InvoiceOrmEntity {
 	@Column({ type: 'varchar', length: 20, default: 'NOT_SIGNED' })
 	sign_status: string; // NOT_SIGNED | SIGNED
 
+	// Resultado del envío al SRI.
+	// NOT_SENT | RETURNED (recepción DEVUELTA) | IN_PROCESS (recibida, sin autorización aún) | AUTHORIZED | NOT_AUTHORIZED
+	@Column({ type: 'varchar', length: 20, default: 'NOT_SENT' })
+	sri_status: string;
+
+	@Column({ type: 'varchar', length: 49, nullable: true })
+	sri_authorization_number: string | null;
+
+	@Column({ type: 'timestamp', nullable: true })
+	sri_authorization_date: Date | null;
+
+	@Column({ type: 'timestamp', nullable: true })
+	sri_sent_at: Date | null;
+
+	// Mensajes devueltos por el SRI (motivos de rechazo o advertencias): [{ identificador, mensaje, informacionAdicional, tipo }]
+	@Column({ type: 'jsonb', nullable: true })
+	sri_messages: Array<{ identificador: string; mensaje: string; informacionAdicional?: string; tipo?: string }> | null;
+
+	// Última respuesta SOAP completa del SRI, por trazabilidad (no se devuelve en los listados).
+	@Column({ type: 'text', nullable: true, select: false })
+	sri_response_xml: string | null;
+
 	@Column({ nullable: true })
 	created_by: number;
 

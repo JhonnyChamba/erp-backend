@@ -46,6 +46,18 @@ export class InvoiceController {
 		return this.invoiceService.sign(Number(id), companyId);
 	}
 
+	@Post(':id/send-sri')
+	sendToSri(@Param('id') id: number, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+		return this.invoiceService.sendToSri(Number(id), companyId);
+	}
+
+	@Post(':id/check-sri')
+	checkSri(@Param('id') id: number, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+		return this.invoiceService.checkSriAuthorization(Number(id), companyId);
+	}
+
 	@Get(':id/xml')
 	xml(@Param('id') id: number, @Query('companyId') companyIdQuery: string, @Req() req: any) {
 		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
