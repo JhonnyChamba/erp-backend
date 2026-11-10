@@ -49,6 +49,14 @@ let InvoiceController = class InvoiceController {
         const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
         return this.invoiceService.sign(Number(id), companyId);
     }
+    sendToSri(id, companyIdQuery, req) {
+        const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+        return this.invoiceService.sendToSri(Number(id), companyId);
+    }
+    checkSri(id, companyIdQuery, req) {
+        const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+        return this.invoiceService.checkSriAuthorization(Number(id), companyId);
+    }
     xml(id, companyIdQuery, req) {
         const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
         return this.invoiceService.getSignedXml(Number(id), companyId);
@@ -99,6 +107,24 @@ __decorate([
     __metadata("design:paramtypes", [Number, String, Object]),
     __metadata("design:returntype", void 0)
 ], InvoiceController.prototype, "sign", null);
+__decorate([
+    (0, common_1.Post)(':id/send-sri'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String, Object]),
+    __metadata("design:returntype", void 0)
+], InvoiceController.prototype, "sendToSri", null);
+__decorate([
+    (0, common_1.Post)(':id/check-sri'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String, Object]),
+    __metadata("design:returntype", void 0)
+], InvoiceController.prototype, "checkSri", null);
 __decorate([
     (0, common_1.Get)(':id/xml'),
     __param(0, (0, common_1.Param)('id')),

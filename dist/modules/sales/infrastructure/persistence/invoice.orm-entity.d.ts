@@ -28,6 +28,17 @@ export declare class InvoiceOrmEntity {
     signed_xml: string;
     signed_at: Date;
     sign_status: string;
+    sri_status: string;
+    sri_authorization_number: string | null;
+    sri_authorization_date: Date | null;
+    sri_sent_at: Date | null;
+    sri_messages: Array<{
+        identificador: string;
+        mensaje: string;
+        informacionAdicional?: string;
+        tipo?: string;
+    }> | null;
+    sri_response_xml: string | null;
     created_by: number;
     enabled: boolean;
     deleted: boolean;

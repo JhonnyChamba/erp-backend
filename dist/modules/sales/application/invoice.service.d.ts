@@ -3,6 +3,7 @@ import { InvoiceOrmEntity, InvoiceDetailOrmEntity } from '../infrastructure/pers
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InventoryItemOrmEntity } from 'src/modules/inventory/infrastructure/persistence/inventory.orm-entity';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
+import { SriMessage } from './sri-client';
 export declare class InvoiceService {
     private readonly invoiceRepo;
     private readonly detailRepo;
@@ -22,6 +23,22 @@ export declare class InvoiceService {
         sign_status: string;
         file_name: string;
     }>;
+    sendToSri(id: number, companyId: number): Promise<{
+        id: number;
+        sri_status: string;
+        sri_authorization_number: string;
+        sri_authorization_date: string;
+        sri_messages: SriMessage[];
+    }>;
+    checkSriAuthorization(id: number, companyId: number): Promise<{
+        id: number;
+        sri_status: string;
+        sri_authorization_number: string;
+        sri_authorization_date: string;
+        sri_messages: SriMessage[];
+    }>;
+    private getSriEnvironment;
+    private buildSriResult;
     getSignedXml(id: number, companyId: number): Promise<{
         file_name: string;
         xml: string;

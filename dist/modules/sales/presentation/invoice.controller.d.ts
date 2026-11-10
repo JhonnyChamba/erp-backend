@@ -13,6 +13,20 @@ export declare class InvoiceController {
         sign_status: string;
         file_name: string;
     }>;
+    sendToSri(id: number, companyIdQuery: string, req: any): Promise<{
+        id: number;
+        sri_status: string;
+        sri_authorization_number: string;
+        sri_authorization_date: string;
+        sri_messages: import("../application/sri-client").SriMessage[];
+    }>;
+    checkSri(id: number, companyIdQuery: string, req: any): Promise<{
+        id: number;
+        sri_status: string;
+        sri_authorization_number: string;
+        sri_authorization_date: string;
+        sri_messages: import("../application/sri-client").SriMessage[];
+    }>;
     xml(id: number, companyIdQuery: string, req: any): Promise<{
         file_name: string;
         xml: string;

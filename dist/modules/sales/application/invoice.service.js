@@ -24,6 +24,7 @@ const company_orm_entity_1 = require("../../company/infrastructure/persistence/c
 const secret_crypto_1 = require("../../../common/crypto/secret-crypto");
 const sri_xml_builder_1 = require("./sri-xml.builder");
 const sri_signer_1 = require("./sri-signer");
+const sri_client_1 = require("./sri-client");
 let InvoiceService = class InvoiceService {
     invoiceRepo;
     detailRepo;
@@ -254,6 +255,87 @@ let InvoiceService = class InvoiceService {
         catch (e) {
             throw new common_1.BadRequestException(e?.message || 'No se pudo firmar la factura.');
         }
+    }
+    async sendToSri(id, companyId) {
+        const invoice = await this.invoiceRepo
+            .createQueryBuilder('i')
+            .addSelect('i.signed_xml')
+            .where('i.id = :id AND i.company_id = :companyId AND i.deleted = false', { id, companyId })
+            .getOne();
+        if (!invoice)
+            throw new common_1.NotFoundException('Factura no encontrada.');
+        if (invoice.status === 'CANCELED')
+            throw new common_1.BadRequestException('No se puede enviar al SRI una factura anulada.');
+        if (invoice.sign_status !== 'SIGNED' || !invoice.signed_xml) {
+            throw new common_1.BadRequestException('La factura debe estar firmada electrónicamente antes de enviarla al SRI.');
+        }
+        if (invoice.sri_status === 'AUTHORIZED') {
+            throw new common_1.BadRequestException(`La factura ya fue autorizada por el SRI (No. ${invoice.sri_authorization_number}).`);
+        }
+        const environment = await this.getSriEnvironment(companyId);
+        let reception;
+        try {
+            reception = await (0, sri_client_1.sriReception)(invoice.signed_xml, environment);
+        }
+        catch (e) {
+            throw new common_1.BadRequestException(e?.message || 'No se pudo enviar la factura al SRI.');
+        }
+        const sentAt = new Date();
+        if (reception.estado !== 'RECIBIDA') {
+            await this.invoiceRepo.update({ id }, { sri_status: 'RETURNED', sri_sent_at: sentAt, sri_messages: reception.mensajes, sri_response_xml: reception.rawXml });
+            return this.buildSriResult(id, 'RETURNED', reception.mensajes);
+        }
+        await this.invoiceRepo.update({ id }, { sri_status: 'IN_PROCESS', sri_sent_at: sentAt, sri_messages: reception.mensajes, sri_response_xml: reception.rawXml });
+        await (0, sri_client_1.sleep)(3000);
+        return this.checkSriAuthorization(id, companyId);
+    }
+    async checkSriAuthorization(id, companyId) {
+        const invoice = await this.findOne(id, companyId);
+        if (!invoice.access_key)
+            throw new common_1.BadRequestException('La factura no tiene clave de acceso.');
+        if (invoice.sri_status === 'NOT_SENT' || invoice.sri_status === 'RETURNED') {
+            throw new common_1.BadRequestException('La factura aún no ha sido recibida por el SRI. Envíala primero.');
+        }
+        const environment = await this.getSriEnvironment(companyId);
+        let authorization;
+        try {
+            authorization = await (0, sri_client_1.sriAuthorization)(invoice.access_key, environment);
+        }
+        catch (e) {
+            throw new common_1.BadRequestException(e?.message || 'No se pudo consultar la autorización en el SRI.');
+        }
+        if (authorization.estado === 'AUTORIZADO') {
+            await this.invoiceRepo.update({ id }, {
+                sri_status: 'AUTHORIZED',
+                status: 'AUTHORIZED',
+                sri_authorization_number: authorization.numeroAutorizacion ?? invoice.access_key,
+                sri_authorization_date: authorization.fechaAutorizacion ? new Date(authorization.fechaAutorizacion) : new Date(),
+                sri_messages: authorization.mensajes,
+                sri_response_xml: authorization.rawXml,
+            });
+            return this.buildSriResult(id, 'AUTHORIZED', authorization.mensajes, authorization.numeroAutorizacion ?? invoice.access_key, authorization.fechaAutorizacion);
+        }
+        if (authorization.estado === 'NO AUTORIZADO') {
+            await this.invoiceRepo.update({ id }, { sri_status: 'NOT_AUTHORIZED', sri_messages: authorization.mensajes, sri_response_xml: authorization.rawXml });
+            return this.buildSriResult(id, 'NOT_AUTHORIZED', authorization.mensajes);
+        }
+        await this.invoiceRepo.update({ id }, { sri_status: 'IN_PROCESS', sri_response_xml: authorization.rawXml });
+        return this.buildSriResult(id, 'IN_PROCESS', authorization.mensajes);
+    }
+    async getSriEnvironment(companyId) {
+        const company = await this.companyRepo.findOne({ where: { id: companyId }, select: ['id', 'sri_environment'] });
+        if (!company)
+            throw new common_1.NotFoundException('Empresa no encontrada.');
+        return company.sri_environment === '2' ? '2' : '1';
+    }
+    buildSriResult(id, sri_status, messages, authorizationNumber, authorizationDate) {
+        return {
+            id,
+            sri_status,
+            sri_authorization_number: authorizationNumber ?? null,
+            sri_authorization_date: authorizationDate ?? null,
+            sri_messages: messages,
+        };
     }
     async getSignedXml(id, companyId) {
         const invoice = await this.invoiceRepo

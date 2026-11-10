@@ -41,6 +41,12 @@ let InvoiceOrmEntity = class InvoiceOrmEntity {
     signed_xml;
     signed_at;
     sign_status;
+    sri_status;
+    sri_authorization_number;
+    sri_authorization_date;
+    sri_sent_at;
+    sri_messages;
+    sri_response_xml;
     created_by;
     enabled;
     deleted;
@@ -161,6 +167,30 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 20, default: 'NOT_SIGNED' }),
     __metadata("design:type", String)
 ], InvoiceOrmEntity.prototype, "sign_status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 20, default: 'NOT_SENT' }),
+    __metadata("design:type", String)
+], InvoiceOrmEntity.prototype, "sri_status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 49, nullable: true }),
+    __metadata("design:type", String)
+], InvoiceOrmEntity.prototype, "sri_authorization_number", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], InvoiceOrmEntity.prototype, "sri_authorization_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], InvoiceOrmEntity.prototype, "sri_sent_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], InvoiceOrmEntity.prototype, "sri_messages", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true, select: false }),
+    __metadata("design:type", String)
+], InvoiceOrmEntity.prototype, "sri_response_xml", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
