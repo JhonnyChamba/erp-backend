@@ -65,3 +65,4 @@ export class PurchasesController {
 		return this.purchasesService.cancelPurchase(Number(id), companyId, req.user?.user_id);
 	}
 }
+

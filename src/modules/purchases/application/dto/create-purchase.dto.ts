@@ -60,6 +60,14 @@ export class CreatePurchaseDetailDto {
 export class CreatePurchaseDto {
 	@IsOptional()
 	@IsNumber()
+	companyId?: number;
+
+	@IsOptional()
+	@IsNumber()
+	company_id?: number;
+
+	@IsOptional()
+	@IsNumber()
 	provider_id?: number;
 
 	@IsOptional()
@@ -147,3 +155,4 @@ export class CreatePurchaseDto {
 	@Type(() => CreatePurchaseDetailDto)
 	items: CreatePurchaseDetailDto[];
 }
+

@@ -12,6 +12,8 @@ export declare class CreatePurchaseDetailDto {
     taxRate?: number;
 }
 export declare class CreatePurchaseDto {
+    companyId?: number;
+    company_id?: number;
     provider_id?: number;
     providerId?: number;
     provider_name: string;

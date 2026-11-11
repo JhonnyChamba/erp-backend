@@ -608,9 +608,24 @@ let InventoryService = class InventoryService {
                 if (existing)
                     return existing;
             }
-            const product = await manager.findOne(inventory_orm_entity_1.ItemOrmEntity, {
+            let product = await manager.findOne(inventory_orm_entity_1.ItemOrmEntity, {
                 where: { id: params.productId, company: { id: params.companyId }, deleted: false },
             });
+            if (!product) {
+                const legacyItem = await manager.findOne(inventory_orm_entity_1.InventoryItemOrmEntity, {
+                    where: { id: params.productId, company: { id: params.companyId }, deleted: false },
+                });
+                if (legacyItem) {
+                    product = {
+                        id: legacyItem.id,
+                        code: legacyItem.code,
+                        name: legacyItem.name,
+                        item_type: 'PRODUCT',
+                        purchase_price: legacyItem.cost_price,
+                        company: legacyItem.company,
+                    };
+                }
+            }
             if (!product) {
                 throw new common_1.NotFoundException(`El concepto ID ${params.productId} no existe en la empresa.`);
             }
@@ -693,9 +708,24 @@ let InventoryService = class InventoryService {
                 if (existing)
                     return existing;
             }
-            const product = await manager.findOne(inventory_orm_entity_1.ItemOrmEntity, {
+            let product = await manager.findOne(inventory_orm_entity_1.ItemOrmEntity, {
                 where: { id: params.productId, company: { id: params.companyId }, deleted: false },
             });
+            if (!product) {
+                const legacyItem = await manager.findOne(inventory_orm_entity_1.InventoryItemOrmEntity, {
+                    where: { id: params.productId, company: { id: params.companyId }, deleted: false },
+                });
+                if (legacyItem) {
+                    product = {
+                        id: legacyItem.id,
+                        code: legacyItem.code,
+                        name: legacyItem.name,
+                        item_type: 'PRODUCT',
+                        purchase_price: legacyItem.cost_price,
+                        company: legacyItem.company,
+                    };
+                }
+            }
             if (!product) {
                 throw new common_1.NotFoundException(`El concepto ID ${params.productId} no existe en la empresa.`);
             }

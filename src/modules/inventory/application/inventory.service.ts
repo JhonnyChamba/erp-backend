@@ -689,9 +689,24 @@ export class InventoryService {
 			}
 
 			// 2. Validar artículo
-			const product = await manager.findOne(ItemOrmEntity, {
+			let product = await manager.findOne(ItemOrmEntity, {
 				where: { id: params.productId, company: { id: params.companyId }, deleted: false },
 			});
+			if (!product) {
+				const legacyItem = await manager.findOne(InventoryItemOrmEntity, {
+					where: { id: params.productId, company: { id: params.companyId }, deleted: false },
+				});
+				if (legacyItem) {
+					product = {
+						id: legacyItem.id,
+						code: legacyItem.code,
+						name: legacyItem.name,
+						item_type: 'PRODUCT',
+						purchase_price: legacyItem.cost_price,
+						company: legacyItem.company,
+					} as any;
+				}
+			}
 			if (!product) {
 				throw new NotFoundException(`El concepto ID ${params.productId} no existe en la empresa.`);
 			}
@@ -810,9 +825,24 @@ export class InventoryService {
 			}
 
 			// 2. Validar artículo
-			const product = await manager.findOne(ItemOrmEntity, {
+			let product = await manager.findOne(ItemOrmEntity, {
 				where: { id: params.productId, company: { id: params.companyId }, deleted: false },
 			});
+			if (!product) {
+				const legacyItem = await manager.findOne(InventoryItemOrmEntity, {
+					where: { id: params.productId, company: { id: params.companyId }, deleted: false },
+				});
+				if (legacyItem) {
+					product = {
+						id: legacyItem.id,
+						code: legacyItem.code,
+						name: legacyItem.name,
+						item_type: 'PRODUCT',
+						purchase_price: legacyItem.cost_price,
+						company: legacyItem.company,
+					} as any;
+				}
+			}
 			if (!product) {
 				throw new NotFoundException(`El concepto ID ${params.productId} no existe en la empresa.`);
 			}

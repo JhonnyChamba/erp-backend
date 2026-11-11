@@ -22,3 +22,4 @@ import { InventoryModule } from '../inventory/inventory.module';
 	exports: [PurchasesService],
 })
 export class PurchasesModule {}
+

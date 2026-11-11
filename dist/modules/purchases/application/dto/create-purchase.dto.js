@@ -84,6 +84,8 @@ __decorate([
     __metadata("design:type", Number)
 ], CreatePurchaseDetailDto.prototype, "taxRate", void 0);
 class CreatePurchaseDto {
+    companyId;
+    company_id;
     provider_id;
     providerId;
     provider_name;
@@ -108,6 +110,16 @@ class CreatePurchaseDto {
     items;
 }
 exports.CreatePurchaseDto = CreatePurchaseDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreatePurchaseDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreatePurchaseDto.prototype, "company_id", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
