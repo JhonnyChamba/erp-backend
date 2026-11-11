@@ -12,3 +12,4 @@ export class AddAutoSendSriToCompany1794900000000 implements MigrationInterface 
 		await queryRunner.query(`ALTER TABLE "tab_company" DROP COLUMN IF EXISTS "auto_send_sri";`);
 	}
 }
+
