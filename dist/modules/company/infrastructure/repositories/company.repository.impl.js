@@ -38,7 +38,7 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
         const cols = {};
         for (const k of [
             'address_matriz', 'phone', 'email', 'obligated_accounting', 'special_taxpayer', 'tax_regime',
-            'sri_environment', 'default_establishment', 'default_emission_point', 'cert_file_name',
+            'sri_environment', 'auto_send_sri', 'default_establishment', 'default_emission_point', 'cert_file_name',
             'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_from_name', 'smtp_from_email',
         ]) {
             if (f[k] !== undefined)
@@ -187,6 +187,7 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
             special_taxpayer: entity.special_taxpayer ?? '',
             tax_regime: entity.tax_regime ?? 'GENERAL',
             sri_environment: entity.sri_environment ?? '1',
+            auto_send_sri: Boolean(entity.auto_send_sri),
             default_establishment: entity.default_establishment ?? '001',
             default_emission_point: entity.default_emission_point ?? '001',
             cert_file_name: entity.cert_file_name ?? '',

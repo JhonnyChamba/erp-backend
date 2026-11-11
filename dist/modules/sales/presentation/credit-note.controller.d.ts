@@ -1,0 +1,227 @@
+import type { Response } from 'express';
+import { CreditNoteService } from '../application/credit-note.service';
+import { CreateCreditNoteDto } from '../application/dto/create-credit-note.dto';
+export declare class CreditNoteController {
+    private readonly creditNoteService;
+    constructor(creditNoteService: CreditNoteService);
+    private resolveCompanyId;
+    create(dto: CreateCreditNoteDto, req: any): Promise<import("../infrastructure/persistence/credit-note.orm-entity").CreditNoteOrmEntity | {
+        sri_result: {
+            id: number;
+            success: boolean;
+            status: string;
+            sri_status: string;
+            message: string;
+            authorizationNumber: string;
+            sri_authorization_number: string;
+            authorizationDate: Date;
+            sri_authorization_date: Date;
+            sri_messages: {
+                identificador: string;
+                mensaje: string;
+                informacionAdicional?: string;
+                tipo?: string;
+            }[];
+            sriMessages: {
+                identificador: string;
+                mensaje: string;
+                informacionAdicional?: string;
+                tipo?: string;
+            }[];
+        } | {
+            id: number;
+            success: boolean;
+            status: string;
+            sri_status: string;
+            message: string;
+            sri_messages: {
+                identificador: string;
+                mensaje: string;
+                informacionAdicional?: string;
+                tipo?: string;
+            }[];
+            sriMessages: {
+                identificador: string;
+                mensaje: string;
+                informacionAdicional?: string;
+                tipo?: string;
+            }[];
+            authorizationNumber?: undefined;
+            sri_authorization_number?: undefined;
+            authorizationDate?: undefined;
+            sri_authorization_date?: undefined;
+        };
+        id: number;
+        company: import("../../company/infrastructure/persistence/company.orm-entity").CompanyOrmEntity;
+        invoice: import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity | null;
+        branch_id: number | null;
+        branch_address: string | null;
+        establishment: string;
+        emission_point: string;
+        sequential: string;
+        credit_note_number: string;
+        issue_date: string;
+        modified_document_type: string;
+        modified_document_number: string;
+        modified_document_date: string;
+        reason: string;
+        customer_id_type: string;
+        customer_id_number: string;
+        customer_name: string;
+        customer_address: string;
+        customer_email: string;
+        customer_phone: string;
+        access_key: string;
+        status: string;
+        subtotal_zero_tax: number;
+        subtotal_taxable: number;
+        subtotal: number;
+        discount_total: number;
+        tax_total: number;
+        total: number;
+        adjust_inventory: boolean;
+        notes: string;
+        signed_xml: string;
+        signed_at: Date;
+        sign_status: string;
+        sri_status: string;
+        sri_authorization_number: string | null;
+        sri_authorization_date: Date | null;
+        sri_sent_at: Date | null;
+        sri_messages: Array<{
+            identificador: string;
+            mensaje: string;
+            informacionAdicional?: string;
+            tipo?: string;
+        }> | null;
+        sri_response_xml: string | null;
+        created_by: number;
+        enabled: boolean;
+        deleted: boolean;
+        details: import("../infrastructure/persistence/credit-note.orm-entity").CreditNoteDetailOrmEntity[];
+        created_at: Date;
+        updated_at: Date;
+    } | {
+        sri_result: {
+            id: number;
+            success: boolean;
+            status: string;
+            sri_status: string;
+            message: any;
+            sri_authorization_number: any;
+            authorizationNumber: any;
+            sri_authorization_date: any;
+            authorizationDate: any;
+            sri_messages: {
+                identificador: string;
+                mensaje: any;
+                tipo: string;
+            }[];
+            sriMessages: {
+                identificador: string;
+                mensaje: any;
+                tipo: string;
+            }[];
+            error: any;
+        };
+        id: number;
+        company: import("../../company/infrastructure/persistence/company.orm-entity").CompanyOrmEntity;
+        invoice: import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity | null;
+        branch_id: number | null;
+        branch_address: string | null;
+        establishment: string;
+        emission_point: string;
+        sequential: string;
+        credit_note_number: string;
+        issue_date: string;
+        modified_document_type: string;
+        modified_document_number: string;
+        modified_document_date: string;
+        reason: string;
+        customer_id_type: string;
+        customer_id_number: string;
+        customer_name: string;
+        customer_address: string;
+        customer_email: string;
+        customer_phone: string;
+        access_key: string;
+        status: string;
+        subtotal_zero_tax: number;
+        subtotal_taxable: number;
+        subtotal: number;
+        discount_total: number;
+        tax_total: number;
+        total: number;
+        adjust_inventory: boolean;
+        notes: string;
+        signed_xml: string;
+        signed_at: Date;
+        sign_status: string;
+        sri_status: string;
+        sri_authorization_number: string | null;
+        sri_authorization_date: Date | null;
+        sri_sent_at: Date | null;
+        sri_messages: Array<{
+            identificador: string;
+            mensaje: string;
+            informacionAdicional?: string;
+            tipo?: string;
+        }> | null;
+        sri_response_xml: string | null;
+        created_by: number;
+        enabled: boolean;
+        deleted: boolean;
+        details: import("../infrastructure/persistence/credit-note.orm-entity").CreditNoteDetailOrmEntity[];
+        created_at: Date;
+        updated_at: Date;
+    }>;
+    findAll(companyIdQuery: string, branchIdQuery: string, invoiceIdQuery: string, search: string, req: any): Promise<import("../infrastructure/persistence/credit-note.orm-entity").CreditNoteOrmEntity[]>;
+    getNextSequential(branchIdQuery: string, emissionPointQuery: string, companyIdQuery: string, req: any): Promise<string>;
+    findOne(id: number, companyIdQuery: string, req: any): Promise<import("../infrastructure/persistence/credit-note.orm-entity").CreditNoteOrmEntity>;
+    sendToSri(id: number, companyIdQuery: string, req: any): Promise<{
+        id: number;
+        success: boolean;
+        status: string;
+        sri_status: string;
+        message: string;
+        authorizationNumber: string;
+        sri_authorization_number: string;
+        authorizationDate: Date;
+        sri_authorization_date: Date;
+        sri_messages: {
+            identificador: string;
+            mensaje: string;
+            informacionAdicional?: string;
+            tipo?: string;
+        }[];
+        sriMessages: {
+            identificador: string;
+            mensaje: string;
+            informacionAdicional?: string;
+            tipo?: string;
+        }[];
+    } | {
+        id: number;
+        success: boolean;
+        status: string;
+        sri_status: string;
+        message: string;
+        sri_messages: {
+            identificador: string;
+            mensaje: string;
+            informacionAdicional?: string;
+            tipo?: string;
+        }[];
+        sriMessages: {
+            identificador: string;
+            mensaje: string;
+            informacionAdicional?: string;
+            tipo?: string;
+        }[];
+        authorizationNumber?: undefined;
+        sri_authorization_number?: undefined;
+        authorizationDate?: undefined;
+        sri_authorization_date?: undefined;
+    }>;
+    downloadXml(id: number, companyIdQuery: string, req: any, res: Response): Promise<Response<any, Record<string, any>>>;
+}

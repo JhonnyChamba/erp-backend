@@ -129,7 +129,49 @@ export class CreditNoteService {
 			throw new BadRequestException('El motivo de emisión de la nota de crédito es obligatorio según el SRI.');
 		}
 
-		return this.dataSource.transaction((manager) => this.createInTransaction(manager, dto, companyId, userId));
+		const saved = await this.dataSource.transaction((manager) => this.createInTransaction(manager, dto, companyId, userId));
+
+		// Si la empresa tiene habilitado el envío automático al SRI, firmar y enviar de inmediato
+		try {
+			const company = await this.companyRepo.findOne({ where: { id: companyId }, select: ['id', 'auto_send_sri'] });
+			if (company?.auto_send_sri) {
+				try {
+					const sriResult = await this.sendToSri(saved.id, companyId);
+					return {
+						...saved,
+						sri_result: sriResult,
+					};
+				} catch (err: any) {
+					const errorMsg = err?.message || 'Error inesperado al enviar la nota de crédito al SRI.';
+					const fallbackMessages = [{ identificador: 'ERR-ENVIO', mensaje: errorMsg, tipo: 'ERROR' }];
+					await this.creditNoteRepo.update(
+						{ id: saved.id },
+						{ sri_status: 'RETURNED', sri_messages: fallbackMessages },
+					);
+					return {
+						...saved,
+						sri_result: {
+							id: saved.id,
+							success: false,
+							status: 'RETURNED',
+							sri_status: 'RETURNED',
+							message: errorMsg,
+							sri_authorization_number: null,
+							authorizationNumber: null,
+							sri_authorization_date: null,
+							authorizationDate: null,
+							sri_messages: fallbackMessages,
+							sriMessages: fallbackMessages,
+							error: errorMsg,
+						},
+					};
+				}
+			}
+		} catch (compErr) {
+			console.error('Error verificando envío automático al SRI en nota de crédito:', compErr);
+		}
+
+		return saved;
 	}
 
 	private async createInTransaction(manager: EntityManager, dto: CreateCreditNoteDto, companyId: number, userId?: number) {
@@ -378,11 +420,17 @@ export class CreditNoteService {
 
 		if (cn.sri_status === 'AUTHORIZED') {
 			return {
+				id,
 				success: true,
 				status: 'AUTHORIZED',
+				sri_status: 'AUTHORIZED',
 				message: 'Esta nota de crédito ya está autorizada por el SRI.',
 				authorizationNumber: cn.sri_authorization_number,
+				sri_authorization_number: cn.sri_authorization_number,
 				authorizationDate: cn.sri_authorization_date,
+				sri_authorization_date: cn.sri_authorization_date,
+				sri_messages: cn.sri_messages || [],
+				sriMessages: cn.sri_messages || [],
 			};
 		}
 
@@ -419,9 +467,12 @@ export class CreditNoteService {
 			cn.sri_response_xml = receptionRes.rawXml || null;
 			await this.creditNoteRepo.save(cn);
 			return {
+				id,
 				success: false,
 				status: 'RETURNED',
+				sri_status: 'RETURNED',
 				message: 'El SRI devolvió la nota de crédito por inconsistencias.',
+				sri_messages: cn.sri_messages,
 				sriMessages: cn.sri_messages,
 			};
 		}
@@ -445,11 +496,17 @@ export class CreditNoteService {
 			await this.creditNoteRepo.save(cn);
 
 			return {
+				id,
 				success: true,
 				status: 'AUTHORIZED',
+				sri_status: 'AUTHORIZED',
 				message: 'Nota de crédito AUTORIZADA correctamente por el SRI.',
 				authorizationNumber: cn.sri_authorization_number,
+				sri_authorization_number: cn.sri_authorization_number,
 				authorizationDate: cn.sri_authorization_date,
+				sri_authorization_date: cn.sri_authorization_date,
+				sri_messages: cn.sri_messages || [],
+				sriMessages: cn.sri_messages || [],
 			};
 		}
 
@@ -457,19 +514,26 @@ export class CreditNoteService {
 			cn.sri_status = 'NOT_AUTHORIZED';
 			await this.creditNoteRepo.save(cn);
 			return {
+				id,
 				success: false,
 				status: 'NOT_AUTHORIZED',
+				sri_status: 'NOT_AUTHORIZED',
 				message: 'La nota de crédito NO fue autorizada por el SRI.',
-				sriMessages: cn.sri_messages,
+				sri_messages: cn.sri_messages || [],
+				sriMessages: cn.sri_messages || [],
 			};
 		}
 
 		cn.sri_status = 'IN_PROCESS';
 		await this.creditNoteRepo.save(cn);
 		return {
+			id,
 			success: true,
 			status: 'IN_PROCESS',
+			sri_status: 'IN_PROCESS',
 			message: 'La nota de crédito fue RECIBIDA por el SRI y se encuentra en procesamiento.',
+			sri_messages: cn.sri_messages || [],
+			sriMessages: cn.sri_messages || [],
 		};
 	}
 

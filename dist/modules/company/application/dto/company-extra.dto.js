@@ -20,6 +20,7 @@ class CompanyExtraDto {
     special_taxpayer;
     tax_regime;
     sri_environment;
+    auto_send_sri;
     default_establishment;
     default_emission_point;
     cert_p12_base64;
@@ -76,6 +77,11 @@ __decorate([
     (0, class_validator_1.IsIn)(['1', '2']),
     __metadata("design:type", String)
 ], CompanyExtraDto.prototype, "sri_environment", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CompanyExtraDto.prototype, "auto_send_sri", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Matches)(/^\d{3}$/),

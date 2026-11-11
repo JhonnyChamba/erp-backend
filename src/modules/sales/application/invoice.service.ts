@@ -127,7 +127,45 @@ export class InvoiceService {
 		}
 
 		// Todo en una transacción: numeración, factura y descuento de stock se confirman o se revierten juntos.
-		return this.dataSource.transaction((manager) => this.createInTransaction(manager, dto, companyId, userId));
+		const saved = await this.dataSource.transaction((manager) => this.createInTransaction(manager, dto, companyId, userId));
+
+		// Si la empresa tiene habilitado el envío automático al SRI, firmar y enviar de inmediato
+		try {
+			const company = await this.companyRepo.findOne({ where: { id: companyId }, select: ['id', 'auto_send_sri'] });
+			if (company?.auto_send_sri) {
+				try {
+					const sriResult = await this.sendToSri(saved.id, companyId);
+					return {
+						...saved,
+						sri_result: sriResult,
+					};
+				} catch (err: any) {
+					const errorMsg = err?.message || 'Error inesperado al enviar comprobante al SRI.';
+					const fallbackMessages = [{ identificador: 'ERR-ENVIO', mensaje: errorMsg, tipo: 'ERROR' }];
+					await this.invoiceRepo.update(
+						{ id: saved.id },
+						{ sri_status: 'RETURNED', sri_messages: fallbackMessages },
+					);
+					return {
+						...saved,
+						sri_result: {
+							id: saved.id,
+							success: false,
+							status: 'RETURNED',
+							sri_status: 'RETURNED',
+							sri_authorization_number: null,
+							sri_authorization_date: null,
+							sri_messages: fallbackMessages,
+							error: errorMsg,
+						},
+					};
+				}
+			}
+		} catch (compErr) {
+			console.error('Error verificando envío automático al SRI:', compErr);
+		}
+
+		return saved;
 	}
 
 	private async createInTransaction(manager: EntityManager, dto: CreateInvoiceDto, companyId: number, userId?: number) {
@@ -399,18 +437,31 @@ export class InvoiceService {
 	 * Guarda en la factura el estado, el número/fecha de autorización y los mensajes de rechazo.
 	 */
 	async sendToSri(id: number, companyId: number) {
-		const invoice = await this.invoiceRepo
+		let invoice = await this.invoiceRepo
 			.createQueryBuilder('i')
 			.addSelect('i.signed_xml')
 			.where('i.id = :id AND i.company_id = :companyId AND i.deleted = false', { id, companyId })
 			.getOne();
 		if (!invoice) throw new NotFoundException('Factura no encontrada.');
 		if (invoice.status === 'CANCELED') throw new BadRequestException('No se puede enviar al SRI una factura anulada.');
-		if (invoice.sign_status !== 'SIGNED' || !invoice.signed_xml) {
-			throw new BadRequestException('La factura debe estar firmada electrónicamente antes de enviarla al SRI.');
-		}
 		if (invoice.sri_status === 'AUTHORIZED') {
-			throw new BadRequestException(`La factura ya fue autorizada por el SRI (No. ${invoice.sri_authorization_number}).`);
+			return this.buildSriResult(
+				id,
+				'AUTHORIZED',
+				invoice.sri_messages || [],
+				invoice.sri_authorization_number,
+				invoice.sri_authorization_date ? invoice.sri_authorization_date.toISOString() : undefined,
+			);
+		}
+
+		if (invoice.sign_status !== 'SIGNED' || !invoice.signed_xml) {
+			await this.sign(id, companyId);
+			invoice = await this.invoiceRepo
+				.createQueryBuilder('i')
+				.addSelect('i.signed_xml')
+				.where('i.id = :id AND i.company_id = :companyId AND i.deleted = false', { id, companyId })
+				.getOne();
+			if (!invoice) throw new NotFoundException('Factura no encontrada tras firmar.');
 		}
 
 		const environment = await this.getSriEnvironment(companyId);
@@ -492,10 +543,12 @@ export class InvoiceService {
 	private buildSriResult(id: number, sri_status: string, messages: SriMessage[], authorizationNumber?: string, authorizationDate?: string) {
 		return {
 			id,
+			success: sri_status === 'AUTHORIZED',
+			status: sri_status,
 			sri_status,
 			sri_authorization_number: authorizationNumber ?? null,
 			sri_authorization_date: authorizationDate ?? null,
-			sri_messages: messages,
+			sri_messages: messages || [],
 		};
 	}
 

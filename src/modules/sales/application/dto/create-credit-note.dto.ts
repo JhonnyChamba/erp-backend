@@ -117,3 +117,4 @@ export class CreateCreditNoteDto {
 	@Type(() => CreateCreditNoteDetailDto)
 	details: CreateCreditNoteDetailDto[];
 }
+

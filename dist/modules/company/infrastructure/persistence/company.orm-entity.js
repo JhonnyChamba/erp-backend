@@ -27,6 +27,7 @@ let CompanyOrmEntity = class CompanyOrmEntity {
     special_taxpayer;
     tax_regime;
     sri_environment;
+    auto_send_sri;
     default_establishment;
     default_emission_point;
     cert_p12_base64;
@@ -108,6 +109,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 1, default: '1' }),
     __metadata("design:type", String)
 ], CompanyOrmEntity.prototype, "sri_environment", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], CompanyOrmEntity.prototype, "auto_send_sri", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 3, default: '001' }),
     __metadata("design:type", String)

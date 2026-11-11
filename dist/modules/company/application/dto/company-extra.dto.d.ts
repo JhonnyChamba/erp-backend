@@ -6,6 +6,7 @@ export declare class CompanyExtraDto {
     special_taxpayer?: string;
     tax_regime?: string;
     sri_environment?: string;
+    auto_send_sri?: boolean;
     default_establishment?: string;
     default_emission_point?: string;
     cert_p12_base64?: string;

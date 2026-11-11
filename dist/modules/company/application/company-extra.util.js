@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.splitCompanyExtra = splitCompanyExtra;
 const FISCAL_KEYS = [
     'address_matriz', 'phone', 'email', 'obligated_accounting', 'special_taxpayer', 'tax_regime',
-    'sri_environment', 'default_establishment', 'default_emission_point', 'cert_file_name', 'cert_expires_at',
+    'sri_environment', 'auto_send_sri', 'default_establishment', 'default_emission_point', 'cert_file_name', 'cert_expires_at',
     'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_from_name', 'smtp_from_email',
 ];
 function splitCompanyExtra(dto) {

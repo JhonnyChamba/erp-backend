@@ -88,3 +88,4 @@ export class CreateCreditNotesTables1794800000000 implements MigrationInterface 
 		await queryRunner.query(`DROP TABLE IF EXISTS "tab_credit_note";`);
 	}
 }
+

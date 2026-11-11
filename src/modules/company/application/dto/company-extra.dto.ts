@@ -10,6 +10,7 @@ export class CompanyExtraDto {
 	@IsOptional() @IsString() @MaxLength(20) special_taxpayer?: string;
 	@IsOptional() @IsString() @MaxLength(60) tax_regime?: string;
 	@IsOptional() @IsIn(['1', '2']) sri_environment?: string;
+	@IsOptional() @IsBoolean() auto_send_sri?: boolean;
 	@IsOptional() @Matches(/^\d{3}$/) default_establishment?: string;
 	@IsOptional() @Matches(/^\d{3}$/) default_emission_point?: string;
 

@@ -46,6 +46,9 @@ export class CompanyOrmEntity {
 	@Column({ type: 'varchar', length: 1, default: '1' })
 	sri_environment: string; // 1 pruebas, 2 producción
 
+	@Column({ default: false })
+	auto_send_sri: boolean; // true = automático al emitir comprobantes, false = manual
+
 	@Column({ type: 'varchar', length: 3, default: '001' })
 	default_establishment: string;
 
