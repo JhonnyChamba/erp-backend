@@ -20,6 +20,7 @@ import { SubscriptionsModuleModule } from './modules/subscriptions-module/subscr
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { ContactsModule } from './modules/contacts/contacts.module';
     InventoryModule,
     SalesModule,
     ContactsModule,
+    PurchasesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
