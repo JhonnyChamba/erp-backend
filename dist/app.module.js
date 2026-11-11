@@ -66,7 +66,7 @@ exports.AppModule = AppModule = __decorate([
                         retryAttempts: 2,
                         retryDelay: 1000,
                         autoLoadEntities: true,
-                        synchronize: config.get('DATABASE_SYNCHRONIZE', config.get('NODE_ENV') === 'production' ? 'false' : 'true') === 'true',
+                        synchronize: config.get('DATABASE_SYNCHRONIZE', 'true') === 'true',
                     };
                 },
             }),

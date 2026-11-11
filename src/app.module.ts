@@ -57,8 +57,8 @@ import { ContactsModule } from './modules/contacts/contacts.module';
           retryAttempts: 2,
           retryDelay: 1000,
           autoLoadEntities: true,
-          // En producción no se sincroniza el esquema salvo que DATABASE_SYNCHRONIZE=true se indique de forma explícita.
-          synchronize: config.get<string>('DATABASE_SYNCHRONIZE', config.get<string>('NODE_ENV') === 'production' ? 'false' : 'true') === 'true',
+          // El esquema se sincroniza con las entidades al iniciar (también en producción); solo se desactiva con DATABASE_SYNCHRONIZE=false.
+          synchronize: config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
         };
       },
     }),
