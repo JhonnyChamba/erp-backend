@@ -876,6 +876,8 @@ class CreateInventoryCategoryDto {
     categoryType;
     description;
     enabled;
+    status;
+    ind_active;
 }
 exports.CreateInventoryCategoryDto = CreateInventoryCategoryDto;
 __decorate([
@@ -914,6 +916,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], CreateInventoryCategoryDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryCategoryDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryCategoryDto.prototype, "ind_active", void 0);
 class UpdateInventoryCategoryDto {
     companyId;
     code;
@@ -922,6 +934,8 @@ class UpdateInventoryCategoryDto {
     categoryType;
     description;
     enabled;
+    status;
+    ind_active;
 }
 exports.UpdateInventoryCategoryDto = UpdateInventoryCategoryDto;
 __decorate([
@@ -960,6 +974,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateInventoryCategoryDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryCategoryDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryCategoryDto.prototype, "ind_active", void 0);
 class CreateInventoryWarehouseDto {
     companyId;
     code;
@@ -972,6 +996,8 @@ class CreateInventoryWarehouseDto {
     is_default;
     isDefault;
     enabled;
+    status;
+    ind_active;
 }
 exports.CreateInventoryWarehouseDto = CreateInventoryWarehouseDto;
 __decorate([
@@ -1032,6 +1058,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], CreateInventoryWarehouseDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryWarehouseDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryWarehouseDto.prototype, "ind_active", void 0);
 class UpdateInventoryWarehouseDto {
     companyId;
     code;
@@ -1044,6 +1080,8 @@ class UpdateInventoryWarehouseDto {
     is_default;
     isDefault;
     enabled;
+    status;
+    ind_active;
 }
 exports.UpdateInventoryWarehouseDto = UpdateInventoryWarehouseDto;
 __decorate([
@@ -1104,6 +1142,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateInventoryWarehouseDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryWarehouseDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryWarehouseDto.prototype, "ind_active", void 0);
 class CreateUnifiedItemDto {
     companyId;
     code;

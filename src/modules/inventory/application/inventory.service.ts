@@ -444,7 +444,7 @@ export class InventoryService {
 			name: dto.name.trim(),
 			category_type: categoryType,
 			description: dto.description || '',
-			enabled: dto.enabled !== false,
+			enabled: (dto.enabled ?? dto.status ?? dto.ind_active) !== false,
 			deleted: false,
 			company: { id: companyId } as any,
 			created_by: userId,
@@ -475,7 +475,8 @@ export class InventoryService {
 		const catType = dto.category_type || dto.categoryType;
 		if (catType) existing.category_type = catType.trim().toUpperCase();
 		if (dto.description !== undefined) existing.description = dto.description;
-		if (dto.enabled !== undefined) existing.enabled = dto.enabled;
+		const statusVal = dto.enabled ?? dto.status ?? dto.ind_active;
+		if (statusVal !== undefined) existing.enabled = statusVal;
 
 		const saved = await this.categoryRepo.save(existing);
 		return {
@@ -552,7 +553,7 @@ export class InventoryService {
 				phone: dto.phone || '',
 				branch_id: dto.branch_id ?? dto.branchId,
 				is_default: isDefault,
-				enabled: dto.enabled !== false,
+				enabled: (dto.enabled ?? dto.status ?? dto.ind_active) !== false,
 				deleted: false,
 				company: { id: companyId } as any,
 				created_by: userId,
@@ -599,7 +600,8 @@ export class InventoryService {
 			if (dto.phone !== undefined) existing.phone = dto.phone;
 			const branchId = dto.branch_id ?? dto.branchId;
 			if (branchId !== undefined) existing.branch_id = branchId;
-			if (dto.enabled !== undefined) existing.enabled = dto.enabled;
+			const enabledVal = dto.enabled ?? dto.status ?? dto.ind_active;
+			if (enabledVal !== undefined) existing.enabled = Boolean(enabledVal);
 
 			const saved = await manager.save(InventoryWarehouseOrmEntity, existing);
 			return {

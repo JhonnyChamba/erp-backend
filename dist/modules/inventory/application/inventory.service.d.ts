@@ -423,7 +423,7 @@ export declare class InventoryService {
         averageCost: number;
         updated_at: Date;
     }[]>;
-    getKardex(companyId: number, productId: number, warehouseId?: number, fromDate?: string, toDate?: string): Promise<{
+    getKardex(companyId: number, productId?: number, warehouseId?: number, fromDate?: string, toDate?: string): Promise<{
         id: number;
         date: Date;
         warehouseId: number;

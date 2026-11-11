@@ -620,6 +620,14 @@ export class CreateInventoryCategoryDto {
 	@IsBoolean()
 	@IsOptional()
 	enabled?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	status?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	ind_active?: boolean;
 }
 
 export class UpdateInventoryCategoryDto {
@@ -651,6 +659,14 @@ export class UpdateInventoryCategoryDto {
 	@IsBoolean()
 	@IsOptional()
 	enabled?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	status?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	ind_active?: boolean;
 }
 
 export class CreateInventoryWarehouseDto {
@@ -700,6 +716,14 @@ export class CreateInventoryWarehouseDto {
 	@IsBoolean()
 	@IsOptional()
 	enabled?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	status?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	ind_active?: boolean;
 }
 
 export class UpdateInventoryWarehouseDto {
@@ -749,6 +773,14 @@ export class UpdateInventoryWarehouseDto {
 	@IsBoolean()
 	@IsOptional()
 	enabled?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	status?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	ind_active?: boolean;
 }
 
 /**

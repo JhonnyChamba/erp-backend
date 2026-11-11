@@ -434,6 +434,25 @@ export declare class InventoryController {
         averageCost: number;
         updated_at: Date;
     }[]>;
+    getAllKardex(productId: string, warehouseId: string, fromDate: string, toDate: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+        id: number;
+        date: Date;
+        warehouseId: number;
+        warehouseName: string;
+        productId: number;
+        productCode: string;
+        productName: string;
+        type: string;
+        reason: string;
+        quantity: number;
+        unitCost: number;
+        totalCost: number;
+        stockAfter: number;
+        originDocument: string;
+        originName: string;
+        groupId: string;
+        reversalOfId: number;
+    }[]>;
     getKardex(productId: string, warehouseId: string, fromDate: string, toDate: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
         id: number;
         date: Date;

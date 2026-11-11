@@ -141,6 +141,10 @@ let InventoryController = class InventoryController {
         const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
         return this.inventoryService.getStockByWarehouse(companyId, Number(warehouseId), productId ? Number(productId) : undefined);
     }
+    getAllKardex(productId, warehouseId, fromDate, toDate, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.getKardex(companyId, productId ? Number(productId) : undefined, warehouseId ? Number(warehouseId) : undefined, fromDate, toDate);
+    }
     getKardex(productId, warehouseId, fromDate, toDate, queryCompanyId, headerCompanyId, req) {
         const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
         return this.inventoryService.getKardex(companyId, Number(productId), warehouseId ? Number(warehouseId) : undefined, fromDate, toDate);
@@ -431,6 +435,19 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "getStockByWarehouse", null);
+__decorate([
+    (0, common_1.Get)('kardex'),
+    __param(0, (0, common_1.Query)('productId')),
+    __param(1, (0, common_1.Query)('warehouseId')),
+    __param(2, (0, common_1.Query)('fromDate')),
+    __param(3, (0, common_1.Query)('toDate')),
+    __param(4, (0, common_1.Query)('companyId')),
+    __param(5, (0, common_1.Headers)('x-company-id')),
+    __param(6, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getAllKardex", null);
 __decorate([
     (0, common_1.Get)('kardex/:productId'),
     __param(0, (0, common_1.Param)('productId')),

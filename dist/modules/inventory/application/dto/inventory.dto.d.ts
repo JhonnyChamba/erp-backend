@@ -148,6 +148,8 @@ export declare class CreateInventoryCategoryDto {
     categoryType?: string;
     description?: string;
     enabled?: boolean;
+    status?: boolean;
+    ind_active?: boolean;
 }
 export declare class UpdateInventoryCategoryDto {
     companyId?: number;
@@ -157,6 +159,8 @@ export declare class UpdateInventoryCategoryDto {
     categoryType?: string;
     description?: string;
     enabled?: boolean;
+    status?: boolean;
+    ind_active?: boolean;
 }
 export declare class CreateInventoryWarehouseDto {
     companyId?: number;
@@ -170,6 +174,8 @@ export declare class CreateInventoryWarehouseDto {
     is_default?: boolean;
     isDefault?: boolean;
     enabled?: boolean;
+    status?: boolean;
+    ind_active?: boolean;
 }
 export declare class UpdateInventoryWarehouseDto {
     companyId?: number;
@@ -183,6 +189,8 @@ export declare class UpdateInventoryWarehouseDto {
     is_default?: boolean;
     isDefault?: boolean;
     enabled?: boolean;
+    status?: boolean;
+    ind_active?: boolean;
 }
 export declare class CreateUnifiedItemDto {
     companyId?: number;

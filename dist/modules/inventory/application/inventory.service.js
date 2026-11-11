@@ -405,7 +405,7 @@ let InventoryService = class InventoryService {
             name: dto.name.trim(),
             category_type: categoryType,
             description: dto.description || '',
-            enabled: dto.enabled !== false,
+            enabled: (dto.enabled ?? dto.status ?? dto.ind_active) !== false,
             deleted: false,
             company: { id: companyId },
             created_by: userId,
@@ -439,8 +439,9 @@ let InventoryService = class InventoryService {
             existing.category_type = catType.trim().toUpperCase();
         if (dto.description !== undefined)
             existing.description = dto.description;
-        if (dto.enabled !== undefined)
-            existing.enabled = dto.enabled;
+        const statusVal = dto.enabled ?? dto.status ?? dto.ind_active;
+        if (statusVal !== undefined)
+            existing.enabled = statusVal;
         const saved = await this.categoryRepo.save(existing);
         return {
             id: saved.id,
@@ -505,7 +506,7 @@ let InventoryService = class InventoryService {
                 phone: dto.phone || '',
                 branch_id: dto.branch_id ?? dto.branchId,
                 is_default: isDefault,
-                enabled: dto.enabled !== false,
+                enabled: (dto.enabled ?? dto.status ?? dto.ind_active) !== false,
                 deleted: false,
                 company: { id: companyId },
                 created_by: userId,
@@ -557,8 +558,9 @@ let InventoryService = class InventoryService {
             const branchId = dto.branch_id ?? dto.branchId;
             if (branchId !== undefined)
                 existing.branch_id = branchId;
-            if (dto.enabled !== undefined)
-                existing.enabled = dto.enabled;
+            const enabledVal = dto.enabled ?? dto.status ?? dto.ind_active;
+            if (enabledVal !== undefined)
+                existing.enabled = Boolean(enabledVal);
             const saved = await manager.save(inventory_orm_entity_1.InventoryWarehouseOrmEntity, existing);
             return {
                 id: saved.id,
@@ -984,9 +986,12 @@ let InventoryService = class InventoryService {
             .createQueryBuilder('m')
             .innerJoinAndSelect('m.warehouse', 'w')
             .innerJoinAndSelect('m.product', 'p')
-            .where('m.company_id = :companyId AND m.product_id = :productId', { companyId, productId })
-            .orderBy('m.movement_at', 'ASC')
-            .addOrderBy('m.id', 'ASC');
+            .where('m.company_id = :companyId', { companyId })
+            .orderBy('m.movement_at', 'DESC')
+            .addOrderBy('m.id', 'DESC');
+        if (productId) {
+            qb.andWhere('m.product_id = :productId', { productId });
+        }
         if (warehouseId) {
             qb.andWhere('m.warehouse_id = :warehouseId', { warehouseId });
         }
