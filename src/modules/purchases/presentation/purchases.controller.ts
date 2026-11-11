@@ -27,7 +27,8 @@ export class PurchasesController {
 
 	@Post()
 	create(@Body() dto: CreatePurchaseDto, @Req() req: any) {
-		const companyId = this.resolveCompanyId(req);
+		const explicitCompany = (dto as any)?.companyId || (dto as any)?.company_id;
+		const companyId = this.resolveCompanyId(req, explicitCompany);
 		return this.purchasesService.createPurchase(companyId, dto, req.user?.user_id);
 	}
 
