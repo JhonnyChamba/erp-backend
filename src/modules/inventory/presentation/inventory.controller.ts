@@ -21,6 +21,10 @@ import {
 	UpdateInventoryServiceDto,
 	CreateInventorySubcontractDto,
 	UpdateInventorySubcontractDto,
+	CreateInventoryCategoryDto,
+	UpdateInventoryCategoryDto,
+	CreateInventoryWarehouseDto,
+	UpdateInventoryWarehouseDto,
 } from '../application/dto/inventory.dto';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
@@ -165,6 +169,96 @@ export class InventoryController {
 	) {
 		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
 		return this.inventoryService.deleteSubcontract(Number(id), companyId);
+	}
+
+	// ============================================================
+	// 4. CATEGORÍAS DE INVENTARIO (/inventory/categories)
+	// ============================================================
+	@Get('categories')
+	listCategories(
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.listCategories(companyId);
+	}
+
+	@Post('categories')
+	createCategory(
+		@Body() dto: CreateInventoryCategoryDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		return this.inventoryService.createCategory(dto, companyId, req.user?.user_id);
+	}
+
+	@Patch('categories/:id')
+	updateCategory(
+		@Param('id') id: string,
+		@Body() dto: UpdateInventoryCategoryDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		return this.inventoryService.updateCategory(Number(id), companyId, dto);
+	}
+
+	@Delete('categories/:id')
+	deleteCategory(
+		@Param('id') id: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.deleteCategory(Number(id), companyId);
+	}
+
+	// ============================================================
+	// 5. BODEGAS / ALMACENES (/inventory/warehouses)
+	// ============================================================
+	@Get('warehouses')
+	listWarehouses(
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.listWarehouses(companyId);
+	}
+
+	@Post('warehouses')
+	createWarehouse(
+		@Body() dto: CreateInventoryWarehouseDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		return this.inventoryService.createWarehouse(dto, companyId, req.user?.user_id);
+	}
+
+	@Patch('warehouses/:id')
+	updateWarehouse(
+		@Param('id') id: string,
+		@Body() dto: UpdateInventoryWarehouseDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		return this.inventoryService.updateWarehouse(Number(id), companyId, dto);
+	}
+
+	@Delete('warehouses/:id')
+	deleteWarehouse(
+		@Param('id') id: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.deleteWarehouse(Number(id), companyId);
 	}
 }
 

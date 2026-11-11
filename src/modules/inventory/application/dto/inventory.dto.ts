@@ -19,6 +19,16 @@ export class CreateInventoryItemDto {
 	@IsNotEmpty()
 	name: string;
 
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	category_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	categoryId?: number;
+
 	@IsString()
 	@IsOptional()
 	category?: string;
@@ -80,6 +90,16 @@ export class CreateInventoryItemDto {
 	@IsNumber()
 	@IsOptional()
 	stockMin?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouse_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouseId?: number;
 
 	@IsString()
 	@IsOptional()
@@ -120,6 +140,16 @@ export class UpdateInventoryItemDto {
 	@IsOptional()
 	name?: string;
 
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	category_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	categoryId?: number;
+
 	@IsString()
 	@IsOptional()
 	category?: string;
@@ -181,6 +211,16 @@ export class UpdateInventoryItemDto {
 	@IsNumber()
 	@IsOptional()
 	stockMin?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouse_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouseId?: number;
 
 	@IsString()
 	@IsOptional()
@@ -549,4 +589,148 @@ export class UpdateInventorySubcontractDto {
 	@IsBoolean()
 	@IsOptional()
 	status?: boolean;
+}
+
+export class CreateInventoryCategoryDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@IsString()
+	@IsOptional()
+	code?: string;
+
+	@IsString()
+	@IsNotEmpty()
+	name: string;
+
+	@IsString()
+	@IsOptional()
+	description?: string;
+
+	@IsBoolean()
+	@IsOptional()
+	enabled?: boolean;
+}
+
+export class UpdateInventoryCategoryDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@IsString()
+	@IsOptional()
+	code?: string;
+
+	@IsString()
+	@IsOptional()
+	name?: string;
+
+	@IsString()
+	@IsOptional()
+	description?: string;
+
+	@IsBoolean()
+	@IsOptional()
+	enabled?: boolean;
+}
+
+export class CreateInventoryWarehouseDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@IsString()
+	@IsOptional()
+	code?: string;
+
+	@IsString()
+	@IsNotEmpty()
+	name: string;
+
+	@IsString()
+	@IsOptional()
+	address?: string;
+
+	@IsString()
+	@IsOptional()
+	responsible?: string;
+
+	@IsString()
+	@IsOptional()
+	phone?: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	branch_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	branchId?: number;
+
+	@IsBoolean()
+	@IsOptional()
+	is_default?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	isDefault?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	enabled?: boolean;
+}
+
+export class UpdateInventoryWarehouseDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@IsString()
+	@IsOptional()
+	code?: string;
+
+	@IsString()
+	@IsOptional()
+	name?: string;
+
+	@IsString()
+	@IsOptional()
+	address?: string;
+
+	@IsString()
+	@IsOptional()
+	responsible?: string;
+
+	@IsString()
+	@IsOptional()
+	phone?: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	branch_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	branchId?: number;
+
+	@IsBoolean()
+	@IsOptional()
+	is_default?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	isDefault?: boolean;
+
+	@IsBoolean()
+	@IsOptional()
+	enabled?: boolean;
 }

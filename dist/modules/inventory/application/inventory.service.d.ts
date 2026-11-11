@@ -1,11 +1,13 @@
 import { Repository } from 'typeorm';
-import { InventoryItemOrmEntity, InventoryServiceOrmEntity, InventorySubcontractOrmEntity } from '../infrastructure/persistence/inventory.orm-entity';
-import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto } from './dto/inventory.dto';
+import { InventoryCategoryOrmEntity, InventoryItemOrmEntity, InventoryServiceOrmEntity, InventorySubcontractOrmEntity, InventoryWarehouseOrmEntity } from '../infrastructure/persistence/inventory.orm-entity';
+import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto, CreateInventoryCategoryDto, UpdateInventoryCategoryDto, CreateInventoryWarehouseDto, UpdateInventoryWarehouseDto } from './dto/inventory.dto';
 export declare class InventoryService {
     private readonly itemRepo;
     private readonly serviceRepo;
     private readonly subcontractRepo;
-    constructor(itemRepo: Repository<InventoryItemOrmEntity>, serviceRepo: Repository<InventoryServiceOrmEntity>, subcontractRepo: Repository<InventorySubcontractOrmEntity>);
+    private readonly categoryRepo;
+    private readonly warehouseRepo;
+    constructor(itemRepo: Repository<InventoryItemOrmEntity>, serviceRepo: Repository<InventoryServiceOrmEntity>, subcontractRepo: Repository<InventorySubcontractOrmEntity>, categoryRepo: Repository<InventoryCategoryOrmEntity>, warehouseRepo: Repository<InventoryWarehouseOrmEntity>);
     private generateNextCode;
     listItems(companyId: number): Promise<{
         id: number;
@@ -13,6 +15,8 @@ export declare class InventoryService {
         code: string;
         sku: string;
         name: string;
+        categoryId: number;
+        category_id: number;
         category: string;
         unit: string;
         unit_measure: string;
@@ -26,6 +30,8 @@ export declare class InventoryService {
         stock_current: number;
         stockMin: number;
         stock_min: number;
+        warehouseId: number;
+        warehouse_id: number;
         location: string;
         warehouse_location: string;
         description: string;
@@ -39,6 +45,8 @@ export declare class InventoryService {
         code: string;
         sku: string;
         name: string;
+        categoryId: number;
+        category_id: number;
         category: string;
         unit: string;
         unit_measure: string;
@@ -52,6 +60,8 @@ export declare class InventoryService {
         stock_current: number;
         stockMin: number;
         stock_min: number;
+        warehouseId: number;
+        warehouse_id: number;
         location: string;
         warehouse_location: string;
         description: string;
@@ -65,6 +75,8 @@ export declare class InventoryService {
         code: string;
         sku: string;
         name: string;
+        categoryId: number;
+        category_id: number;
         category: string;
         unit: string;
         unit_measure: string;
@@ -78,6 +90,8 @@ export declare class InventoryService {
         stock_current: number;
         stockMin: number;
         stock_min: number;
+        warehouseId: number;
+        warehouse_id: number;
         location: string;
         warehouse_location: string;
         description: string;
@@ -241,4 +255,90 @@ export declare class InventoryService {
         id: number;
     }>;
     private mapSubcontract;
+    listCategories(companyId: number): Promise<{
+        id: number;
+        code: string;
+        name: string;
+        description: string;
+        enabled: boolean;
+        status: boolean;
+        companyId: number;
+        created_at: Date;
+    }[]>;
+    createCategory(dto: CreateInventoryCategoryDto, companyId: number, userId?: number): Promise<{
+        id: number;
+        code: string;
+        name: string;
+        description: string;
+        enabled: boolean;
+        status: boolean;
+        companyId: number;
+        created_at: Date;
+    }>;
+    updateCategory(id: number, companyId: number, dto: UpdateInventoryCategoryDto): Promise<{
+        id: number;
+        code: string;
+        name: string;
+        description: string;
+        enabled: boolean;
+        status: boolean;
+        companyId: number;
+        created_at: Date;
+    }>;
+    deleteCategory(id: number, companyId: number): Promise<{
+        deleted: boolean;
+        id: number;
+    }>;
+    listWarehouses(companyId: number): Promise<{
+        id: number;
+        code: string;
+        name: string;
+        address: string;
+        responsible: string;
+        phone: string;
+        branchId: number;
+        branch_id: number;
+        isDefault: boolean;
+        is_default: boolean;
+        enabled: boolean;
+        status: boolean;
+        companyId: number;
+        created_at: Date;
+    }[]>;
+    createWarehouse(dto: CreateInventoryWarehouseDto, companyId: number, userId?: number): Promise<{
+        id: number;
+        code: string;
+        name: string;
+        address: string;
+        responsible: string;
+        phone: string;
+        branchId: number;
+        branch_id: number;
+        isDefault: boolean;
+        is_default: boolean;
+        enabled: boolean;
+        status: boolean;
+        companyId: number;
+        created_at: Date;
+    }>;
+    updateWarehouse(id: number, companyId: number, dto: UpdateInventoryWarehouseDto): Promise<{
+        id: number;
+        code: string;
+        name: string;
+        address: string;
+        responsible: string;
+        phone: string;
+        branchId: number;
+        branch_id: number;
+        isDefault: boolean;
+        is_default: boolean;
+        enabled: boolean;
+        status: boolean;
+        companyId: number;
+        created_at: Date;
+    }>;
+    deleteWarehouse(id: number, companyId: number): Promise<{
+        deleted: boolean;
+        id: number;
+    }>;
 }

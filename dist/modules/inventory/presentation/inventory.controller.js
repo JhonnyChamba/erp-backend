@@ -74,6 +74,38 @@ let InventoryController = class InventoryController {
         const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
         return this.inventoryService.deleteSubcontract(Number(id), companyId);
     }
+    listCategories(queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.listCategories(companyId);
+    }
+    createCategory(dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        return this.inventoryService.createCategory(dto, companyId, req.user?.user_id);
+    }
+    updateCategory(id, dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        return this.inventoryService.updateCategory(Number(id), companyId, dto);
+    }
+    deleteCategory(id, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.deleteCategory(Number(id), companyId);
+    }
+    listWarehouses(queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.listWarehouses(companyId);
+    }
+    createWarehouse(dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        return this.inventoryService.createWarehouse(dto, companyId, req.user?.user_id);
+    }
+    updateWarehouse(id, dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        return this.inventoryService.updateWarehouse(Number(id), companyId, dto);
+    }
+    deleteWarehouse(id, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.deleteWarehouse(Number(id), companyId);
+    }
 };
 exports.InventoryController = InventoryController;
 __decorate([
@@ -190,6 +222,82 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "deleteSubcontract", null);
+__decorate([
+    (0, common_1.Get)('categories'),
+    __param(0, (0, common_1.Query)('companyId')),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "listCategories", null);
+__decorate([
+    (0, common_1.Post)('categories'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inventory_dto_1.CreateInventoryCategoryDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createCategory", null);
+__decorate([
+    (0, common_1.Patch)('categories/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, inventory_dto_1.UpdateInventoryCategoryDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateCategory", null);
+__decorate([
+    (0, common_1.Delete)('categories/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteCategory", null);
+__decorate([
+    (0, common_1.Get)('warehouses'),
+    __param(0, (0, common_1.Query)('companyId')),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "listWarehouses", null);
+__decorate([
+    (0, common_1.Post)('warehouses'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inventory_dto_1.CreateInventoryWarehouseDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createWarehouse", null);
+__decorate([
+    (0, common_1.Patch)('warehouses/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, inventory_dto_1.UpdateInventoryWarehouseDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateWarehouse", null);
+__decorate([
+    (0, common_1.Delete)('warehouses/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteWarehouse", null);
 exports.InventoryController = InventoryController = __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('inventory'),

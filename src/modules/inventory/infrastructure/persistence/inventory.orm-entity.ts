@@ -25,6 +25,9 @@ export class InventoryItemOrmEntity {
 	@Column({ length: 180 })
 	name: string;
 
+	@Column({ nullable: true })
+	category_id: number;
+
 	@Column({ length: 100, default: 'General' })
 	category: string;
 
@@ -45,6 +48,9 @@ export class InventoryItemOrmEntity {
 
 	@Column('numeric', { precision: 12, scale: 2, default: 0 })
 	stock_min: number;
+
+	@Column({ nullable: true })
+	warehouse_id: number;
 
 	@Column({ length: 120, nullable: true })
 	warehouse_location: string;
@@ -161,6 +167,86 @@ export class InventorySubcontractOrmEntity {
 
 	@Column({ type: 'text', nullable: true })
 	description: string;
+
+	@ManyToOne(() => CompanyOrmEntity, { nullable: true })
+	@JoinColumn({ name: 'company_id' })
+	company: CompanyOrmEntity;
+
+	@Column({ nullable: true })
+	created_by: number;
+
+	@Column({ default: true })
+	enabled: boolean;
+
+	@Column({ default: false })
+	deleted: boolean;
+
+	@CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+	created_at: Date;
+}
+
+/**
+ * 4. TABLA DE CATEGORÍAS DE INVENTARIO (tab_inventory_category)
+ */
+@Entity('tab_inventory_category')
+export class InventoryCategoryOrmEntity {
+	@PrimaryGeneratedColumn()
+	id: number;
+
+	@Column({ length: 25 })
+	code: string;
+
+	@Column({ length: 120 })
+	name: string;
+
+	@Column({ type: 'text', nullable: true })
+	description: string;
+
+	@ManyToOne(() => CompanyOrmEntity, { nullable: true })
+	@JoinColumn({ name: 'company_id' })
+	company: CompanyOrmEntity;
+
+	@Column({ nullable: true })
+	created_by: number;
+
+	@Column({ default: true })
+	enabled: boolean;
+
+	@Column({ default: false })
+	deleted: boolean;
+
+	@CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+	created_at: Date;
+}
+
+/**
+ * 5. TABLA DE BODEGAS / ALMACENES (tab_inventory_warehouse)
+ */
+@Entity('tab_inventory_warehouse')
+export class InventoryWarehouseOrmEntity {
+	@PrimaryGeneratedColumn()
+	id: number;
+
+	@Column({ length: 25 })
+	code: string;
+
+	@Column({ length: 120 })
+	name: string;
+
+	@Column({ length: 255, nullable: true })
+	address: string;
+
+	@Column({ length: 120, nullable: true })
+	responsible: string;
+
+	@Column({ length: 40, nullable: true })
+	phone: string;
+
+	@Column({ nullable: true })
+	branch_id: number;
+
+	@Column({ default: false })
+	is_default: boolean;
 
 	@ManyToOne(() => CompanyOrmEntity, { nullable: true })
 	@JoinColumn({ name: 'company_id' })

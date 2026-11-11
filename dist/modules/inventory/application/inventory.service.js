@@ -21,10 +21,14 @@ let InventoryService = class InventoryService {
     itemRepo;
     serviceRepo;
     subcontractRepo;
-    constructor(itemRepo, serviceRepo, subcontractRepo) {
+    categoryRepo;
+    warehouseRepo;
+    constructor(itemRepo, serviceRepo, subcontractRepo, categoryRepo, warehouseRepo) {
         this.itemRepo = itemRepo;
         this.serviceRepo = serviceRepo;
         this.subcontractRepo = subcontractRepo;
+        this.categoryRepo = categoryRepo;
+        this.warehouseRepo = warehouseRepo;
     }
     async generateNextCode(repo, companyId, defaultPrefix) {
         const all = await repo.find({
@@ -63,17 +67,26 @@ let InventoryService = class InventoryService {
     }
     async createItem(dto, companyId, userId) {
         const nextCode = dto.code?.trim() || (await this.generateNextCode(this.itemRepo, companyId, 'ART-'));
+        const categoryId = dto.category_id ?? dto.categoryId;
+        let categoryName = dto.category?.trim();
+        if (categoryId && !categoryName) {
+            const cat = await this.categoryRepo.findOne({ where: { id: Number(categoryId), company: { id: companyId } } });
+            if (cat)
+                categoryName = cat.name;
+        }
         const entity = this.itemRepo.create({
             code: nextCode,
             sku: dto.sku || '',
             name: dto.name,
-            category: dto.category || 'General',
+            category_id: categoryId ? Number(categoryId) : undefined,
+            category: categoryName || 'General',
             unit_measure: dto.unit_measure || dto.unit || 'UND',
             cost_price: Number(dto.cost_price ?? dto.costPrice ?? 0),
             sale_price: Number(dto.sale_price ?? dto.salePrice ?? 0),
             tax_rate: Number(dto.tax_rate ?? dto.taxRate ?? 15),
             stock_current: Number(dto.stock_current ?? dto.stockCurrent ?? 0),
             stock_min: Number(dto.stock_min ?? dto.stockMin ?? 0),
+            warehouse_id: (dto.warehouse_id ?? dto.warehouseId) ? Number(dto.warehouse_id ?? dto.warehouseId) : undefined,
             warehouse_location: dto.warehouse_location || dto.location || 'Bodega Principal',
             description: dto.description || '',
             enabled: dto.enabled ?? dto.status ?? true,
@@ -93,7 +106,17 @@ let InventoryService = class InventoryService {
             throw new common_1.NotFoundException('Artículo no encontrado');
         existing.sku = dto.sku ?? existing.sku;
         existing.name = dto.name ?? existing.name;
-        existing.category = dto.category ?? existing.category;
+        const categoryId = dto.category_id ?? dto.categoryId;
+        if (categoryId !== undefined)
+            existing.category_id = Number(categoryId);
+        let categoryName = dto.category;
+        if (categoryId && !categoryName) {
+            const cat = await this.categoryRepo.findOne({ where: { id: Number(categoryId), company: { id: companyId } } });
+            if (cat)
+                categoryName = cat.name;
+        }
+        if (categoryName !== undefined)
+            existing.category = categoryName;
         existing.unit_measure = dto.unit_measure ?? dto.unit ?? existing.unit_measure;
         const costPrice = dto.cost_price ?? dto.costPrice;
         if (costPrice !== undefined)
@@ -110,6 +133,9 @@ let InventoryService = class InventoryService {
         const stockMin = dto.stock_min ?? dto.stockMin;
         if (stockMin !== undefined)
             existing.stock_min = Number(stockMin);
+        const warehouseId = dto.warehouse_id ?? dto.warehouseId;
+        if (warehouseId !== undefined)
+            existing.warehouse_id = Number(warehouseId);
         existing.warehouse_location = dto.warehouse_location ?? dto.location ?? existing.warehouse_location;
         existing.description = dto.description ?? existing.description;
         const statusVal = dto.enabled ?? dto.status;
@@ -130,6 +156,8 @@ let InventoryService = class InventoryService {
             code: r.code,
             sku: r.sku || '',
             name: r.name,
+            categoryId: r.category_id,
+            category_id: r.category_id,
             category: r.category || 'General',
             unit: r.unit_measure || 'UND',
             unit_measure: r.unit_measure || 'UND',
@@ -143,6 +171,8 @@ let InventoryService = class InventoryService {
             stock_current: Number(r.stock_current || 0),
             stockMin: Number(r.stock_min || 0),
             stock_min: Number(r.stock_min || 0),
+            warehouseId: r.warehouse_id,
+            warehouse_id: r.warehouse_id,
             location: r.warehouse_location || 'Bodega Principal',
             warehouse_location: r.warehouse_location || 'Bodega Principal',
             description: r.description || '',
@@ -328,6 +358,185 @@ let InventoryService = class InventoryService {
             created_at: r.created_at,
         };
     }
+    async listCategories(companyId) {
+        const rows = await this.categoryRepo.find({
+            where: { company: { id: companyId }, deleted: false },
+            order: { name: 'ASC' },
+        });
+        return rows.map((r) => ({
+            id: r.id,
+            code: r.code,
+            name: r.name,
+            description: r.description || '',
+            enabled: r.enabled !== false,
+            status: r.enabled !== false,
+            companyId,
+            created_at: r.created_at,
+        }));
+    }
+    async createCategory(dto, companyId, userId) {
+        const nextCode = dto.code?.trim() || (await this.generateNextCode(this.categoryRepo, companyId, 'CAT-'));
+        const entity = this.categoryRepo.create({
+            code: nextCode,
+            name: dto.name.trim(),
+            description: dto.description || '',
+            enabled: dto.enabled !== false,
+            deleted: false,
+            company: { id: companyId },
+            created_by: userId,
+        });
+        const saved = await this.categoryRepo.save(entity);
+        return {
+            id: saved.id,
+            code: saved.code,
+            name: saved.name,
+            description: saved.description || '',
+            enabled: saved.enabled !== false,
+            status: saved.enabled !== false,
+            companyId,
+            created_at: saved.created_at,
+        };
+    }
+    async updateCategory(id, companyId, dto) {
+        const existing = await this.categoryRepo.findOne({
+            where: { id, company: { id: companyId }, deleted: false },
+        });
+        if (!existing)
+            throw new common_1.NotFoundException('Categoría no encontrada');
+        if (dto.code)
+            existing.code = dto.code.trim();
+        if (dto.name)
+            existing.name = dto.name.trim();
+        if (dto.description !== undefined)
+            existing.description = dto.description;
+        if (dto.enabled !== undefined)
+            existing.enabled = dto.enabled;
+        const saved = await this.categoryRepo.save(existing);
+        return {
+            id: saved.id,
+            code: saved.code,
+            name: saved.name,
+            description: saved.description || '',
+            enabled: saved.enabled !== false,
+            status: saved.enabled !== false,
+            companyId,
+            created_at: saved.created_at,
+        };
+    }
+    async deleteCategory(id, companyId) {
+        await this.categoryRepo.update({ id, company: { id: companyId } }, { deleted: true, enabled: false });
+        return { deleted: true, id };
+    }
+    async listWarehouses(companyId) {
+        const rows = await this.warehouseRepo.find({
+            where: { company: { id: companyId }, deleted: false },
+            order: { is_default: 'DESC', name: 'ASC' },
+        });
+        return rows.map((r) => ({
+            id: r.id,
+            code: r.code,
+            name: r.name,
+            address: r.address || '',
+            responsible: r.responsible || '',
+            phone: r.phone || '',
+            branchId: r.branch_id,
+            branch_id: r.branch_id,
+            isDefault: Boolean(r.is_default),
+            is_default: Boolean(r.is_default),
+            enabled: r.enabled !== false,
+            status: r.enabled !== false,
+            companyId,
+            created_at: r.created_at,
+        }));
+    }
+    async createWarehouse(dto, companyId, userId) {
+        const nextCode = dto.code?.trim() || (await this.generateNextCode(this.warehouseRepo, companyId, 'BOD-'));
+        const isDefault = dto.is_default ?? dto.isDefault ?? false;
+        if (isDefault) {
+            await this.warehouseRepo.update({ company: { id: companyId } }, { is_default: false });
+        }
+        const entity = this.warehouseRepo.create({
+            code: nextCode,
+            name: dto.name.trim(),
+            address: dto.address || '',
+            responsible: dto.responsible || '',
+            phone: dto.phone || '',
+            branch_id: dto.branch_id ?? dto.branchId,
+            is_default: isDefault,
+            enabled: dto.enabled !== false,
+            deleted: false,
+            company: { id: companyId },
+            created_by: userId,
+        });
+        const saved = await this.warehouseRepo.save(entity);
+        return {
+            id: saved.id,
+            code: saved.code,
+            name: saved.name,
+            address: saved.address || '',
+            responsible: saved.responsible || '',
+            phone: saved.phone || '',
+            branchId: saved.branch_id,
+            branch_id: saved.branch_id,
+            isDefault: Boolean(saved.is_default),
+            is_default: Boolean(saved.is_default),
+            enabled: saved.enabled !== false,
+            status: saved.enabled !== false,
+            companyId,
+            created_at: saved.created_at,
+        };
+    }
+    async updateWarehouse(id, companyId, dto) {
+        const existing = await this.warehouseRepo.findOne({
+            where: { id, company: { id: companyId }, deleted: false },
+        });
+        if (!existing)
+            throw new common_1.NotFoundException('Bodega no encontrada');
+        const isDefault = dto.is_default ?? dto.isDefault;
+        if (isDefault) {
+            await this.warehouseRepo.update({ company: { id: companyId } }, { is_default: false });
+            existing.is_default = true;
+        }
+        else if (isDefault !== undefined) {
+            existing.is_default = false;
+        }
+        if (dto.code)
+            existing.code = dto.code.trim();
+        if (dto.name)
+            existing.name = dto.name.trim();
+        if (dto.address !== undefined)
+            existing.address = dto.address;
+        if (dto.responsible !== undefined)
+            existing.responsible = dto.responsible;
+        if (dto.phone !== undefined)
+            existing.phone = dto.phone;
+        const branchId = dto.branch_id ?? dto.branchId;
+        if (branchId !== undefined)
+            existing.branch_id = branchId;
+        if (dto.enabled !== undefined)
+            existing.enabled = dto.enabled;
+        const saved = await this.warehouseRepo.save(existing);
+        return {
+            id: saved.id,
+            code: saved.code,
+            name: saved.name,
+            address: saved.address || '',
+            responsible: saved.responsible || '',
+            phone: saved.phone || '',
+            branchId: saved.branch_id,
+            branch_id: saved.branch_id,
+            isDefault: Boolean(saved.is_default),
+            is_default: Boolean(saved.is_default),
+            enabled: saved.enabled !== false,
+            status: saved.enabled !== false,
+            companyId,
+            created_at: saved.created_at,
+        };
+    }
+    async deleteWarehouse(id, companyId) {
+        await this.warehouseRepo.update({ id, company: { id: companyId } }, { deleted: true, enabled: false });
+        return { deleted: true, id };
+    }
 };
 exports.InventoryService = InventoryService;
 exports.InventoryService = InventoryService = __decorate([
@@ -335,7 +544,11 @@ exports.InventoryService = InventoryService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(inventory_orm_entity_1.InventoryItemOrmEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(inventory_orm_entity_1.InventoryServiceOrmEntity)),
     __param(2, (0, typeorm_1.InjectRepository)(inventory_orm_entity_1.InventorySubcontractOrmEntity)),
+    __param(3, (0, typeorm_1.InjectRepository)(inventory_orm_entity_1.InventoryCategoryOrmEntity)),
+    __param(4, (0, typeorm_1.InjectRepository)(inventory_orm_entity_1.InventoryWarehouseOrmEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], InventoryService);

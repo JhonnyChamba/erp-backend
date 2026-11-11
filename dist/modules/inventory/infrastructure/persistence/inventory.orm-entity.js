@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InventorySubcontractOrmEntity = exports.InventoryServiceOrmEntity = exports.InventoryItemOrmEntity = void 0;
+exports.InventoryWarehouseOrmEntity = exports.InventoryCategoryOrmEntity = exports.InventorySubcontractOrmEntity = exports.InventoryServiceOrmEntity = exports.InventoryItemOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const company_orm_entity_1 = require("../../../company/infrastructure/persistence/company.orm-entity");
 let InventoryItemOrmEntity = class InventoryItemOrmEntity {
@@ -17,6 +17,7 @@ let InventoryItemOrmEntity = class InventoryItemOrmEntity {
     code;
     sku;
     name;
+    category_id;
     category;
     unit_measure;
     cost_price;
@@ -24,6 +25,7 @@ let InventoryItemOrmEntity = class InventoryItemOrmEntity {
     tax_rate;
     stock_current;
     stock_min;
+    warehouse_id;
     warehouse_location;
     description;
     company;
@@ -49,6 +51,10 @@ __decorate([
     (0, typeorm_1.Column)({ length: 180 }),
     __metadata("design:type", String)
 ], InventoryItemOrmEntity.prototype, "name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], InventoryItemOrmEntity.prototype, "category_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 100, default: 'General' }),
     __metadata("design:type", String)
@@ -77,6 +83,10 @@ __decorate([
     (0, typeorm_1.Column)('numeric', { precision: 12, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], InventoryItemOrmEntity.prototype, "stock_min", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], InventoryItemOrmEntity.prototype, "warehouse_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 120, nullable: true }),
     __metadata("design:type", String)
@@ -283,4 +293,128 @@ __decorate([
 exports.InventorySubcontractOrmEntity = InventorySubcontractOrmEntity = __decorate([
     (0, typeorm_1.Entity)('tab_inventory_subcontract')
 ], InventorySubcontractOrmEntity);
+let InventoryCategoryOrmEntity = class InventoryCategoryOrmEntity {
+    id;
+    code;
+    name;
+    description;
+    company;
+    created_by;
+    enabled;
+    deleted;
+    created_at;
+};
+exports.InventoryCategoryOrmEntity = InventoryCategoryOrmEntity;
+__decorate([
+    (0, typeorm_1.PrimaryGeneratedColumn)(),
+    __metadata("design:type", Number)
+], InventoryCategoryOrmEntity.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 25 }),
+    __metadata("design:type", String)
+], InventoryCategoryOrmEntity.prototype, "code", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 120 }),
+    __metadata("design:type", String)
+], InventoryCategoryOrmEntity.prototype, "name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], InventoryCategoryOrmEntity.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => company_orm_entity_1.CompanyOrmEntity, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'company_id' }),
+    __metadata("design:type", company_orm_entity_1.CompanyOrmEntity)
+], InventoryCategoryOrmEntity.prototype, "company", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], InventoryCategoryOrmEntity.prototype, "created_by", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: true }),
+    __metadata("design:type", Boolean)
+], InventoryCategoryOrmEntity.prototype, "enabled", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], InventoryCategoryOrmEntity.prototype, "deleted", void 0);
+__decorate([
+    (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }),
+    __metadata("design:type", Date)
+], InventoryCategoryOrmEntity.prototype, "created_at", void 0);
+exports.InventoryCategoryOrmEntity = InventoryCategoryOrmEntity = __decorate([
+    (0, typeorm_1.Entity)('tab_inventory_category')
+], InventoryCategoryOrmEntity);
+let InventoryWarehouseOrmEntity = class InventoryWarehouseOrmEntity {
+    id;
+    code;
+    name;
+    address;
+    responsible;
+    phone;
+    branch_id;
+    is_default;
+    company;
+    created_by;
+    enabled;
+    deleted;
+    created_at;
+};
+exports.InventoryWarehouseOrmEntity = InventoryWarehouseOrmEntity;
+__decorate([
+    (0, typeorm_1.PrimaryGeneratedColumn)(),
+    __metadata("design:type", Number)
+], InventoryWarehouseOrmEntity.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 25 }),
+    __metadata("design:type", String)
+], InventoryWarehouseOrmEntity.prototype, "code", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 120 }),
+    __metadata("design:type", String)
+], InventoryWarehouseOrmEntity.prototype, "name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 255, nullable: true }),
+    __metadata("design:type", String)
+], InventoryWarehouseOrmEntity.prototype, "address", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 120, nullable: true }),
+    __metadata("design:type", String)
+], InventoryWarehouseOrmEntity.prototype, "responsible", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 40, nullable: true }),
+    __metadata("design:type", String)
+], InventoryWarehouseOrmEntity.prototype, "phone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], InventoryWarehouseOrmEntity.prototype, "branch_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], InventoryWarehouseOrmEntity.prototype, "is_default", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => company_orm_entity_1.CompanyOrmEntity, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'company_id' }),
+    __metadata("design:type", company_orm_entity_1.CompanyOrmEntity)
+], InventoryWarehouseOrmEntity.prototype, "company", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], InventoryWarehouseOrmEntity.prototype, "created_by", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: true }),
+    __metadata("design:type", Boolean)
+], InventoryWarehouseOrmEntity.prototype, "enabled", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], InventoryWarehouseOrmEntity.prototype, "deleted", void 0);
+__decorate([
+    (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }),
+    __metadata("design:type", Date)
+], InventoryWarehouseOrmEntity.prototype, "created_at", void 0);
+exports.InventoryWarehouseOrmEntity = InventoryWarehouseOrmEntity = __decorate([
+    (0, typeorm_1.Entity)('tab_inventory_warehouse')
+], InventoryWarehouseOrmEntity);
 //# sourceMappingURL=inventory.orm-entity.js.map

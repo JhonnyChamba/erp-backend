@@ -4,6 +4,7 @@ export declare class InventoryItemOrmEntity {
     code: string;
     sku: string;
     name: string;
+    category_id: number;
     category: string;
     unit_measure: string;
     cost_price: number;
@@ -11,6 +12,7 @@ export declare class InventoryItemOrmEntity {
     tax_rate: number;
     stock_current: number;
     stock_min: number;
+    warehouse_id: number;
     warehouse_location: string;
     description: string;
     company: CompanyOrmEntity;
@@ -49,6 +51,32 @@ export declare class InventorySubcontractOrmEntity {
     tax_rate: number;
     includes_materials: boolean;
     description: string;
+    company: CompanyOrmEntity;
+    created_by: number;
+    enabled: boolean;
+    deleted: boolean;
+    created_at: Date;
+}
+export declare class InventoryCategoryOrmEntity {
+    id: number;
+    code: string;
+    name: string;
+    description: string;
+    company: CompanyOrmEntity;
+    created_by: number;
+    enabled: boolean;
+    deleted: boolean;
+    created_at: Date;
+}
+export declare class InventoryWarehouseOrmEntity {
+    id: number;
+    code: string;
+    name: string;
+    address: string;
+    responsible: string;
+    phone: string;
+    branch_id: number;
+    is_default: boolean;
     company: CompanyOrmEntity;
     created_by: number;
     enabled: boolean;

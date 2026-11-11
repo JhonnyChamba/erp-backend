@@ -22,6 +22,8 @@ exports.InventoryModule = InventoryModule = __decorate([
                 inventory_orm_entity_1.InventoryItemOrmEntity,
                 inventory_orm_entity_1.InventoryServiceOrmEntity,
                 inventory_orm_entity_1.InventorySubcontractOrmEntity,
+                inventory_orm_entity_1.InventoryCategoryOrmEntity,
+                inventory_orm_entity_1.InventoryWarehouseOrmEntity,
             ]),
         ],
         controllers: [inventory_controller_1.InventoryController],

@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateInventorySubcontractDto = exports.CreateInventorySubcontractDto = exports.UpdateInventoryServiceDto = exports.CreateInventoryServiceDto = exports.UpdateInventoryItemDto = exports.CreateInventoryItemDto = void 0;
+exports.UpdateInventoryWarehouseDto = exports.CreateInventoryWarehouseDto = exports.UpdateInventoryCategoryDto = exports.CreateInventoryCategoryDto = exports.UpdateInventorySubcontractDto = exports.CreateInventorySubcontractDto = exports.UpdateInventoryServiceDto = exports.CreateInventoryServiceDto = exports.UpdateInventoryItemDto = exports.CreateInventoryItemDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class CreateInventoryItemDto {
@@ -17,6 +17,8 @@ class CreateInventoryItemDto {
     code;
     sku;
     name;
+    category_id;
+    categoryId;
     category;
     unit_measure;
     unit;
@@ -30,6 +32,8 @@ class CreateInventoryItemDto {
     stockCurrent;
     stock_min;
     stockMin;
+    warehouse_id;
+    warehouseId;
     warehouse_location;
     location;
     description;
@@ -58,6 +62,18 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateInventoryItemDto.prototype, "name", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryItemDto.prototype, "category_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryItemDto.prototype, "categoryId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -134,6 +150,18 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateInventoryItemDto.prototype, "stockMin", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryItemDto.prototype, "warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryItemDto.prototype, "warehouseId", void 0);
+__decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
@@ -163,6 +191,8 @@ class UpdateInventoryItemDto {
     code;
     sku;
     name;
+    category_id;
+    categoryId;
     category;
     unit_measure;
     unit;
@@ -176,6 +206,8 @@ class UpdateInventoryItemDto {
     stockCurrent;
     stock_min;
     stockMin;
+    warehouse_id;
+    warehouseId;
     warehouse_location;
     location;
     description;
@@ -204,6 +236,18 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateInventoryItemDto.prototype, "name", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryItemDto.prototype, "category_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryItemDto.prototype, "categoryId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -279,6 +323,18 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], UpdateInventoryItemDto.prototype, "stockMin", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryItemDto.prototype, "warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryItemDto.prototype, "warehouseId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -812,4 +868,216 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateInventorySubcontractDto.prototype, "status", void 0);
+class CreateInventoryCategoryDto {
+    companyId;
+    code;
+    name;
+    description;
+    enabled;
+}
+exports.CreateInventoryCategoryDto = CreateInventoryCategoryDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryCategoryDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryCategoryDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateInventoryCategoryDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryCategoryDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryCategoryDto.prototype, "enabled", void 0);
+class UpdateInventoryCategoryDto {
+    companyId;
+    code;
+    name;
+    description;
+    enabled;
+}
+exports.UpdateInventoryCategoryDto = UpdateInventoryCategoryDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryCategoryDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryCategoryDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryCategoryDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryCategoryDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryCategoryDto.prototype, "enabled", void 0);
+class CreateInventoryWarehouseDto {
+    companyId;
+    code;
+    name;
+    address;
+    responsible;
+    phone;
+    branch_id;
+    branchId;
+    is_default;
+    isDefault;
+    enabled;
+}
+exports.CreateInventoryWarehouseDto = CreateInventoryWarehouseDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryWarehouseDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryWarehouseDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateInventoryWarehouseDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryWarehouseDto.prototype, "address", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryWarehouseDto.prototype, "responsible", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryWarehouseDto.prototype, "phone", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryWarehouseDto.prototype, "branch_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryWarehouseDto.prototype, "branchId", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryWarehouseDto.prototype, "is_default", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryWarehouseDto.prototype, "isDefault", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateInventoryWarehouseDto.prototype, "enabled", void 0);
+class UpdateInventoryWarehouseDto {
+    companyId;
+    code;
+    name;
+    address;
+    responsible;
+    phone;
+    branch_id;
+    branchId;
+    is_default;
+    isDefault;
+    enabled;
+}
+exports.UpdateInventoryWarehouseDto = UpdateInventoryWarehouseDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryWarehouseDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryWarehouseDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryWarehouseDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryWarehouseDto.prototype, "address", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryWarehouseDto.prototype, "responsible", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryWarehouseDto.prototype, "phone", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryWarehouseDto.prototype, "branch_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateInventoryWarehouseDto.prototype, "branchId", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryWarehouseDto.prototype, "is_default", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryWarehouseDto.prototype, "isDefault", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateInventoryWarehouseDto.prototype, "enabled", void 0);
 //# sourceMappingURL=inventory.dto.js.map

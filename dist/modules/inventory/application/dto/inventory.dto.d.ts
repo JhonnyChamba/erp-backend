@@ -3,6 +3,8 @@ export declare class CreateInventoryItemDto {
     code?: string;
     sku?: string;
     name: string;
+    category_id?: number;
+    categoryId?: number;
     category?: string;
     unit_measure?: string;
     unit?: string;
@@ -16,6 +18,8 @@ export declare class CreateInventoryItemDto {
     stockCurrent?: number;
     stock_min?: number;
     stockMin?: number;
+    warehouse_id?: number;
+    warehouseId?: number;
     warehouse_location?: string;
     location?: string;
     description?: string;
@@ -27,6 +31,8 @@ export declare class UpdateInventoryItemDto {
     code?: string;
     sku?: string;
     name?: string;
+    category_id?: number;
+    categoryId?: number;
     category?: string;
     unit_measure?: string;
     unit?: string;
@@ -40,6 +46,8 @@ export declare class UpdateInventoryItemDto {
     stockCurrent?: number;
     stock_min?: number;
     stockMin?: number;
+    warehouse_id?: number;
+    warehouseId?: number;
     warehouse_location?: string;
     location?: string;
     description?: string;
@@ -131,4 +139,44 @@ export declare class UpdateInventorySubcontractDto {
     description?: string;
     enabled?: boolean;
     status?: boolean;
+}
+export declare class CreateInventoryCategoryDto {
+    companyId?: number;
+    code?: string;
+    name: string;
+    description?: string;
+    enabled?: boolean;
+}
+export declare class UpdateInventoryCategoryDto {
+    companyId?: number;
+    code?: string;
+    name?: string;
+    description?: string;
+    enabled?: boolean;
+}
+export declare class CreateInventoryWarehouseDto {
+    companyId?: number;
+    code?: string;
+    name: string;
+    address?: string;
+    responsible?: string;
+    phone?: string;
+    branch_id?: number;
+    branchId?: number;
+    is_default?: boolean;
+    isDefault?: boolean;
+    enabled?: boolean;
+}
+export declare class UpdateInventoryWarehouseDto {
+    companyId?: number;
+    code?: string;
+    name?: string;
+    address?: string;
+    responsible?: string;
+    phone?: string;
+    branch_id?: number;
+    branchId?: number;
+    is_default?: boolean;
+    isDefault?: boolean;
+    enabled?: boolean;
 }
