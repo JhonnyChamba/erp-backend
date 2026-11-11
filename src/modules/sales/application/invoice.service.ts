@@ -74,7 +74,33 @@ export class InvoiceService {
 		return `${raw48}${verifier}`;
 	}
 
-	private async getNextSequential(manager: EntityManager, companyId: number, establishment: string, emissionPoint: string): Promise<string> {
+	private async getNextSequential(
+		manager: EntityManager,
+		companyId: number,
+		branchId: number,
+		establishment: string,
+		emissionPoint: string,
+	): Promise<string> {
+		let currentCorrelative = 0;
+		try {
+			const seqRow = await manager.query(`
+				SELECT s.id, s.correlative
+				FROM tab_emission_point_sequence s
+				JOIN tab_emission_point p ON p.id = s.emission_point_id
+				WHERE p.company_id = $1 
+				  AND p.branch_id = $2
+				  AND p.serie = $3
+				  AND s.document_type = 'FACTURAS'
+				LIMIT 1;
+			`, [companyId, branchId, emissionPoint]);
+
+			if (seqRow && seqRow.length > 0) {
+				currentCorrelative = Number(seqRow[0].correlative || 0);
+			}
+		} catch (e) {
+			console.error('Error fetching emission sequence:', e);
+		}
+
 		const last = await manager.getRepository(InvoiceOrmEntity).findOne({
 			where: {
 				company: { id: companyId },
@@ -85,12 +111,13 @@ export class InvoiceService {
 			select: ['id', 'sequential'],
 		});
 
-		let nextNum = 1;
+		let lastInvoiceNum = 0;
 		if (last?.sequential) {
 			const parsed = parseInt(last.sequential, 10);
-			if (!isNaN(parsed)) nextNum = parsed + 1;
+			if (!isNaN(parsed)) lastInvoiceNum = parsed;
 		}
 
+		const nextNum = Math.max(currentCorrelative + 1, lastInvoiceNum + 1);
 		return String(nextNum).padStart(9, '0');
 	}
 
@@ -127,7 +154,7 @@ export class InvoiceService {
 		if (!/^[0-9]{3}$/.test(establishment) || !/^[0-9]{3}$/.test(emissionPoint)) {
 			throw new BadRequestException('El establecimiento y el punto de emisión deben tener 3 dígitos (corrige el código de la sucursal).');
 		}
-		const sequential = await this.getNextSequential(manager, companyId, establishment, emissionPoint);
+		const sequential = await this.getNextSequential(manager, companyId, branch.id, establishment, emissionPoint);
 		const invoiceNumber = `${establishment}-${emissionPoint}-${sequential}`;
 
 		const issueDate = dto.issue_date || new Date().toISOString().slice(0, 10);
@@ -255,6 +282,27 @@ export class InvoiceService {
 		});
 
 		const saved = await invoiceRepo.save(invoice);
+
+		// Actualizar el nuevo correlativo en el detalle de la secuencia del punto de emisión para FACTURAS
+		try {
+			const numericSeq = parseInt(sequential, 10);
+			if (!isNaN(numericSeq)) {
+				await manager.query(`
+					UPDATE tab_emission_point_sequence s
+					SET correlative = $1, updated_at = NOW()
+					FROM tab_emission_point p
+					WHERE s.emission_point_id = p.id
+					  AND p.company_id = $2
+					  AND p.branch_id = $3
+					  AND p.serie = $4
+					  AND s.document_type = 'FACTURAS'
+					  AND s.correlative < $1;
+				`, [numericSeq, companyId, branch.id, emissionPoint]);
+			}
+		} catch (err) {
+			console.error('Error al actualizar correlativo en tab_emission_point_sequence:', err);
+		}
+
 		return saved;
 	}
 

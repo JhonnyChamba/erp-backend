@@ -108,6 +108,7 @@ let InventoryService = class InventoryService {
             created_by: userId,
         });
         const saved = await this.itemRepo.save(entity);
+        await this.ensureItemInUnified(this.dataSource.manager, saved, companyId);
         return this.mapItem(saved, companyId);
     }
     async updateItem(id, companyId, dto) {
@@ -155,11 +156,57 @@ let InventoryService = class InventoryService {
         if (statusVal !== undefined)
             existing.enabled = statusVal;
         const saved = await this.itemRepo.save(existing);
+        await this.ensureItemInUnified(this.dataSource.manager, saved, companyId);
         return this.mapItem(saved, companyId);
     }
     async deleteItem(id, companyId) {
         await this.itemRepo.update({ id, company: { id: companyId } }, { deleted: true, enabled: false });
+        await this.dataSource.query(`UPDATE tab_items SET deleted = true, ind_active = false WHERE id = $1 AND company_id = $2`, [id, companyId]).catch(() => { });
         return { deleted: true, id };
+    }
+    async ensureItemInUnified(manager, legacyItem, companyId) {
+        try {
+            await manager.query(`
+				INSERT INTO tab_items (
+					id, company_id, product_category_id, category_name, code, sku, name, description,
+					item_type, unit_measure, sale_price, purchase_price, tax_rate, ind_active, deleted, created_at, updated_at
+				) VALUES (
+					$1, $2, $3, $4, $5, $6, $7, $8, 'PRODUCT', $9, $10, $11, $12, $13, $14, NOW(), NOW()
+				) ON CONFLICT (id) DO UPDATE SET
+					company_id = EXCLUDED.company_id,
+					product_category_id = EXCLUDED.product_category_id,
+					category_name = EXCLUDED.category_name,
+					code = EXCLUDED.code,
+					sku = EXCLUDED.sku,
+					name = EXCLUDED.name,
+					description = EXCLUDED.description,
+					unit_measure = EXCLUDED.unit_measure,
+					sale_price = EXCLUDED.sale_price,
+					purchase_price = EXCLUDED.purchase_price,
+					tax_rate = EXCLUDED.tax_rate,
+					ind_active = EXCLUDED.ind_active,
+					deleted = EXCLUDED.deleted,
+					updated_at = NOW();
+			`, [
+                legacyItem.id,
+                companyId,
+                legacyItem.category_id || null,
+                legacyItem.category || null,
+                legacyItem.code,
+                legacyItem.sku || null,
+                legacyItem.name,
+                legacyItem.description || null,
+                legacyItem.unit_measure || 'UND',
+                Number(legacyItem.sale_price || 0),
+                Number(legacyItem.cost_price || 0),
+                Number(legacyItem.tax_rate ?? 15),
+                legacyItem.enabled !== false,
+                legacyItem.deleted || false,
+            ]);
+        }
+        catch (e) {
+            console.error('Error ensuring item in tab_items:', e);
+        }
     }
     mapItem(r, fallbackCompanyId) {
         const status = r.enabled !== false;
@@ -616,14 +663,10 @@ let InventoryService = class InventoryService {
                     where: { id: params.productId, company: { id: params.companyId }, deleted: false },
                 });
                 if (legacyItem) {
-                    product = {
-                        id: legacyItem.id,
-                        code: legacyItem.code,
-                        name: legacyItem.name,
-                        item_type: 'PRODUCT',
-                        purchase_price: legacyItem.cost_price,
-                        company: legacyItem.company,
-                    };
+                    await this.ensureItemInUnified(manager, legacyItem, params.companyId);
+                    product = await manager.findOne(inventory_orm_entity_1.ItemOrmEntity, {
+                        where: { id: legacyItem.id },
+                    });
                 }
             }
             if (!product) {
@@ -692,7 +735,24 @@ let InventoryService = class InventoryService {
                 reversal_of_movement_id: params.reversalOfMovementId,
                 created_user_id: params.createdUserId,
             });
-            return await manager.save(inventory_orm_entity_1.InventoryMovementOrmEntity, movement);
+            const savedMovement = await manager.save(inventory_orm_entity_1.InventoryMovementOrmEntity, movement);
+            try {
+                await manager.query(`
+					UPDATE tab_inventory_item
+					SET stock_current = stock_current + $1,
+					    cost_price = $2
+					WHERE id = $3 AND company_id = $4
+				`, [entryQty.toNumber(), balance.average_cost, params.productId, params.companyId]);
+                await manager.query(`
+					UPDATE tab_items
+					SET purchase_price = $1
+					WHERE id = $2 AND company_id = $3
+				`, [balance.average_cost, params.productId, params.companyId]);
+            }
+            catch (e) {
+                console.error('Error updating stock on entry:', e);
+            }
+            return savedMovement;
         };
         if (externalManager) {
             return await run(externalManager);
@@ -716,14 +776,10 @@ let InventoryService = class InventoryService {
                     where: { id: params.productId, company: { id: params.companyId }, deleted: false },
                 });
                 if (legacyItem) {
-                    product = {
-                        id: legacyItem.id,
-                        code: legacyItem.code,
-                        name: legacyItem.name,
-                        item_type: 'PRODUCT',
-                        purchase_price: legacyItem.cost_price,
-                        company: legacyItem.company,
-                    };
+                    await this.ensureItemInUnified(manager, legacyItem, params.companyId);
+                    product = await manager.findOne(inventory_orm_entity_1.ItemOrmEntity, {
+                        where: { id: legacyItem.id },
+                    });
                 }
             }
             if (!product) {
@@ -791,7 +847,18 @@ let InventoryService = class InventoryService {
                 reversal_of_movement_id: params.reversalOfMovementId,
                 created_user_id: params.createdUserId,
             });
-            return await manager.save(inventory_orm_entity_1.InventoryMovementOrmEntity, movement);
+            const savedMovement = await manager.save(inventory_orm_entity_1.InventoryMovementOrmEntity, movement);
+            try {
+                await manager.query(`
+					UPDATE tab_inventory_item
+					SET stock_current = GREATEST(0, stock_current - $1)
+					WHERE id = $2 AND company_id = $3
+				`, [exitQty.toNumber(), params.productId, params.companyId]);
+            }
+            catch (e) {
+                console.error('Error updating stock on exit:', e);
+            }
+            return savedMovement;
         };
         if (externalManager) {
             return await run(externalManager);

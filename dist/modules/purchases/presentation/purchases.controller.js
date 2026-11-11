@@ -29,7 +29,8 @@ let PurchasesController = class PurchasesController {
         return !Number.isNaN(candidate) && candidate > 0 ? candidate : 1;
     }
     create(dto, req) {
-        const companyId = this.resolveCompanyId(req);
+        const explicitCompany = dto?.companyId || dto?.company_id;
+        const companyId = this.resolveCompanyId(req, explicitCompany);
         return this.purchasesService.createPurchase(companyId, dto, req.user?.user_id);
     }
     findAll(companyIdQuery, warehouseIdQuery, statusQuery, qQuery, req) {

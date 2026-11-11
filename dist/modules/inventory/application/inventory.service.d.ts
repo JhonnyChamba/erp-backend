@@ -108,6 +108,7 @@ export declare class InventoryService {
         deleted: boolean;
         id: number;
     }>;
+    private ensureItemInUnified;
     private mapItem;
     listServices(companyId: number): Promise<{
         id: number;
