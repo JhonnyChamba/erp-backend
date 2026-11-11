@@ -51,3 +51,4 @@ export class CreateTaxesAndDocumentTypesTables1794700000000 implements Migration
 		await queryRunner.query(`DROP TABLE IF EXISTS "tab_taxes";`);
 	}
 }
+

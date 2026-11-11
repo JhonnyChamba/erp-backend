@@ -43,3 +43,4 @@ export class UpdateTaxDto {
 	@IsBoolean()
 	is_default?: boolean;
 }
+

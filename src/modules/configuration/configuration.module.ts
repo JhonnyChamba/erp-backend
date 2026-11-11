@@ -16,3 +16,4 @@ import { DocumentTypeController } from './presentation/document-type.controller'
 	exports: [TaxService, DocumentTypeService],
 })
 export class ConfigurationModule {}
+

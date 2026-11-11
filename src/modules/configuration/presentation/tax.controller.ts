@@ -72,3 +72,4 @@ export class TaxController {
 		return this.taxService.remove(id, companyId);
 	}
 }
+

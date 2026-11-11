@@ -130,3 +130,4 @@ export class DocumentTypeService {
 		return { success: true, message: 'Tipo de documento eliminado correctamente.' };
 	}
 }
+

@@ -46,3 +46,4 @@ export class DocumentTypeOrmEntity {
 	@UpdateDateColumn({ type: 'timestamp' })
 	updated_at: Date;
 }
+

@@ -47,3 +47,4 @@ export class TaxOrmEntity {
 	@UpdateDateColumn({ type: 'timestamp' })
 	updated_at: Date;
 }
+

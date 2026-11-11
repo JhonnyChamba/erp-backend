@@ -73,3 +73,4 @@ export class DocumentTypeController {
 		return this.docTypeService.remove(id, companyId);
 	}
 }
+
