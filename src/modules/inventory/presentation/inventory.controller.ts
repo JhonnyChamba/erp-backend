@@ -25,6 +25,10 @@ import {
 	UpdateInventoryCategoryDto,
 	CreateInventoryWarehouseDto,
 	UpdateInventoryWarehouseDto,
+	CreateUnifiedItemDto,
+	UpdateUnifiedItemDto,
+	CreateInventoryTransferDto,
+	CreateInventoryAdjustmentDto,
 } from '../application/dto/inventory.dto';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
@@ -177,11 +181,12 @@ export class InventoryController {
 	@Get('categories')
 	listCategories(
 		@Query('companyId') queryCompanyId: string,
+		@Query('type') type: string,
 		@Headers('x-company-id') headerCompanyId: string,
 		@Req() req: any,
 	) {
 		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
-		return this.inventoryService.listCategories(companyId);
+		return this.inventoryService.listCategories(companyId, type);
 	}
 
 	@Post('categories')
@@ -259,6 +264,171 @@ export class InventoryController {
 	) {
 		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
 		return this.inventoryService.deleteWarehouse(Number(id), companyId);
+	}
+
+	// ============================================================
+	// 6. CATÁLOGO ÚNICO (/inventory/unified-items)
+	// ============================================================
+	@Get('unified-items')
+	listUnifiedItems(
+		@Query('companyId') queryCompanyId: string,
+		@Query('type') type: string,
+		@Query('categoryId') categoryId: string,
+		@Query('search') search: string,
+		@Query('status') status: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		const parsedStatus = status === 'true' ? true : status === 'false' ? false : undefined;
+		return this.inventoryService.listUnifiedItems(companyId, {
+			type,
+			categoryId: categoryId ? Number(categoryId) : undefined,
+			search,
+			status: parsedStatus,
+		});
+	}
+
+	@Get('unified-items/:id')
+	getUnifiedItem(
+		@Param('id') id: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.getUnifiedItemById(Number(id), companyId);
+	}
+
+	@Post('unified-items')
+	createUnifiedItem(
+		@Body() dto: CreateUnifiedItemDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		dto.companyId = companyId;
+		return this.inventoryService.createUnifiedItem(dto, req.user?.user_id);
+	}
+
+	@Patch('unified-items/:id')
+	updateUnifiedItem(
+		@Param('id') id: string,
+		@Body() dto: UpdateUnifiedItemDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		return this.inventoryService.updateUnifiedItem(Number(id), companyId, dto);
+	}
+
+	@Delete('unified-items/:id')
+	deleteUnifiedItem(
+		@Param('id') id: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.deleteUnifiedItem(Number(id), companyId);
+	}
+
+	// ============================================================
+	// 7. MOTOR CENTRAL: SALDOS, KARDEX, AJUSTES Y TRANSFERENCIAS
+	// ============================================================
+	@Get('stock/:productId')
+	getStock(
+		@Param('productId') productId: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.getStock(companyId, Number(productId));
+	}
+
+	@Get('stock/warehouse/:warehouseId')
+	getStockByWarehouse(
+		@Param('warehouseId') warehouseId: string,
+		@Query('productId') productId: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.getStockByWarehouse(
+			companyId,
+			Number(warehouseId),
+			productId ? Number(productId) : undefined,
+		);
+	}
+
+	@Get('kardex/:productId')
+	getKardex(
+		@Param('productId') productId: string,
+		@Query('warehouseId') warehouseId: string,
+		@Query('fromDate') fromDate: string,
+		@Query('toDate') toDate: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.getKardex(
+			companyId,
+			Number(productId),
+			warehouseId ? Number(warehouseId) : undefined,
+			fromDate,
+			toDate,
+		);
+	}
+
+	@Get('reconcile')
+	reconcileStock(
+		@Query('warehouseId') warehouseId: string,
+		@Query('productId') productId: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.reconcileStock(companyId, Number(warehouseId), Number(productId));
+	}
+
+	@Post('transfers')
+	createTransfer(
+		@Body() dto: CreateInventoryTransferDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		dto.companyId = companyId;
+		dto.created_user_id = req.user?.user_id;
+		return this.inventoryService.registerTransfer(dto);
+	}
+
+	@Post('adjustments')
+	createAdjustment(
+		@Body() dto: CreateInventoryAdjustmentDto,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+		dto.companyId = companyId;
+		dto.created_user_id = req.user?.user_id;
+		return this.inventoryService.createAdjustment(dto);
+	}
+
+	@Post('movements/:id/reverse')
+	reverseMovement(
+		@Param('id') id: string,
+		@Body('reason') reason: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.reverseMovement(Number(id), companyId, reason);
 	}
 }
 

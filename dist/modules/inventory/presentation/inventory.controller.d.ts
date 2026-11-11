@@ -1,5 +1,5 @@
 import { InventoryService } from '../application/inventory.service';
-import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto, CreateInventoryCategoryDto, UpdateInventoryCategoryDto, CreateInventoryWarehouseDto, UpdateInventoryWarehouseDto } from '../application/dto/inventory.dto';
+import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto, CreateInventoryCategoryDto, UpdateInventoryCategoryDto, CreateInventoryWarehouseDto, UpdateInventoryWarehouseDto, CreateUnifiedItemDto, UpdateUnifiedItemDto, CreateInventoryTransferDto, CreateInventoryAdjustmentDto } from '../application/dto/inventory.dto';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
@@ -247,10 +247,12 @@ export declare class InventoryController {
         deleted: boolean;
         id: number;
     }>;
-    listCategories(queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+    listCategories(queryCompanyId: string, type: string, headerCompanyId: string, req: any): Promise<{
         id: number;
         code: string;
         name: string;
+        categoryType: string;
+        category_type: string;
         description: string;
         enabled: boolean;
         status: boolean;
@@ -261,6 +263,8 @@ export declare class InventoryController {
         id: number;
         code: string;
         name: string;
+        categoryType: string;
+        category_type: string;
         description: string;
         enabled: boolean;
         status: boolean;
@@ -271,6 +275,8 @@ export declare class InventoryController {
         id: number;
         code: string;
         name: string;
+        categoryType: string;
+        category_type: string;
         description: string;
         enabled: boolean;
         status: boolean;
@@ -333,4 +339,137 @@ export declare class InventoryController {
         deleted: boolean;
         id: number;
     }>;
+    listUnifiedItems(queryCompanyId: string, type: string, categoryId: string, search: string, status: string, headerCompanyId: string, req: any): Promise<{
+        id: number;
+        companyId: number;
+        code: string;
+        sku: string;
+        name: string;
+        description: string;
+        itemType: string;
+        item_type: string;
+        categoryId: number;
+        product_category_id: number;
+        categoryName: string;
+        category: string;
+        unitMeasure: string;
+        unit_measure: string;
+        unit: string;
+        salePrice: number;
+        sale_price: number;
+        purchasePrice: number;
+        purchase_price: number;
+        taxRate: number;
+        tax_rate: number;
+        stockCurrent: number;
+        stock_current: number;
+        reservedStock: number;
+        availableStock: number;
+        indActive: boolean;
+        status: boolean;
+        enabled: boolean;
+        created_at: Date;
+    }[]>;
+    getUnifiedItem(id: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+        id: number;
+        companyId: number;
+        code: string;
+        sku: string;
+        name: string;
+        description: string;
+        itemType: string;
+        item_type: string;
+        categoryId: number;
+        product_category_id: number;
+        categoryName: string;
+        unitMeasure: string;
+        salePrice: number;
+        purchasePrice: number;
+        taxRate: number;
+        indActive: boolean;
+        status: boolean;
+        stockInfo: any;
+        created_at: Date;
+    }>;
+    createUnifiedItem(dto: CreateUnifiedItemDto, headerCompanyId: string, req: any): Promise<import("../infrastructure/persistence/inventory.orm-entity").ItemOrmEntity>;
+    updateUnifiedItem(id: string, dto: UpdateUnifiedItemDto, headerCompanyId: string, req: any): Promise<import("../infrastructure/persistence/inventory.orm-entity").ItemOrmEntity>;
+    deleteUnifiedItem(id: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+        deleted: boolean;
+        deactivated: boolean;
+        message: string;
+        id?: undefined;
+    } | {
+        deleted: boolean;
+        id: number;
+        deactivated?: undefined;
+        message?: undefined;
+    }>;
+    getStock(productId: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+        productId: number;
+        totalStock: number;
+        totalReserved: number;
+        availableStock: number;
+        warehouses: {
+            warehouseId: number;
+            warehouseCode: string;
+            warehouseName: string;
+            isDefault: boolean;
+            stock: number;
+            reservedStock: number;
+            availableStock: number;
+            averageCost: number;
+        }[];
+    }>;
+    getStockByWarehouse(warehouseId: string, productId: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+        id: number;
+        productId: number;
+        productCode: string;
+        productName: string;
+        itemType: string;
+        warehouseId: number;
+        warehouseName: string;
+        stock: number;
+        reservedStock: number;
+        availableStock: number;
+        averageCost: number;
+        updated_at: Date;
+    }[]>;
+    getKardex(productId: string, warehouseId: string, fromDate: string, toDate: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+        id: number;
+        date: Date;
+        warehouseId: number;
+        warehouseName: string;
+        productId: number;
+        productCode: string;
+        productName: string;
+        type: string;
+        reason: string;
+        quantity: number;
+        unitCost: number;
+        totalCost: number;
+        stockAfter: number;
+        originDocument: string;
+        originName: string;
+        groupId: string;
+        reversalOfId: number;
+    }[]>;
+    reconcileStock(warehouseId: string, productId: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<{
+        companyId: number;
+        warehouseId: number;
+        productId: number;
+        currentBalanceStock: number;
+        historicalStock: number;
+        difference: number;
+        isBalanced: boolean;
+    }>;
+    createTransfer(dto: CreateInventoryTransferDto, headerCompanyId: string, req: any): Promise<{
+        movementGroupId: string;
+        exitMovement: import("../infrastructure/persistence/inventory.orm-entity").InventoryMovementOrmEntity;
+        entryMovement: import("../infrastructure/persistence/inventory.orm-entity").InventoryMovementOrmEntity;
+    }>;
+    createAdjustment(dto: CreateInventoryAdjustmentDto, headerCompanyId: string, req: any): Promise<{
+        balance: import("../infrastructure/persistence/inventory.orm-entity").InventoryBalanceOrmEntity;
+        movement?: import("../infrastructure/persistence/inventory.orm-entity").InventoryMovementOrmEntity;
+    }>;
+    reverseMovement(id: string, reason: string, queryCompanyId: string, headerCompanyId: string, req: any): Promise<import("../infrastructure/persistence/inventory.orm-entity").InventoryMovementOrmEntity>;
 }

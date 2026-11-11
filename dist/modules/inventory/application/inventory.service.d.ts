@@ -1,13 +1,18 @@
-import { Repository } from 'typeorm';
-import { InventoryCategoryOrmEntity, InventoryItemOrmEntity, InventoryServiceOrmEntity, InventorySubcontractOrmEntity, InventoryWarehouseOrmEntity } from '../infrastructure/persistence/inventory.orm-entity';
-import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto, CreateInventoryCategoryDto, UpdateInventoryCategoryDto, CreateInventoryWarehouseDto, UpdateInventoryWarehouseDto } from './dto/inventory.dto';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import Decimal from 'decimal.js';
+import { InventoryCategoryOrmEntity, InventoryItemOrmEntity, InventoryServiceOrmEntity, InventorySubcontractOrmEntity, InventoryWarehouseOrmEntity, ItemOrmEntity, InventoryBalanceOrmEntity, InventoryMovementOrmEntity } from '../infrastructure/persistence/inventory.orm-entity';
+import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto, CreateInventoryCategoryDto, UpdateInventoryCategoryDto, CreateInventoryWarehouseDto, UpdateInventoryWarehouseDto, CreateUnifiedItemDto, UpdateUnifiedItemDto, CreateInventoryAdjustmentDto, CreateInventoryTransferDto } from './dto/inventory.dto';
 export declare class InventoryService {
     private readonly itemRepo;
     private readonly serviceRepo;
     private readonly subcontractRepo;
     private readonly categoryRepo;
     private readonly warehouseRepo;
-    constructor(itemRepo: Repository<InventoryItemOrmEntity>, serviceRepo: Repository<InventoryServiceOrmEntity>, subcontractRepo: Repository<InventorySubcontractOrmEntity>, categoryRepo: Repository<InventoryCategoryOrmEntity>, warehouseRepo: Repository<InventoryWarehouseOrmEntity>);
+    private readonly unifiedItemRepo;
+    private readonly balanceRepo;
+    private readonly movementRepo;
+    private readonly dataSource;
+    constructor(itemRepo: Repository<InventoryItemOrmEntity>, serviceRepo: Repository<InventoryServiceOrmEntity>, subcontractRepo: Repository<InventorySubcontractOrmEntity>, categoryRepo: Repository<InventoryCategoryOrmEntity>, warehouseRepo: Repository<InventoryWarehouseOrmEntity>, unifiedItemRepo: Repository<ItemOrmEntity>, balanceRepo: Repository<InventoryBalanceOrmEntity>, movementRepo: Repository<InventoryMovementOrmEntity>, dataSource: DataSource);
     private generateNextCode;
     listItems(companyId: number): Promise<{
         id: number;
@@ -255,10 +260,12 @@ export declare class InventoryService {
         id: number;
     }>;
     private mapSubcontract;
-    listCategories(companyId: number): Promise<{
+    listCategories(companyId: number, type?: string): Promise<{
         id: number;
         code: string;
         name: string;
+        categoryType: string;
+        category_type: string;
         description: string;
         enabled: boolean;
         status: boolean;
@@ -269,6 +276,8 @@ export declare class InventoryService {
         id: number;
         code: string;
         name: string;
+        categoryType: string;
+        category_type: string;
         description: string;
         enabled: boolean;
         status: boolean;
@@ -279,6 +288,8 @@ export declare class InventoryService {
         id: number;
         code: string;
         name: string;
+        categoryType: string;
+        category_type: string;
         description: string;
         enabled: boolean;
         status: boolean;
@@ -340,5 +351,174 @@ export declare class InventoryService {
     deleteWarehouse(id: number, companyId: number): Promise<{
         deleted: boolean;
         id: number;
+    }>;
+    calculateAverageCost(currentStock: Decimal, currentAvgCost: Decimal, entryQty: Decimal, entryUnitCost: Decimal): Decimal;
+    registerEntry(params: {
+        companyId: number;
+        warehouseId: number;
+        productId: number;
+        quantity: number;
+        unitCost?: number;
+        movementReason: 'OPENING' | 'PURCHASE' | 'CUSTOMER_RETURN' | 'ADJUSTMENT' | 'TRANSFER' | 'REVERSAL';
+        collectionOriginId?: string;
+        collectionOriginName?: string;
+        collectionOriginDocument?: string;
+        movementGroupId?: string;
+        idempotencyKey?: string;
+        reversalOfMovementId?: number;
+        createdUserId?: number;
+    }, externalManager?: EntityManager): Promise<InventoryMovementOrmEntity>;
+    registerExit(params: {
+        companyId: number;
+        warehouseId: number;
+        productId: number;
+        quantity: number;
+        unitCost?: number;
+        movementReason: 'SALE' | 'SUPPLIER_RETURN' | 'ADJUSTMENT' | 'TRANSFER' | 'REVERSAL';
+        collectionOriginId?: string;
+        collectionOriginName?: string;
+        collectionOriginDocument?: string;
+        movementGroupId?: string;
+        idempotencyKey?: string;
+        reversalOfMovementId?: number;
+        createdUserId?: number;
+    }, externalManager?: EntityManager): Promise<InventoryMovementOrmEntity>;
+    registerTransfer(params: CreateInventoryTransferDto, externalManager?: EntityManager): Promise<{
+        movementGroupId: string;
+        exitMovement: InventoryMovementOrmEntity;
+        entryMovement: InventoryMovementOrmEntity;
+    }>;
+    createAdjustment(params: CreateInventoryAdjustmentDto, externalManager?: EntityManager): Promise<{
+        balance: InventoryBalanceOrmEntity;
+        movement?: InventoryMovementOrmEntity;
+    }>;
+    reverseMovement(movementId: number, companyId: number, reason?: string, externalManager?: EntityManager): Promise<InventoryMovementOrmEntity>;
+    getStock(companyId: number, productId: number): Promise<{
+        productId: number;
+        totalStock: number;
+        totalReserved: number;
+        availableStock: number;
+        warehouses: {
+            warehouseId: number;
+            warehouseCode: string;
+            warehouseName: string;
+            isDefault: boolean;
+            stock: number;
+            reservedStock: number;
+            availableStock: number;
+            averageCost: number;
+        }[];
+    }>;
+    getStockByWarehouse(companyId: number, warehouseId: number, productId?: number): Promise<{
+        id: number;
+        productId: number;
+        productCode: string;
+        productName: string;
+        itemType: string;
+        warehouseId: number;
+        warehouseName: string;
+        stock: number;
+        reservedStock: number;
+        availableStock: number;
+        averageCost: number;
+        updated_at: Date;
+    }[]>;
+    getKardex(companyId: number, productId: number, warehouseId?: number, fromDate?: string, toDate?: string): Promise<{
+        id: number;
+        date: Date;
+        warehouseId: number;
+        warehouseName: string;
+        productId: number;
+        productCode: string;
+        productName: string;
+        type: string;
+        reason: string;
+        quantity: number;
+        unitCost: number;
+        totalCost: number;
+        stockAfter: number;
+        originDocument: string;
+        originName: string;
+        groupId: string;
+        reversalOfId: number;
+    }[]>;
+    reconcileStock(companyId: number, warehouseId: number, productId: number): Promise<{
+        companyId: number;
+        warehouseId: number;
+        productId: number;
+        currentBalanceStock: number;
+        historicalStock: number;
+        difference: number;
+        isBalanced: boolean;
+    }>;
+    listUnifiedItems(companyId: number, filters?: {
+        type?: string;
+        categoryId?: number;
+        search?: string;
+        status?: boolean;
+    }): Promise<{
+        id: number;
+        companyId: number;
+        code: string;
+        sku: string;
+        name: string;
+        description: string;
+        itemType: string;
+        item_type: string;
+        categoryId: number;
+        product_category_id: number;
+        categoryName: string;
+        category: string;
+        unitMeasure: string;
+        unit_measure: string;
+        unit: string;
+        salePrice: number;
+        sale_price: number;
+        purchasePrice: number;
+        purchase_price: number;
+        taxRate: number;
+        tax_rate: number;
+        stockCurrent: number;
+        stock_current: number;
+        reservedStock: number;
+        availableStock: number;
+        indActive: boolean;
+        status: boolean;
+        enabled: boolean;
+        created_at: Date;
+    }[]>;
+    getUnifiedItemById(id: number, companyId: number): Promise<{
+        id: number;
+        companyId: number;
+        code: string;
+        sku: string;
+        name: string;
+        description: string;
+        itemType: string;
+        item_type: string;
+        categoryId: number;
+        product_category_id: number;
+        categoryName: string;
+        unitMeasure: string;
+        salePrice: number;
+        purchasePrice: number;
+        taxRate: number;
+        indActive: boolean;
+        status: boolean;
+        stockInfo: any;
+        created_at: Date;
+    }>;
+    createUnifiedItem(dto: CreateUnifiedItemDto, userId?: number): Promise<ItemOrmEntity>;
+    updateUnifiedItem(id: number, companyId: number, dto: UpdateUnifiedItemDto): Promise<ItemOrmEntity>;
+    deleteUnifiedItem(id: number, companyId: number): Promise<{
+        deleted: boolean;
+        deactivated: boolean;
+        message: string;
+        id?: undefined;
+    } | {
+        deleted: boolean;
+        id: number;
+        deactivated?: undefined;
+        message?: undefined;
     }>;
 }

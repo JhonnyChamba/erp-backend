@@ -74,9 +74,9 @@ let InventoryController = class InventoryController {
         const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
         return this.inventoryService.deleteSubcontract(Number(id), companyId);
     }
-    listCategories(queryCompanyId, headerCompanyId, req) {
+    listCategories(queryCompanyId, type, headerCompanyId, req) {
         const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
-        return this.inventoryService.listCategories(companyId);
+        return this.inventoryService.listCategories(companyId, type);
     }
     createCategory(dto, headerCompanyId, req) {
         const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
@@ -105,6 +105,65 @@ let InventoryController = class InventoryController {
     deleteWarehouse(id, queryCompanyId, headerCompanyId, req) {
         const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
         return this.inventoryService.deleteWarehouse(Number(id), companyId);
+    }
+    listUnifiedItems(queryCompanyId, type, categoryId, search, status, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        const parsedStatus = status === 'true' ? true : status === 'false' ? false : undefined;
+        return this.inventoryService.listUnifiedItems(companyId, {
+            type,
+            categoryId: categoryId ? Number(categoryId) : undefined,
+            search,
+            status: parsedStatus,
+        });
+    }
+    getUnifiedItem(id, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.getUnifiedItemById(Number(id), companyId);
+    }
+    createUnifiedItem(dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        dto.companyId = companyId;
+        return this.inventoryService.createUnifiedItem(dto, req.user?.user_id);
+    }
+    updateUnifiedItem(id, dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        return this.inventoryService.updateUnifiedItem(Number(id), companyId, dto);
+    }
+    deleteUnifiedItem(id, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.deleteUnifiedItem(Number(id), companyId);
+    }
+    getStock(productId, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.getStock(companyId, Number(productId));
+    }
+    getStockByWarehouse(warehouseId, productId, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.getStockByWarehouse(companyId, Number(warehouseId), productId ? Number(productId) : undefined);
+    }
+    getKardex(productId, warehouseId, fromDate, toDate, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.getKardex(companyId, Number(productId), warehouseId ? Number(warehouseId) : undefined, fromDate, toDate);
+    }
+    reconcileStock(warehouseId, productId, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.reconcileStock(companyId, Number(warehouseId), Number(productId));
+    }
+    createTransfer(dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        dto.companyId = companyId;
+        dto.created_user_id = req.user?.user_id;
+        return this.inventoryService.registerTransfer(dto);
+    }
+    createAdjustment(dto, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(undefined, headerCompanyId, dto.companyId, req);
+        dto.companyId = companyId;
+        dto.created_user_id = req.user?.user_id;
+        return this.inventoryService.createAdjustment(dto);
+    }
+    reverseMovement(id, reason, queryCompanyId, headerCompanyId, req) {
+        const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+        return this.inventoryService.reverseMovement(Number(id), companyId, reason);
     }
 };
 exports.InventoryController = InventoryController;
@@ -225,10 +284,11 @@ __decorate([
 __decorate([
     (0, common_1.Get)('categories'),
     __param(0, (0, common_1.Query)('companyId')),
-    __param(1, (0, common_1.Headers)('x-company-id')),
-    __param(2, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('type')),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "listCategories", null);
 __decorate([
@@ -298,6 +358,132 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "deleteWarehouse", null);
+__decorate([
+    (0, common_1.Get)('unified-items'),
+    __param(0, (0, common_1.Query)('companyId')),
+    __param(1, (0, common_1.Query)('type')),
+    __param(2, (0, common_1.Query)('categoryId')),
+    __param(3, (0, common_1.Query)('search')),
+    __param(4, (0, common_1.Query)('status')),
+    __param(5, (0, common_1.Headers)('x-company-id')),
+    __param(6, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "listUnifiedItems", null);
+__decorate([
+    (0, common_1.Get)('unified-items/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getUnifiedItem", null);
+__decorate([
+    (0, common_1.Post)('unified-items'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inventory_dto_1.CreateUnifiedItemDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createUnifiedItem", null);
+__decorate([
+    (0, common_1.Patch)('unified-items/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, inventory_dto_1.UpdateUnifiedItemDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateUnifiedItem", null);
+__decorate([
+    (0, common_1.Delete)('unified-items/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteUnifiedItem", null);
+__decorate([
+    (0, common_1.Get)('stock/:productId'),
+    __param(0, (0, common_1.Param)('productId')),
+    __param(1, (0, common_1.Query)('companyId')),
+    __param(2, (0, common_1.Headers)('x-company-id')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getStock", null);
+__decorate([
+    (0, common_1.Get)('stock/warehouse/:warehouseId'),
+    __param(0, (0, common_1.Param)('warehouseId')),
+    __param(1, (0, common_1.Query)('productId')),
+    __param(2, (0, common_1.Query)('companyId')),
+    __param(3, (0, common_1.Headers)('x-company-id')),
+    __param(4, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getStockByWarehouse", null);
+__decorate([
+    (0, common_1.Get)('kardex/:productId'),
+    __param(0, (0, common_1.Param)('productId')),
+    __param(1, (0, common_1.Query)('warehouseId')),
+    __param(2, (0, common_1.Query)('fromDate')),
+    __param(3, (0, common_1.Query)('toDate')),
+    __param(4, (0, common_1.Query)('companyId')),
+    __param(5, (0, common_1.Headers)('x-company-id')),
+    __param(6, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getKardex", null);
+__decorate([
+    (0, common_1.Get)('reconcile'),
+    __param(0, (0, common_1.Query)('warehouseId')),
+    __param(1, (0, common_1.Query)('productId')),
+    __param(2, (0, common_1.Query)('companyId')),
+    __param(3, (0, common_1.Headers)('x-company-id')),
+    __param(4, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "reconcileStock", null);
+__decorate([
+    (0, common_1.Post)('transfers'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inventory_dto_1.CreateInventoryTransferDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createTransfer", null);
+__decorate([
+    (0, common_1.Post)('adjustments'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-company-id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inventory_dto_1.CreateInventoryAdjustmentDto, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createAdjustment", null);
+__decorate([
+    (0, common_1.Post)('movements/:id/reverse'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('reason')),
+    __param(2, (0, common_1.Query)('companyId')),
+    __param(3, (0, common_1.Headers)('x-company-id')),
+    __param(4, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "reverseMovement", null);
 exports.InventoryController = InventoryController = __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Controller)('inventory'),

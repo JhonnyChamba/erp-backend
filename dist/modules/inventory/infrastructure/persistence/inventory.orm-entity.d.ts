@@ -1,4 +1,4 @@
-import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
+import { CompanyOrmEntity } from '../../../company/infrastructure/persistence/company.orm-entity';
 export declare class InventoryItemOrmEntity {
     id: number;
     code: string;

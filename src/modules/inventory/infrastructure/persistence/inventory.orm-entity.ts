@@ -8,7 +8,7 @@ import {
 	JoinColumn,
 	Index,
 } from 'typeorm';
-import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
+import { CompanyOrmEntity } from '../../../company/infrastructure/persistence/company.orm-entity';
 
 /**
  * 1. TABLA DE ÍTEMS / ARTÍCULOS FÍSICOS (tab_inventory_item) - Legado / Compatibilidad
