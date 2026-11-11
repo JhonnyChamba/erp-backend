@@ -43,3 +43,4 @@ export class UpdateSequenceDto {
 	@Min(0, { message: 'El correlativo no puede ser negativo' })
 	correlative: number;
 }
+

@@ -51,3 +51,4 @@ export class CreateEmissionPointTables1794600000000 implements MigrationInterfac
 		await queryRunner.query(`DROP TABLE IF EXISTS "tab_emission_point"`);
 	}
 }
+

@@ -91,3 +91,4 @@ export class EmissionPointSequenceOrmEntity {
 	@UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
 	updated_at: Date;
 }
+
