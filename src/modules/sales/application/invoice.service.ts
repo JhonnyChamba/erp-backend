@@ -4,7 +4,11 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 import { randomInt } from 'crypto';
 import { InvoiceOrmEntity, InvoiceDetailOrmEntity } from '../infrastructure/persistence/invoice.orm-entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
-import { InventoryItemOrmEntity } from 'src/modules/inventory/infrastructure/persistence/inventory.orm-entity';
+import {
+	InventoryItemOrmEntity,
+	InventoryWarehouseOrmEntity,
+} from 'src/modules/inventory/infrastructure/persistence/inventory.orm-entity';
+import { InventoryService } from 'src/modules/inventory/application/inventory.service';
 import { BranchCompanyOrmEntity } from 'src/modules/branch-company/infrastructure/persistence/branch-company.orm-entity';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
 import { decryptSecret } from 'src/common/crypto/secret-crypto';
@@ -23,6 +27,7 @@ export class InvoiceService {
 		private readonly inventoryItemRepo: Repository<InventoryItemOrmEntity>,
 		@InjectRepository(CompanyOrmEntity)
 		private readonly companyRepo: Repository<CompanyOrmEntity>,
+		private readonly inventoryService: InventoryService,
 		@InjectDataSource()
 		private readonly dataSource: DataSource,
 	) {}
@@ -132,6 +137,18 @@ export class InvoiceService {
 			issueDate, companyRuc, establishment, emissionPoint, sequential, company.sri_environment || '1',
 		);
 
+		// Resolver bodega predeterminada de despacho para la factura
+		let headerWarehouseId = dto.warehouse_id ?? dto.warehouseId;
+		if (!headerWarehouseId) {
+			const activeWhs = await manager.getRepository(InventoryWarehouseOrmEntity).find({
+				where: { company: { id: companyId }, deleted: false, enabled: true },
+				order: { is_default: 'DESC', id: 'ASC' },
+			});
+			if (activeWhs.length > 0) {
+				headerWarehouseId = activeWhs[0].id;
+			}
+		}
+
 		// Calcular totales conforme al SRI
 		let subtotalZero = 0;
 		let subtotalTaxable = 0;
@@ -161,9 +178,12 @@ export class InvoiceService {
 			discountTotal += discount;
 			taxTotal += rowTax;
 
+			const detailWarehouseId = d.warehouse_id ?? d.warehouseId ?? headerWarehouseId;
+
 			const detail = detailRepo.create({
-				item_type: d.item_type || 'ITEM',
+				item_type: d.item_type || 'PRODUCT',
 				item_id: d.item_id,
+				warehouse_id: detailWarehouseId || null,
 				code: d.code || '',
 				description: d.description,
 				quantity: qty,
@@ -176,13 +196,27 @@ export class InvoiceService {
 			});
 			detailEntities.push(detail);
 
-			// Si es un artículo físico del inventario, descontar stock
-			if (d.item_type === 'ITEM' && d.item_id) {
-				const item = await inventoryItemRepo.findOne({ where: { id: d.item_id, company: { id: companyId } } });
-				if (item) {
-					item.stock_current = Math.max(0, Number(item.stock_current || 0) - qty);
-					await inventoryItemRepo.save(item);
+			// Si es un artículo físico (PRODUCT o ITEM), registrar la salida con InventoryService
+			const isPhysical = d.item_type === 'PRODUCT' || d.item_type === 'ITEM';
+			if (isPhysical && d.item_id) {
+				if (!detailWarehouseId) {
+					throw new BadRequestException(
+						`El producto "${d.description}" requiere una bodega de despacho asignada para controlar inventario.`,
+					);
 				}
+				await this.inventoryService.registerExit(
+					{
+						companyId,
+						warehouseId: detailWarehouseId,
+						productId: d.item_id,
+						quantity: qty,
+						movementReason: 'SALE',
+						collectionOriginName: 'INVOICE',
+						collectionOriginDocument: invoiceNumber,
+						createdUserId: userId,
+					},
+					manager,
+				);
 			}
 		}
 
@@ -194,6 +228,7 @@ export class InvoiceService {
 			emission_point: emissionPoint,
 			branch_id: branch.id,
 			branch_address: branch.address,
+			warehouse_id: headerWarehouseId || null,
 			sequential,
 			invoice_number: invoiceNumber,
 			issue_date: issueDate,
@@ -247,13 +282,25 @@ export class InvoiceService {
 
 		// Al anular se devuelve al inventario el stock que descontó la factura (en una sola transacción).
 		return this.dataSource.transaction(async (manager) => {
-			const itemRepo = manager.getRepository(InventoryItemOrmEntity);
 			for (const d of invoice.details || []) {
-				if (d.item_type === 'ITEM' && d.item_id) {
-					const item = await itemRepo.findOne({ where: { id: d.item_id, company: { id: companyId } } });
-					if (item) {
-						item.stock_current = Number(item.stock_current || 0) + Number(d.quantity || 0);
-						await itemRepo.save(item);
+				const isPhysical = d.item_type === 'PRODUCT' || d.item_type === 'ITEM';
+				const warehouseId = d.warehouse_id || invoice.warehouse_id;
+				if (isPhysical && d.item_id && warehouseId) {
+					try {
+						await this.inventoryService.registerEntry(
+							{
+								companyId,
+								warehouseId,
+								productId: d.item_id,
+								quantity: Number(d.quantity || 1),
+								movementReason: 'CUSTOMER_RETURN',
+								collectionOriginName: 'INVOICE_CANCEL',
+								collectionOriginDocument: `Anulación de factura ${invoice.invoice_number}`,
+							},
+							manager,
+						);
+					} catch (e) {
+						// Si el artículo no existe en inventario o fue eliminado, continuar
 					}
 				}
 			}

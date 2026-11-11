@@ -1,6 +1,8 @@
 export declare class CreateInvoiceDetailDto {
     item_type?: string;
     item_id?: number;
+    warehouse_id?: number;
+    warehouseId?: number;
     code?: string;
     description: string;
     quantity: number;
@@ -11,6 +13,8 @@ export declare class CreateInvoiceDetailDto {
 export declare class CreateInvoiceDto {
     companyId?: number;
     branchId: number;
+    warehouse_id?: number;
+    warehouseId?: number;
     emission_point?: string;
     issue_date?: string;
     customer_id_type: string;

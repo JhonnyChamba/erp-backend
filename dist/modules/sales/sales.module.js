@@ -14,6 +14,7 @@ const invoice_service_1 = require("./application/invoice.service");
 const invoice_controller_1 = require("./presentation/invoice.controller");
 const inventory_orm_entity_1 = require("../inventory/infrastructure/persistence/inventory.orm-entity");
 const company_orm_entity_1 = require("../company/infrastructure/persistence/company.orm-entity");
+const inventory_module_1 = require("../inventory/inventory.module");
 let SalesModule = class SalesModule {
 };
 exports.SalesModule = SalesModule;
@@ -26,6 +27,7 @@ exports.SalesModule = SalesModule = __decorate([
                 inventory_orm_entity_1.InventoryItemOrmEntity,
                 company_orm_entity_1.CompanyOrmEntity,
             ]),
+            inventory_module_1.InventoryModule,
         ],
         controllers: [invoice_controller_1.InvoiceController],
         providers: [invoice_service_1.InvoiceService],

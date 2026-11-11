@@ -6,6 +6,7 @@ export declare class InvoiceOrmEntity {
     emission_point: string;
     branch_id: number | null;
     branch_address: string | null;
+    warehouse_id: number | null;
     sequential: string;
     invoice_number: string;
     issue_date: string;
@@ -50,6 +51,7 @@ export declare class InvoiceDetailOrmEntity {
     invoice: InvoiceOrmEntity;
     item_type: string;
     item_id: number;
+    warehouse_id: number | null;
     code: string;
     description: string;
     quantity: number;

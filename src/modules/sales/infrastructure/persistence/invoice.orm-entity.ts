@@ -35,6 +35,10 @@ export class InvoiceOrmEntity {
 	@Column({ type: 'varchar', length: 300, nullable: true })
 	branch_address: string | null;
 
+	// Bodega predeterminada de despacho para la factura
+	@Column({ type: 'int', nullable: true })
+	warehouse_id: number | null;
+
 	@Column({ length: 9 })
 	sequential: string; // 9 dígitos secuenciales
 
@@ -161,10 +165,14 @@ export class InvoiceDetailOrmEntity {
 
 	// Referencia opcional al catálogo
 	@Column({ length: 20, nullable: true })
-	item_type: string; // 'ITEM' | 'SERVICE' | 'SUBCONTRACT'
+	item_type: string; // 'PRODUCT' | 'SERVICE' | 'LABOR' | 'ITEM'
 
 	@Column({ nullable: true })
 	item_id: number;
+
+	// Bodega de donde se despacha el producto específico en esta fila
+	@Column({ type: 'int', nullable: true })
+	warehouse_id: number | null;
 
 	@Column({ length: 30, nullable: true })
 	code: string;

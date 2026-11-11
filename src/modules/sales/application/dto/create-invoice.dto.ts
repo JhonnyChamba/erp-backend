@@ -18,6 +18,16 @@ export class CreateInvoiceDetailDto {
 	@IsOptional()
 	item_id?: number;
 
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouse_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouseId?: number;
+
 	@IsString()
 	@IsOptional()
 	code?: string;
@@ -56,6 +66,16 @@ export class CreateInvoiceDto {
 	@IsNumber({}, { message: 'Debes seleccionar la sucursal (establecimiento) con la que se emite la factura' })
 	@IsNotEmpty({ message: 'Debes seleccionar la sucursal (establecimiento) con la que se emite la factura' })
 	branchId: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouse_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouseId?: number;
 
 	@IsString()
 	@IsOptional()

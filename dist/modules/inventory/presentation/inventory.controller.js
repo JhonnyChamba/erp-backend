@@ -13,11 +13,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryController = void 0;
-const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
-const common_1 = require("@nestjs/common");
-const passport_1 = require("@nestjs/passport");
-const inventory_service_1 = require("../application/inventory.service");
 const inventory_dto_1 = require("../application/dto/inventory.dto");
+const common_1 = require("@nestjs/common");
+const company_access_guard_1 = require("../../../auth/guards/company-access.guard");
+const inventory_service_1 = require("../application/inventory.service");
+const passport_1 = require("@nestjs/passport");
 let InventoryController = class InventoryController {
     inventoryService;
     constructor(inventoryService) {

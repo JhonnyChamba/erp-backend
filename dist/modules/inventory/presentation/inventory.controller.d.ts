@@ -1,5 +1,5 @@
-import { InventoryService } from '../application/inventory.service';
 import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto, CreateInventoryCategoryDto, UpdateInventoryCategoryDto, CreateInventoryWarehouseDto, UpdateInventoryWarehouseDto, CreateUnifiedItemDto, UpdateUnifiedItemDto, CreateInventoryTransferDto, CreateInventoryAdjustmentDto } from '../application/dto/inventory.dto';
+import { InventoryService } from '../application/inventory.service';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);

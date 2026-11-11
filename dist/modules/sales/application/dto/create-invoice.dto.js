@@ -15,6 +15,8 @@ const class_transformer_1 = require("class-transformer");
 class CreateInvoiceDetailDto {
     item_type;
     item_id;
+    warehouse_id;
+    warehouseId;
     code;
     description;
     quantity;
@@ -34,6 +36,18 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateInvoiceDetailDto.prototype, "item_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInvoiceDetailDto.prototype, "warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInvoiceDetailDto.prototype, "warehouseId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -69,6 +83,8 @@ __decorate([
 class CreateInvoiceDto {
     companyId;
     branchId;
+    warehouse_id;
+    warehouseId;
     emission_point;
     issue_date;
     customer_id_type;
@@ -94,6 +110,18 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'Debes seleccionar la sucursal (establecimiento) con la que se emite la factura' }),
     __metadata("design:type", Number)
 ], CreateInvoiceDto.prototype, "branchId", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInvoiceDto.prototype, "warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInvoiceDto.prototype, "warehouseId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

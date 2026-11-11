@@ -19,6 +19,7 @@ const typeorm_2 = require("typeorm");
 const crypto_1 = require("crypto");
 const invoice_orm_entity_1 = require("../infrastructure/persistence/invoice.orm-entity");
 const inventory_orm_entity_1 = require("../../inventory/infrastructure/persistence/inventory.orm-entity");
+const inventory_service_1 = require("../../inventory/application/inventory.service");
 const branch_company_orm_entity_1 = require("../../branch-company/infrastructure/persistence/branch-company.orm-entity");
 const company_orm_entity_1 = require("../../company/infrastructure/persistence/company.orm-entity");
 const secret_crypto_1 = require("../../../common/crypto/secret-crypto");
@@ -30,12 +31,14 @@ let InvoiceService = class InvoiceService {
     detailRepo;
     inventoryItemRepo;
     companyRepo;
+    inventoryService;
     dataSource;
-    constructor(invoiceRepo, detailRepo, inventoryItemRepo, companyRepo, dataSource) {
+    constructor(invoiceRepo, detailRepo, inventoryItemRepo, companyRepo, inventoryService, dataSource) {
         this.invoiceRepo = invoiceRepo;
         this.detailRepo = detailRepo;
         this.inventoryItemRepo = inventoryItemRepo;
         this.companyRepo = companyRepo;
+        this.inventoryService = inventoryService;
         this.dataSource = dataSource;
     }
     generateSRIAccessKey(issueDate, ruc, establishment, emissionPoint, sequential, environment = '1') {
@@ -113,6 +116,16 @@ let InvoiceService = class InvoiceService {
         const issueDate = dto.issue_date || new Date().toISOString().slice(0, 10);
         const companyRuc = company.ruc.trim();
         const accessKey = this.generateSRIAccessKey(issueDate, companyRuc, establishment, emissionPoint, sequential, company.sri_environment || '1');
+        let headerWarehouseId = dto.warehouse_id ?? dto.warehouseId;
+        if (!headerWarehouseId) {
+            const activeWhs = await manager.getRepository(inventory_orm_entity_1.InventoryWarehouseOrmEntity).find({
+                where: { company: { id: companyId }, deleted: false, enabled: true },
+                order: { is_default: 'DESC', id: 'ASC' },
+            });
+            if (activeWhs.length > 0) {
+                headerWarehouseId = activeWhs[0].id;
+            }
+        }
         let subtotalZero = 0;
         let subtotalTaxable = 0;
         let subtotalGross = 0;
@@ -136,9 +149,11 @@ let InvoiceService = class InvoiceService {
             subtotalGross += qty * unitPrice;
             discountTotal += discount;
             taxTotal += rowTax;
+            const detailWarehouseId = d.warehouse_id ?? d.warehouseId ?? headerWarehouseId;
             const detail = detailRepo.create({
-                item_type: d.item_type || 'ITEM',
+                item_type: d.item_type || 'PRODUCT',
                 item_id: d.item_id,
+                warehouse_id: detailWarehouseId || null,
                 code: d.code || '',
                 description: d.description,
                 quantity: qty,
@@ -150,12 +165,21 @@ let InvoiceService = class InvoiceService {
                 total: rowTotal,
             });
             detailEntities.push(detail);
-            if (d.item_type === 'ITEM' && d.item_id) {
-                const item = await inventoryItemRepo.findOne({ where: { id: d.item_id, company: { id: companyId } } });
-                if (item) {
-                    item.stock_current = Math.max(0, Number(item.stock_current || 0) - qty);
-                    await inventoryItemRepo.save(item);
+            const isPhysical = d.item_type === 'PRODUCT' || d.item_type === 'ITEM';
+            if (isPhysical && d.item_id) {
+                if (!detailWarehouseId) {
+                    throw new common_1.BadRequestException(`El producto "${d.description}" requiere una bodega de despacho asignada para controlar inventario.`);
                 }
+                await this.inventoryService.registerExit({
+                    companyId,
+                    warehouseId: detailWarehouseId,
+                    productId: d.item_id,
+                    quantity: qty,
+                    movementReason: 'SALE',
+                    collectionOriginName: 'INVOICE',
+                    collectionOriginDocument: invoiceNumber,
+                    createdUserId: userId,
+                }, manager);
             }
         }
         const total = Number((subtotalTaxable + subtotalZero + taxTotal).toFixed(2));
@@ -165,6 +189,7 @@ let InvoiceService = class InvoiceService {
             emission_point: emissionPoint,
             branch_id: branch.id,
             branch_address: branch.address,
+            warehouse_id: headerWarehouseId || null,
             sequential,
             invoice_number: invoiceNumber,
             issue_date: issueDate,
@@ -213,13 +238,22 @@ let InvoiceService = class InvoiceService {
         if (invoice.status === 'CANCELED')
             return invoice;
         return this.dataSource.transaction(async (manager) => {
-            const itemRepo = manager.getRepository(inventory_orm_entity_1.InventoryItemOrmEntity);
             for (const d of invoice.details || []) {
-                if (d.item_type === 'ITEM' && d.item_id) {
-                    const item = await itemRepo.findOne({ where: { id: d.item_id, company: { id: companyId } } });
-                    if (item) {
-                        item.stock_current = Number(item.stock_current || 0) + Number(d.quantity || 0);
-                        await itemRepo.save(item);
+                const isPhysical = d.item_type === 'PRODUCT' || d.item_type === 'ITEM';
+                const warehouseId = d.warehouse_id || invoice.warehouse_id;
+                if (isPhysical && d.item_id && warehouseId) {
+                    try {
+                        await this.inventoryService.registerEntry({
+                            companyId,
+                            warehouseId,
+                            productId: d.item_id,
+                            quantity: Number(d.quantity || 1),
+                            movementReason: 'CUSTOMER_RETURN',
+                            collectionOriginName: 'INVOICE_CANCEL',
+                            collectionOriginDocument: `Anulación de factura ${invoice.invoice_number}`,
+                        }, manager);
+                    }
+                    catch (e) {
                     }
                 }
             }
@@ -357,11 +391,12 @@ exports.InvoiceService = InvoiceService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(invoice_orm_entity_1.InvoiceDetailOrmEntity)),
     __param(2, (0, typeorm_1.InjectRepository)(inventory_orm_entity_1.InventoryItemOrmEntity)),
     __param(3, (0, typeorm_1.InjectRepository)(company_orm_entity_1.CompanyOrmEntity)),
-    __param(4, (0, typeorm_1.InjectDataSource)()),
+    __param(5, (0, typeorm_1.InjectDataSource)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
+        inventory_service_1.InventoryService,
         typeorm_2.DataSource])
 ], InvoiceService);
 //# sourceMappingURL=invoice.service.js.map

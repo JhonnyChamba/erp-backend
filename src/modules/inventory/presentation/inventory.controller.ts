@@ -1,40 +1,13 @@
+import { CreateInventoryItemDto, UpdateInventoryItemDto, CreateInventoryServiceDto, UpdateInventoryServiceDto, CreateInventorySubcontractDto, UpdateInventorySubcontractDto, CreateInventoryCategoryDto, UpdateInventoryCategoryDto, CreateInventoryWarehouseDto, UpdateInventoryWarehouseDto, CreateUnifiedItemDto, UpdateUnifiedItemDto, CreateInventoryTransferDto, CreateInventoryAdjustmentDto } from '../application/dto/inventory.dto';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
-import {
-	Body,
-	Controller,
-	Delete,
-	Get,
-	Headers,
-	Param,
-	Patch,
-	Post,
-	Query,
-	Req,
-	UseGuards,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { InventoryService } from '../application/inventory.service';
-import {
-	CreateInventoryItemDto,
-	UpdateInventoryItemDto,
-	CreateInventoryServiceDto,
-	UpdateInventoryServiceDto,
-	CreateInventorySubcontractDto,
-	UpdateInventorySubcontractDto,
-	CreateInventoryCategoryDto,
-	UpdateInventoryCategoryDto,
-	CreateInventoryWarehouseDto,
-	UpdateInventoryWarehouseDto,
-	CreateUnifiedItemDto,
-	UpdateUnifiedItemDto,
-	CreateInventoryTransferDto,
-	CreateInventoryAdjustmentDto,
-} from '../application/dto/inventory.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('inventory')
 export class InventoryController {
-	constructor(private readonly inventoryService: InventoryService) {}
+	constructor(private readonly inventoryService: InventoryService) { }
 
 	private resolveCompanyId(queryCompanyId?: any, headerCompanyId?: any, bodyCompanyId?: any, req?: any): number {
 		return Number(queryCompanyId || bodyCompanyId || headerCompanyId || req?.user?.company_id || 1);

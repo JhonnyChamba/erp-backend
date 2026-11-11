@@ -19,6 +19,7 @@ let InvoiceOrmEntity = class InvoiceOrmEntity {
     emission_point;
     branch_id;
     branch_address;
+    warehouse_id;
     sequential;
     invoice_number;
     issue_date;
@@ -79,6 +80,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 300, nullable: true }),
     __metadata("design:type", String)
 ], InvoiceOrmEntity.prototype, "branch_address", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], InvoiceOrmEntity.prototype, "warehouse_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 9 }),
     __metadata("design:type", String)
@@ -220,6 +225,7 @@ let InvoiceDetailOrmEntity = class InvoiceDetailOrmEntity {
     invoice;
     item_type;
     item_id;
+    warehouse_id;
     code;
     description;
     quantity;
@@ -248,6 +254,10 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
 ], InvoiceDetailOrmEntity.prototype, "item_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], InvoiceDetailOrmEntity.prototype, "warehouse_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 30, nullable: true }),
     __metadata("design:type", String)
