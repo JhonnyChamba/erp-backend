@@ -21,6 +21,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
+import { ConfigurationModule } from './modules/configuration/configuration.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { PurchasesModule } from './modules/purchases/purchases.module';
     SalesModule,
     ContactsModule,
     PurchasesModule,
+    ConfigurationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
