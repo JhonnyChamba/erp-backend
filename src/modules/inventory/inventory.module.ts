@@ -6,6 +6,9 @@ import {
 	InventoryServiceOrmEntity,
 	InventorySubcontractOrmEntity,
 	InventoryWarehouseOrmEntity,
+	ItemOrmEntity,
+	InventoryBalanceOrmEntity,
+	InventoryMovementOrmEntity,
 } from './infrastructure/persistence/inventory.orm-entity';
 import { InventoryService } from './application/inventory.service';
 import { InventoryController } from './presentation/inventory.controller';
@@ -18,6 +21,9 @@ import { InventoryController } from './presentation/inventory.controller';
 			InventorySubcontractOrmEntity,
 			InventoryCategoryOrmEntity,
 			InventoryWarehouseOrmEntity,
+			ItemOrmEntity,
+			InventoryBalanceOrmEntity,
+			InventoryMovementOrmEntity,
 		]),
 	],
 	controllers: [InventoryController],

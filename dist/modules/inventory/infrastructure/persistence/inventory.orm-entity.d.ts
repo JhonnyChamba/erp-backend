@@ -61,17 +61,21 @@ export declare class InventoryCategoryOrmEntity {
     id: number;
     code: string;
     name: string;
+    category_type: string;
     description: string;
     company: CompanyOrmEntity;
     created_by: number;
     enabled: boolean;
     deleted: boolean;
     created_at: Date;
+    updated_at: Date;
 }
+export { InventoryCategoryOrmEntity as ProductCategoryOrmEntity };
 export declare class InventoryWarehouseOrmEntity {
     id: number;
     code: string;
     name: string;
+    description: string;
     address: string;
     responsible: string;
     phone: string;
@@ -81,5 +85,61 @@ export declare class InventoryWarehouseOrmEntity {
     created_by: number;
     enabled: boolean;
     deleted: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+export { InventoryWarehouseOrmEntity as WarehouseOrmEntity };
+export declare class ItemOrmEntity {
+    id: number;
+    company: CompanyOrmEntity;
+    code: string;
+    sku: string;
+    name: string;
+    description: string;
+    item_type: string;
+    category: InventoryCategoryOrmEntity;
+    product_category_id: number;
+    category_name: string;
+    unit_measure: string;
+    sale_price: number;
+    purchase_price: number;
+    tax_rate: number;
+    ind_active: boolean;
+    deleted: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+export declare class InventoryBalanceOrmEntity {
+    id: number;
+    company: CompanyOrmEntity;
+    warehouse: InventoryWarehouseOrmEntity;
+    product: ItemOrmEntity;
+    stock: number;
+    reserved_stock: number;
+    average_cost: number;
+    created_at: Date;
+    updated_at: Date;
+}
+export declare class InventoryMovementOrmEntity {
+    id: number;
+    company: CompanyOrmEntity;
+    warehouse: InventoryWarehouseOrmEntity;
+    product: ItemOrmEntity;
+    product_code: string;
+    product_name: string;
+    movement_type: string;
+    movement_reason: string;
+    quantity: number;
+    unit_cost: number;
+    total_cost: number;
+    stock_after: number;
+    collection_origin_id: string;
+    collection_origin_name: string;
+    collection_origin_document: string;
+    movement_group_id: string;
+    idempotency_key: string;
+    reversal_of_movement_id: number;
+    movement_at: Date;
+    created_user_id: number;
     created_at: Date;
 }

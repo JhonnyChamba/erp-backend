@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateInventoryWarehouseDto = exports.CreateInventoryWarehouseDto = exports.UpdateInventoryCategoryDto = exports.CreateInventoryCategoryDto = exports.UpdateInventorySubcontractDto = exports.CreateInventorySubcontractDto = exports.UpdateInventoryServiceDto = exports.CreateInventoryServiceDto = exports.UpdateInventoryItemDto = exports.CreateInventoryItemDto = void 0;
+exports.CreateInventoryTransferDto = exports.CreateInventoryAdjustmentDto = exports.CreateInventoryMovementDto = exports.UpdateUnifiedItemDto = exports.CreateUnifiedItemDto = exports.UpdateInventoryWarehouseDto = exports.CreateInventoryWarehouseDto = exports.UpdateInventoryCategoryDto = exports.CreateInventoryCategoryDto = exports.UpdateInventorySubcontractDto = exports.CreateInventorySubcontractDto = exports.UpdateInventoryServiceDto = exports.CreateInventoryServiceDto = exports.UpdateInventoryItemDto = exports.CreateInventoryItemDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class CreateInventoryItemDto {
@@ -872,6 +872,8 @@ class CreateInventoryCategoryDto {
     companyId;
     code;
     name;
+    category_type;
+    categoryType;
     description;
     enabled;
 }
@@ -896,6 +898,16 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+], CreateInventoryCategoryDto.prototype, "category_type", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryCategoryDto.prototype, "categoryType", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
 ], CreateInventoryCategoryDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsBoolean)(),
@@ -906,6 +918,8 @@ class UpdateInventoryCategoryDto {
     companyId;
     code;
     name;
+    category_type;
+    categoryType;
     description;
     enabled;
 }
@@ -926,6 +940,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateInventoryCategoryDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryCategoryDto.prototype, "category_type", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateInventoryCategoryDto.prototype, "categoryType", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -1080,4 +1104,387 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateInventoryWarehouseDto.prototype, "enabled", void 0);
+class CreateUnifiedItemDto {
+    companyId;
+    code;
+    sku;
+    name;
+    description;
+    item_type;
+    product_category_id;
+    productCategoryId;
+    category_name;
+    unit_measure;
+    sale_price;
+    purchase_price;
+    tax_rate;
+    ind_active;
+    warehouse_id;
+    initial_stock;
+}
+exports.CreateUnifiedItemDto = CreateUnifiedItemDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUnifiedItemDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUnifiedItemDto.prototype, "sku", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)({ message: 'El nombre del concepto es obligatorio' }),
+    __metadata("design:type", String)
+], CreateUnifiedItemDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUnifiedItemDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)({ message: 'El tipo de concepto (PRODUCT / SERVICE / LABOR) es obligatorio' }),
+    __metadata("design:type", String)
+], CreateUnifiedItemDto.prototype, "item_type", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "product_category_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "productCategoryId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUnifiedItemDto.prototype, "category_name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUnifiedItemDto.prototype, "unit_measure", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "sale_price", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "purchase_price", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "tax_rate", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateUnifiedItemDto.prototype, "ind_active", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateUnifiedItemDto.prototype, "initial_stock", void 0);
+class UpdateUnifiedItemDto {
+    companyId;
+    code;
+    sku;
+    name;
+    description;
+    item_type;
+    product_category_id;
+    productCategoryId;
+    category_name;
+    unit_measure;
+    sale_price;
+    purchase_price;
+    tax_rate;
+    ind_active;
+}
+exports.UpdateUnifiedItemDto = UpdateUnifiedItemDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateUnifiedItemDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUnifiedItemDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUnifiedItemDto.prototype, "sku", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUnifiedItemDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUnifiedItemDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUnifiedItemDto.prototype, "item_type", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateUnifiedItemDto.prototype, "product_category_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateUnifiedItemDto.prototype, "productCategoryId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUnifiedItemDto.prototype, "category_name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUnifiedItemDto.prototype, "unit_measure", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateUnifiedItemDto.prototype, "sale_price", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateUnifiedItemDto.prototype, "purchase_price", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdateUnifiedItemDto.prototype, "tax_rate", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateUnifiedItemDto.prototype, "ind_active", void 0);
+class CreateInventoryMovementDto {
+    companyId;
+    warehouseId;
+    productId;
+    movement_type;
+    movement_reason;
+    quantity;
+    unit_cost;
+    collection_origin_id;
+    collection_origin_name;
+    collection_origin_document;
+    movement_group_id;
+    idempotency_key;
+    reversal_of_movement_id;
+    created_user_id;
+}
+exports.CreateInventoryMovementDto = CreateInventoryMovementDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryMovementDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryMovementDto.prototype, "warehouseId", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryMovementDto.prototype, "productId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateInventoryMovementDto.prototype, "movement_type", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateInventoryMovementDto.prototype, "movement_reason", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryMovementDto.prototype, "quantity", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryMovementDto.prototype, "unit_cost", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryMovementDto.prototype, "collection_origin_id", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryMovementDto.prototype, "collection_origin_name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryMovementDto.prototype, "collection_origin_document", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryMovementDto.prototype, "movement_group_id", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryMovementDto.prototype, "idempotency_key", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryMovementDto.prototype, "reversal_of_movement_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryMovementDto.prototype, "created_user_id", void 0);
+class CreateInventoryAdjustmentDto {
+    companyId;
+    warehouse_id;
+    product_id;
+    new_stock;
+    reason;
+    unit_cost;
+    created_user_id;
+}
+exports.CreateInventoryAdjustmentDto = CreateInventoryAdjustmentDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryAdjustmentDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryAdjustmentDto.prototype, "warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryAdjustmentDto.prototype, "product_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryAdjustmentDto.prototype, "new_stock", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)({ message: 'El motivo del ajuste es obligatorio' }),
+    __metadata("design:type", String)
+], CreateInventoryAdjustmentDto.prototype, "reason", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryAdjustmentDto.prototype, "unit_cost", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryAdjustmentDto.prototype, "created_user_id", void 0);
+class CreateInventoryTransferDto {
+    companyId;
+    from_warehouse_id;
+    to_warehouse_id;
+    product_id;
+    quantity;
+    notes;
+    created_user_id;
+}
+exports.CreateInventoryTransferDto = CreateInventoryTransferDto;
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryTransferDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryTransferDto.prototype, "from_warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryTransferDto.prototype, "to_warehouse_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryTransferDto.prototype, "product_id", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateInventoryTransferDto.prototype, "quantity", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateInventoryTransferDto.prototype, "notes", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateInventoryTransferDto.prototype, "created_user_id", void 0);
 //# sourceMappingURL=inventory.dto.js.map

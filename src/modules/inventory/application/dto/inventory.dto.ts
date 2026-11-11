@@ -607,6 +607,14 @@ export class CreateInventoryCategoryDto {
 
 	@IsString()
 	@IsOptional()
+	category_type?: string;
+
+	@IsString()
+	@IsOptional()
+	categoryType?: string;
+
+	@IsString()
+	@IsOptional()
 	description?: string;
 
 	@IsBoolean()
@@ -627,6 +635,14 @@ export class UpdateInventoryCategoryDto {
 	@IsString()
 	@IsOptional()
 	name?: string;
+
+	@IsString()
+	@IsOptional()
+	category_type?: string;
+
+	@IsString()
+	@IsOptional()
+	categoryType?: string;
 
 	@IsString()
 	@IsOptional()
@@ -733,4 +749,281 @@ export class UpdateInventoryWarehouseDto {
 	@IsBoolean()
 	@IsOptional()
 	enabled?: boolean;
+}
+
+/**
+ * ============================================================================
+ * DTOs PARA EL CATÁLOGO ÚNICO DE CONCEPTOS (PRODUCT, SERVICE, LABOR)
+ * ============================================================================
+ */
+export class CreateUnifiedItemDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@IsString()
+	@IsOptional()
+	code?: string;
+
+	@IsString()
+	@IsOptional()
+	sku?: string;
+
+	@IsString()
+	@IsNotEmpty({ message: 'El nombre del concepto es obligatorio' })
+	name: string;
+
+	@IsString()
+	@IsOptional()
+	description?: string;
+
+	// 'PRODUCT' | 'SERVICE' | 'LABOR'
+	@IsString()
+	@IsNotEmpty({ message: 'El tipo de concepto (PRODUCT / SERVICE / LABOR) es obligatorio' })
+	item_type: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	product_category_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	productCategoryId?: number;
+
+	@IsString()
+	@IsOptional()
+	category_name?: string;
+
+	@IsString()
+	@IsOptional()
+	unit_measure?: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	sale_price?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	purchase_price?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	tax_rate?: number;
+
+	@IsBoolean()
+	@IsOptional()
+	ind_active?: boolean;
+
+	// Opcional para stock inicial si es PRODUCT
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	warehouse_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	initial_stock?: number;
+}
+
+export class UpdateUnifiedItemDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@IsString()
+	@IsOptional()
+	code?: string;
+
+	@IsString()
+	@IsOptional()
+	sku?: string;
+
+	@IsString()
+	@IsOptional()
+	name?: string;
+
+	@IsString()
+	@IsOptional()
+	description?: string;
+
+	@IsString()
+	@IsOptional()
+	item_type?: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	product_category_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	productCategoryId?: number;
+
+	@IsString()
+	@IsOptional()
+	category_name?: string;
+
+	@IsString()
+	@IsOptional()
+	unit_measure?: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	sale_price?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	purchase_price?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	tax_rate?: number;
+
+	@IsBoolean()
+	@IsOptional()
+	ind_active?: boolean;
+}
+
+export class CreateInventoryMovementDto {
+	@Type(() => Number)
+	@IsNumber()
+	companyId: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	warehouseId: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	productId: number;
+
+	@IsString()
+	movement_type: 'IN' | 'OUT';
+
+	@IsString()
+	movement_reason:
+		| 'OPENING'
+		| 'PURCHASE'
+		| 'SALE'
+		| 'CUSTOMER_RETURN'
+		| 'SUPPLIER_RETURN'
+		| 'ADJUSTMENT'
+		| 'TRANSFER'
+		| 'REVERSAL';
+
+	@Type(() => Number)
+	@IsNumber()
+	quantity: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	unit_cost?: number;
+
+	@IsString()
+	@IsOptional()
+	collection_origin_id?: string;
+
+	@IsString()
+	@IsOptional()
+	collection_origin_name?: string;
+
+	@IsString()
+	@IsOptional()
+	collection_origin_document?: string;
+
+	@IsString()
+	@IsOptional()
+	movement_group_id?: string;
+
+	@IsString()
+	@IsOptional()
+	idempotency_key?: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	reversal_of_movement_id?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	created_user_id?: number;
+}
+
+export class CreateInventoryAdjustmentDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	warehouse_id: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	product_id: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	new_stock: number;
+
+	@IsString()
+	@IsNotEmpty({ message: 'El motivo del ajuste es obligatorio' })
+	reason: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	unit_cost?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	created_user_id?: number;
+}
+
+export class CreateInventoryTransferDto {
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	companyId?: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	from_warehouse_id: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	to_warehouse_id: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	product_id: number;
+
+	@Type(() => Number)
+	@IsNumber()
+	quantity: number;
+
+	@IsString()
+	@IsOptional()
+	notes?: string;
+
+	@Type(() => Number)
+	@IsNumber()
+	@IsOptional()
+	created_user_id?: number;
 }
