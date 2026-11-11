@@ -1186,14 +1186,18 @@ export class InventoryService {
 	/**
 	 * Consulta del Kardex histórico inmutable
 	 */
-	async getKardex(companyId: number, productId: number, warehouseId?: number, fromDate?: string, toDate?: string) {
+	async getKardex(companyId: number, productId?: number, warehouseId?: number, fromDate?: string, toDate?: string) {
 		const qb = this.movementRepo
 			.createQueryBuilder('m')
 			.innerJoinAndSelect('m.warehouse', 'w')
 			.innerJoinAndSelect('m.product', 'p')
-			.where('m.company_id = :companyId AND m.product_id = :productId', { companyId, productId })
-			.orderBy('m.movement_at', 'ASC')
-			.addOrderBy('m.id', 'ASC');
+			.where('m.company_id = :companyId', { companyId })
+			.orderBy('m.movement_at', 'DESC')
+			.addOrderBy('m.id', 'DESC');
+
+		if (productId) {
+			qb.andWhere('m.product_id = :productId', { productId });
+		}
 
 		if (warehouseId) {
 			qb.andWhere('m.warehouse_id = :warehouseId', { warehouseId });

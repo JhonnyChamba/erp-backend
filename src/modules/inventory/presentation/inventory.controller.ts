@@ -336,6 +336,26 @@ export class InventoryController {
 		);
 	}
 
+	@Get('kardex')
+	getAllKardex(
+		@Query('productId') productId: string,
+		@Query('warehouseId') warehouseId: string,
+		@Query('fromDate') fromDate: string,
+		@Query('toDate') toDate: string,
+		@Query('companyId') queryCompanyId: string,
+		@Headers('x-company-id') headerCompanyId: string,
+		@Req() req: any,
+	) {
+		const companyId = this.resolveCompanyId(queryCompanyId, headerCompanyId, undefined, req);
+		return this.inventoryService.getKardex(
+			companyId,
+			productId ? Number(productId) : undefined,
+			warehouseId ? Number(warehouseId) : undefined,
+			fromDate,
+			toDate,
+		);
+	}
+
 	@Get('kardex/:productId')
 	getKardex(
 		@Param('productId') productId: string,
