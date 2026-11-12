@@ -21,6 +21,7 @@ export declare class CompanyOrmEntity {
     cert_password_enc: string;
     cert_file_name: string;
     cert_expires_at: string;
+    logo_url: string;
     smtp_host: string;
     smtp_port: number;
     smtp_secure: boolean;

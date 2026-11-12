@@ -22,6 +22,7 @@ import { SalesModule } from './modules/sales/sales.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { ConfigurationModule } from './modules/configuration/configuration.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { ConfigurationModule } from './modules/configuration/configuration.modul
     ContactsModule,
     PurchasesModule,
     ConfigurationModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

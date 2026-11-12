@@ -33,6 +33,7 @@ let BranchCompanyRepositoryImpl = class BranchCompanyRepositoryImpl {
             phone: branch.phone,
             email: branch.email,
             is_matrix: branch.isMatrix,
+            logo_url: branch.logoUrl,
             company: { id: branch.companyId },
             created_by: branch.createdById,
         });
@@ -90,6 +91,7 @@ let BranchCompanyRepositoryImpl = class BranchCompanyRepositoryImpl {
             phone: branch.phone,
             email: branch.email,
             is_matrix: branch.isMatrix,
+            logo_url: branch.logoUrl,
         });
         const updated = await this.repo.findOne({
             where: { id: branch.id, company: { id: branch.companyId } },
@@ -100,7 +102,7 @@ let BranchCompanyRepositoryImpl = class BranchCompanyRepositoryImpl {
         await this.repo.update({ id, company: { id: companyId } }, { deleted: true, enabled: false, is_matrix: false });
     }
     toDomain(entity, companyId) {
-        return new branch_company_entity_1.BranchCompany(entity.id, entity.code, entity.name, entity.address, entity.company?.id ?? companyId, entity.enabled, entity.created_at, undefined, entity.emission_point || '001', entity.phone ?? null, entity.email ?? null, Boolean(entity.is_matrix));
+        return new branch_company_entity_1.BranchCompany(entity.id, entity.code, entity.name, entity.address, entity.company?.id ?? companyId, entity.enabled, entity.created_at, undefined, entity.emission_point || '001', entity.phone ?? null, entity.email ?? null, Boolean(entity.is_matrix), entity.logo_url ?? null);
     }
 };
 exports.BranchCompanyRepositoryImpl = BranchCompanyRepositoryImpl;

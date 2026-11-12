@@ -139,6 +139,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 				enabled: user.enabled,
 				theme_color: user.theme_color || 'Blue_Theme',
 				birth_date: user.birth_date || null,
+				photo_url: user.photo_url || null,
 				role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
 			},
 		);
@@ -289,6 +290,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			effectiveRoleName,
 			companyRoles,
 			entity.birth_date ?? null,
+			entity.photo_url ?? null,
 		);
 	}
 }

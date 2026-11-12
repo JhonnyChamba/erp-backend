@@ -7,6 +7,7 @@ export declare class BranchCompanyOrmEntity {
     emission_point: string;
     phone: string | null;
     email: string | null;
+    logo_url: string | null;
     is_matrix: boolean;
     company: CompanyOrmEntity;
     created_by: number;

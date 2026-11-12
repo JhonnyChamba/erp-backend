@@ -23,6 +23,7 @@ export class BranchCompanyRepositoryImpl implements BranchCompanyRepository {
 			phone: branch.phone,
 			email: branch.email,
 			is_matrix: branch.isMatrix,
+			logo_url: branch.logoUrl,
 			company: { id: branch.companyId },
 			created_by: branch.createdById,
 		});
@@ -91,6 +92,7 @@ export class BranchCompanyRepositoryImpl implements BranchCompanyRepository {
 				phone: branch.phone,
 				email: branch.email,
 				is_matrix: branch.isMatrix,
+				logo_url: branch.logoUrl,
 			},
 		);
 
@@ -119,6 +121,7 @@ export class BranchCompanyRepositoryImpl implements BranchCompanyRepository {
 			entity.phone ?? null,
 			entity.email ?? null,
 			Boolean(entity.is_matrix),
+			entity.logo_url ?? null,
 		);
 	}
 }

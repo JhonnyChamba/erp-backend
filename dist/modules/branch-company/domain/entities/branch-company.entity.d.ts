@@ -11,5 +11,6 @@ export declare class BranchCompany {
     phone: string | null;
     email: string | null;
     isMatrix: boolean;
-    constructor(id: number | null, code: string, name: string, address: string, companyId: number, enabled: boolean, createdAt?: Date, createdById?: number, emissionPoint?: string, phone?: string | null, email?: string | null, isMatrix?: boolean);
+    logoUrl: string | null;
+    constructor(id: number | null, code: string, name: string, address: string, companyId: number, enabled: boolean, createdAt?: Date, createdById?: number, emissionPoint?: string, phone?: string | null, email?: string | null, isMatrix?: boolean, logoUrl?: string | null);
 }

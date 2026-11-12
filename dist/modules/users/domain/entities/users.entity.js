@@ -21,7 +21,8 @@ class Users {
     roleName;
     companyRoles;
     birth_date;
-    constructor(id, num_document, name_user, last_name_user, email, password, companyId, developer, multi_company, enabled, deleted, createdAt, theme_color = 'Blue_Theme', super_admin = false, companyIds = [], roleId, roleName, companyRoles = [], birth_date = null) {
+    photo_url;
+    constructor(id, num_document, name_user, last_name_user, email, password, companyId, developer, multi_company, enabled, deleted, createdAt, theme_color = 'Blue_Theme', super_admin = false, companyIds = [], roleId, roleName, companyRoles = [], birth_date = null, photo_url = null) {
         this.id = id;
         this.num_document = num_document;
         this.name_user = name_user;
@@ -41,6 +42,7 @@ class Users {
         this.roleName = roleName;
         this.companyRoles = companyRoles;
         this.birth_date = birth_date;
+        this.photo_url = photo_url;
     }
 }
 exports.Users = Users;

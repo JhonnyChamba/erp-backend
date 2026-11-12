@@ -20,6 +20,7 @@ export interface CompanyFiscalData {
 	has_smtp_password?: boolean;
 	smtp_from_name?: string;
 	smtp_from_email?: string;
+	logo_url?: string;
 }
 
 // Datos sensibles que solo viajan hacia la BD (entrada)

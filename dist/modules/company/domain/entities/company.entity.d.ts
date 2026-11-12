@@ -19,6 +19,7 @@ export interface CompanyFiscalData {
     has_smtp_password?: boolean;
     smtp_from_name?: string;
     smtp_from_email?: string;
+    logo_url?: string;
 }
 export interface CompanySecretsInput {
     cert_p12_base64?: string;

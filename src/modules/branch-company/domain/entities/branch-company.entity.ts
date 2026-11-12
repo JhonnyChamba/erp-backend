@@ -12,5 +12,6 @@ export class BranchCompany {
 		public phone: string | null = null,
 		public email: string | null = null,
 		public isMatrix: boolean = false,
+		public logoUrl: string | null = null,
 	) { }
 }

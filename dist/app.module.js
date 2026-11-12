@@ -31,6 +31,7 @@ const sales_module_1 = require("./modules/sales/sales.module");
 const contacts_module_1 = require("./modules/contacts/contacts.module");
 const purchases_module_1 = require("./modules/purchases/purchases.module");
 const configuration_module_1 = require("./modules/configuration/configuration.module");
+const storage_module_1 = require("./modules/storage/storage.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -91,6 +92,7 @@ exports.AppModule = AppModule = __decorate([
             contacts_module_1.ContactsModule,
             purchases_module_1.PurchasesModule,
             configuration_module_1.ConfigurationModule,
+            storage_module_1.StorageModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

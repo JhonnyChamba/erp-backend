@@ -68,6 +68,9 @@ export class CompanyOrmEntity {
 	@Column({ type: 'date', nullable: true })
 	cert_expires_at: string;
 
+	@Column({ type: 'text', nullable: true })
+	logo_url: string;
+
 	// ===== Correo saliente (SMTP) =====
 	@Column({ type: 'varchar', length: 150, nullable: true })
 	smtp_host: string;

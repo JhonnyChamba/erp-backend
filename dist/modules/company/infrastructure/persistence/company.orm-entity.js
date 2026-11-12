@@ -34,6 +34,7 @@ let CompanyOrmEntity = class CompanyOrmEntity {
     cert_password_enc;
     cert_file_name;
     cert_expires_at;
+    logo_url;
     smtp_host;
     smtp_port;
     smtp_secure;
@@ -137,6 +138,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", String)
 ], CompanyOrmEntity.prototype, "cert_expires_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], CompanyOrmEntity.prototype, "logo_url", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 150, nullable: true }),
     __metadata("design:type", String)

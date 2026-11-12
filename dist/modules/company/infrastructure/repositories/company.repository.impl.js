@@ -65,7 +65,7 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
         for (const k of [
             'address_matriz', 'phone', 'email', 'obligated_accounting', 'special_taxpayer', 'tax_regime',
             'sri_environment', 'auto_send_sri', 'default_establishment', 'default_emission_point', 'cert_file_name',
-            'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_from_name', 'smtp_from_email',
+            'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_from_name', 'smtp_from_email', 'logo_url',
         ]) {
             if (f[k] !== undefined)
                 cols[k] = f[k] === '' ? null : f[k];
@@ -427,6 +427,7 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
             has_smtp_password: Boolean(entity.smtp_has_password),
             smtp_from_name: entity.smtp_from_name ?? '',
             smtp_from_email: entity.smtp_from_email ?? '',
+            logo_url: entity.logo_url ?? '',
         });
     }
 };

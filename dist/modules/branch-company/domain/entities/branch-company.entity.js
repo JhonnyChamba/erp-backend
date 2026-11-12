@@ -14,7 +14,8 @@ class BranchCompany {
     phone;
     email;
     isMatrix;
-    constructor(id, code, name, address, companyId, enabled, createdAt, createdById, emissionPoint = '001', phone = null, email = null, isMatrix = false) {
+    logoUrl;
+    constructor(id, code, name, address, companyId, enabled, createdAt, createdById, emissionPoint = '001', phone = null, email = null, isMatrix = false, logoUrl = null) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -27,6 +28,7 @@ class BranchCompany {
         this.phone = phone;
         this.email = email;
         this.isMatrix = isMatrix;
+        this.logoUrl = logoUrl;
     }
 }
 exports.BranchCompany = BranchCompany;

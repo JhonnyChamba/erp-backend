@@ -20,6 +20,7 @@ let BranchCompanyOrmEntity = class BranchCompanyOrmEntity {
     emission_point;
     phone;
     email;
+    logo_url;
     is_matrix;
     company;
     created_by;
@@ -56,6 +57,10 @@ __decorate([
     (0, typeorm_1.Column)({ length: 150, nullable: true }),
     __metadata("design:type", String)
 ], BranchCompanyOrmEntity.prototype, "email", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], BranchCompanyOrmEntity.prototype, "logo_url", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: false }),
     __metadata("design:type", Boolean)

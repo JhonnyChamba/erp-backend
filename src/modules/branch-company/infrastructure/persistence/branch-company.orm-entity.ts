@@ -30,6 +30,9 @@ export class BranchCompanyOrmEntity {
 	@Column({ length: 150, nullable: true })
 	email: string | null;
 
+	@Column({ type: 'text', nullable: true })
+	logo_url: string | null;
+
 	// Establecimiento matriz de la empresa (solo uno por empresa)
 	@Column({ default: false })
 	is_matrix: boolean;

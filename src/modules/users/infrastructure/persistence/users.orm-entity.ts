@@ -59,6 +59,9 @@ export class UsersOrmEntity {
 	@Column({ type: 'date', nullable: true })
 	birth_date: string | null;
 
+	@Column({ type: 'text', nullable: true })
+	photo_url: string | null;
+
 	@CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
 	created_at: Date;
 }
