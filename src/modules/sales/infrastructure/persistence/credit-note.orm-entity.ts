@@ -32,6 +32,10 @@ export class CreditNoteOrmEntity {
 	@Column({ type: 'varchar', length: 300, nullable: true })
 	branch_address: string | null;
 
+	// Logotipo del comprobante registrado al momento de la emisión (sucursal o empresa)
+	@Column({ type: 'text', nullable: true })
+	logo_url: string | null;
+
 	// Secuencial SRI Ecuador: Ej: 001-001-000000001
 	@Column({ length: 3, default: '001' })
 	establishment: string;

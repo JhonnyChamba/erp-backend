@@ -243,6 +243,7 @@ let InvoiceService = class InvoiceService {
             emission_point: emissionPoint,
             branch_id: branch.id,
             branch_address: branch.address,
+            logo_url: branch.logo_url || company.logo_url || null,
             warehouse_id: headerWarehouseId || null,
             sequential,
             invoice_number: invoiceNumber,

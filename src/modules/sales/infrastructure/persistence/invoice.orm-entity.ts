@@ -35,6 +35,10 @@ export class InvoiceOrmEntity {
 	@Column({ type: 'varchar', length: 300, nullable: true })
 	branch_address: string | null;
 
+	// Logotipo del comprobante registrado al momento de la emisión (sucursal o empresa)
+	@Column({ type: 'text', nullable: true })
+	logo_url: string | null;
+
 	// Bodega predeterminada de despacho para la factura
 	@Column({ type: 'int', nullable: true })
 	warehouse_id: number | null;

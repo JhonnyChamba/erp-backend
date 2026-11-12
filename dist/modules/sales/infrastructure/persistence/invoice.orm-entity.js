@@ -19,6 +19,7 @@ let InvoiceOrmEntity = class InvoiceOrmEntity {
     emission_point;
     branch_id;
     branch_address;
+    logo_url;
     warehouse_id;
     sequential;
     invoice_number;
@@ -80,6 +81,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 300, nullable: true }),
     __metadata("design:type", String)
 ], InvoiceOrmEntity.prototype, "branch_address", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], InvoiceOrmEntity.prototype, "logo_url", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', nullable: true }),
     __metadata("design:type", Number)

@@ -56,6 +56,7 @@ export declare class CreditNoteController {
         invoice: import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity | null;
         branch_id: number | null;
         branch_address: string | null;
+        logo_url: string | null;
         establishment: string;
         emission_point: string;
         sequential: string;
@@ -129,6 +130,7 @@ export declare class CreditNoteController {
         invoice: import("../infrastructure/persistence/invoice.orm-entity").InvoiceOrmEntity | null;
         branch_id: number | null;
         branch_address: string | null;
+        logo_url: string | null;
         establishment: string;
         emission_point: string;
         sequential: string;

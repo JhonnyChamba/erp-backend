@@ -19,6 +19,7 @@ let CreditNoteOrmEntity = class CreditNoteOrmEntity {
     invoice;
     branch_id;
     branch_address;
+    logo_url;
     establishment;
     emission_point;
     sequential;
@@ -83,6 +84,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 300, nullable: true }),
     __metadata("design:type", String)
 ], CreditNoteOrmEntity.prototype, "branch_address", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], CreditNoteOrmEntity.prototype, "logo_url", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 3, default: '001' }),
     __metadata("design:type", String)

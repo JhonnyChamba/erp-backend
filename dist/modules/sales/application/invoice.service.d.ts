@@ -31,6 +31,7 @@ export declare class InvoiceService {
         emission_point: string;
         branch_id: number | null;
         branch_address: string | null;
+        logo_url: string | null;
         warehouse_id: number | null;
         sequential: string;
         invoice_number: string;
@@ -91,6 +92,7 @@ export declare class InvoiceService {
         emission_point: string;
         branch_id: number | null;
         branch_address: string | null;
+        logo_url: string | null;
         warehouse_id: number | null;
         sequential: string;
         invoice_number: string;

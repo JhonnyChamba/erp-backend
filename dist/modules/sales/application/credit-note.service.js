@@ -263,6 +263,7 @@ let CreditNoteService = class CreditNoteService {
             invoice: originalInvoice ? { id: originalInvoice.id } : null,
             branch_id: branch.id,
             branch_address: branch.address,
+            logo_url: branch.logo_url || company.logo_url || null,
             establishment,
             emission_point: emissionPoint,
             sequential,
