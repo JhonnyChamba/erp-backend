@@ -1,12 +1,18 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { IsOptional, IsString } from 'class-validator';
 import { CompanyOrmEntity } from '../../infrastructure/persistence/company.orm-entity';
 import { decryptSecret } from 'src/common/crypto/secret-crypto';
 import { inspectP12, CertInspectionResult } from '../cert-inspector.util';
 
 export class InspectCertDto {
+	@IsOptional()
+	@IsString()
 	cert_p12_base64?: string;
+
+	@IsOptional()
+	@IsString()
 	cert_password?: string;
 }
 
