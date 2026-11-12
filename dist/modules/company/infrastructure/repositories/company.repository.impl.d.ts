@@ -2,6 +2,13 @@ import { CompanyRepository } from '../../domain/repositories/company.repository'
 import { CompanyOrmEntity } from '../persistence/company.orm-entity';
 import { RolesOrmEntity, RoleModuleOrmEntity } from 'src/modules/roles/infrastructure/persistence/roles.orm-entity';
 import { SubscriptionsOrmEntity } from 'src/modules/subscriptions/infrastructure/persistence/subscriptions.orm-entity';
+import { CustomerOrmEntity, SellerOrmEntity } from 'src/modules/contacts/infrastructure/persistence/contacts.orm-entity';
+import { InventoryWarehouseOrmEntity } from 'src/modules/inventory/infrastructure/persistence/inventory.orm-entity';
+import { BranchCompanyOrmEntity } from 'src/modules/branch-company/infrastructure/persistence/branch-company.orm-entity';
+import { EmissionPointOrmEntity, EmissionPointSequenceOrmEntity } from 'src/modules/sales/infrastructure/persistence/emission-point.orm-entity';
+import { TaxOrmEntity } from 'src/modules/configuration/infrastructure/persistence/tax.orm-entity';
+import { DocumentTypeOrmEntity } from 'src/modules/configuration/infrastructure/persistence/document-type.orm-entity';
+import { UserCompanyOrmEntity } from 'src/modules/user-company/infrastructure/persistence/user-company.orm-entity';
 import { Company } from '../../domain/entities/company.entity';
 import { Repository } from 'typeorm';
 export declare class CompanyRepositoryImpl implements CompanyRepository {
@@ -9,10 +16,20 @@ export declare class CompanyRepositoryImpl implements CompanyRepository {
     private readonly rolesRepo;
     private readonly roleModuleRepo;
     private readonly subscriptionsRepo;
-    constructor(repo: Repository<CompanyOrmEntity>, rolesRepo: Repository<RolesOrmEntity>, roleModuleRepo: Repository<RoleModuleOrmEntity>, subscriptionsRepo: Repository<SubscriptionsOrmEntity>);
+    private readonly customerRepo;
+    private readonly sellerRepo;
+    private readonly warehouseRepo;
+    private readonly branchRepo;
+    private readonly emissionPointRepo;
+    private readonly sequenceRepo;
+    private readonly taxRepo;
+    private readonly docTypeRepo;
+    private readonly userCompanyRepo;
+    constructor(repo: Repository<CompanyOrmEntity>, rolesRepo: Repository<RolesOrmEntity>, roleModuleRepo: Repository<RoleModuleOrmEntity>, subscriptionsRepo: Repository<SubscriptionsOrmEntity>, customerRepo: Repository<CustomerOrmEntity>, sellerRepo: Repository<SellerOrmEntity>, warehouseRepo: Repository<InventoryWarehouseOrmEntity>, branchRepo: Repository<BranchCompanyOrmEntity>, emissionPointRepo: Repository<EmissionPointOrmEntity>, sequenceRepo: Repository<EmissionPointSequenceOrmEntity>, taxRepo: Repository<TaxOrmEntity>, docTypeRepo: Repository<DocumentTypeOrmEntity>, userCompanyRepo: Repository<UserCompanyOrmEntity>);
     private buildExtraColumns;
     create(company: Company): Promise<Company>;
     private ensureDefaultAdminRole;
+    private ensureCompanyDefaults;
     findByCompany(page: number, limit: number, companyIds?: number[] | null): Promise<{
         data: Company[];
         total: number;
