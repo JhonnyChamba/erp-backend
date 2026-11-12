@@ -1,6 +1,10 @@
 import { IsNotEmpty, IsNumber, IsOptional, IsString, Length, Min } from 'class-validator';
 
 export class CreateEmissionPointDto {
+	@IsOptional()
+	@IsNumber({}, { message: 'El ID de la empresa debe ser numérico' })
+	companyId?: number;
+
 	@IsNotEmpty({ message: 'La descripción del punto de emisión es obligatoria' })
 	@IsString()
 	description: string;
@@ -22,6 +26,10 @@ export class CreateEmissionPointDto {
 
 export class UpdateEmissionPointDto {
 	@IsOptional()
+	@IsNumber()
+	companyId?: number;
+
+	@IsOptional()
 	@IsString()
 	description?: string;
 
@@ -38,6 +46,10 @@ export class UpdateEmissionPointDto {
 }
 
 export class UpdateSequenceDto {
+	@IsOptional()
+	@IsNumber()
+	companyId?: number;
+
 	@IsNotEmpty({ message: 'El correlativo es obligatorio' })
 	@IsNumber({}, { message: 'El correlativo debe ser numérico' })
 	@Min(0, { message: 'El correlativo no puede ser negativo' })

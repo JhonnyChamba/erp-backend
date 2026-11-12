@@ -15,6 +15,7 @@ const company_orm_entity_1 = require("./infrastructure/persistence/company.orm-e
 const roles_orm_entity_1 = require("../roles/infrastructure/persistence/roles.orm-entity");
 const subscriptions_orm_entity_1 = require("../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
 const get_company_use_case_1 = require("./application/use-cases/get-company.use-case");
+const inspect_cert_use_case_1 = require("./application/use-cases/inspect-cert.use-case");
 const company_repository_1 = require("./domain/repositories/company.repository");
 const company_controller_1 = require("./presentation/company.controller");
 const typeorm_1 = require("@nestjs/typeorm");
@@ -38,6 +39,7 @@ exports.CompanyModule = CompanyModule = __decorate([
             list_company_use_case_1.ListCompanyUseCase,
             get_company_use_case_1.GetCompanyUseCase,
             update_company_use_case_1.UpdateCompanyUseCase,
+            inspect_cert_use_case_1.InspectCertUseCase,
             {
                 provide: company_repository_1.CompanyRepository,
                 useClass: company_repository_impl_1.CompanyRepositoryImpl,

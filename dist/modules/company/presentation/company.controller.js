@@ -21,6 +21,7 @@ const update_company_use_case_1 = require("../application/use-cases/update-compa
 const common_2 = require("@nestjs/common");
 const list_company_use_case_1 = require("../application/use-cases/list-company.use-case");
 const get_company_use_case_1 = require("../application/use-cases/get-company.use-case");
+const inspect_cert_use_case_1 = require("../application/use-cases/inspect-cert.use-case");
 const create_company_dto_1 = require("../application/dto/create-company.dto");
 const update_company_dto_1 = require("../application/dto/update-company.dto");
 const list_company_dto_1 = require("../application/dto/list-company.dto");
@@ -30,12 +31,14 @@ let CompanyController = class CompanyController {
     listUseCase;
     getUseCase;
     updateUseCase;
+    inspectCertUseCase;
     accessControlService;
-    constructor(createUseCase, listUseCase, getUseCase, updateUseCase, accessControlService) {
+    constructor(createUseCase, listUseCase, getUseCase, updateUseCase, inspectCertUseCase, accessControlService) {
         this.createUseCase = createUseCase;
         this.listUseCase = listUseCase;
         this.getUseCase = getUseCase;
         this.updateUseCase = updateUseCase;
+        this.inspectCertUseCase = inspectCertUseCase;
         this.accessControlService = accessControlService;
     }
     async assertCompanyAccess(user, companyId) {
@@ -56,6 +59,13 @@ let CompanyController = class CompanyController {
     async update(id, dto, req) {
         await this.assertCompanyAccess(req.user, Number(id));
         return this.updateUseCase.execute(Number(id), dto);
+    }
+    async inspectCertNew(dto) {
+        return this.inspectCertUseCase.execute(null, dto);
+    }
+    async inspectCert(id, dto, req) {
+        await this.assertCompanyAccess(req.user, Number(id));
+        return this.inspectCertUseCase.execute(Number(id), dto);
     }
 };
 exports.CompanyController = CompanyController;
@@ -92,6 +102,22 @@ __decorate([
     __metadata("design:paramtypes", [Number, update_company_dto_1.UpdateCompanyDto, Object]),
     __metadata("design:returntype", Promise)
 ], CompanyController.prototype, "update", null);
+__decorate([
+    (0, common_2.Post)('inspect-cert'),
+    __param(0, (0, common_2.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inspect_cert_use_case_1.InspectCertDto]),
+    __metadata("design:returntype", Promise)
+], CompanyController.prototype, "inspectCertNew", null);
+__decorate([
+    (0, common_2.Post)(':id/inspect-cert'),
+    __param(0, (0, common_2.Param)('id')),
+    __param(1, (0, common_2.Body)()),
+    __param(2, (0, common_2.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, inspect_cert_use_case_1.InspectCertDto, Object]),
+    __metadata("design:returntype", Promise)
+], CompanyController.prototype, "inspectCert", null);
 exports.CompanyController = CompanyController = __decorate([
     (0, common_2.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_2.Controller)('company'),
@@ -99,6 +125,7 @@ exports.CompanyController = CompanyController = __decorate([
         list_company_use_case_1.ListCompanyUseCase,
         get_company_use_case_1.GetCompanyUseCase,
         update_company_use_case_1.UpdateCompanyUseCase,
+        inspect_cert_use_case_1.InspectCertUseCase,
         access_control_service_1.AccessControlService])
 ], CompanyController);
 //# sourceMappingURL=company.controller.js.map

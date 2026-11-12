@@ -6,6 +6,7 @@ import { UpdateCompanyUseCase } from "../application/use-cases/update-company.us
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ListCompanyUseCase } from "../application/use-cases/list-company.use-case";
 import { GetCompanyUseCase } from "../application/use-cases/get-company.use-case";
+import { InspectCertUseCase, InspectCertDto } from "../application/use-cases/inspect-cert.use-case";
 import { CreateCompanyDto } from "../application/dto/create-company.dto";
 import { UpdateCompanyDto } from "../application/dto/update-company.dto";
 import { ListCompanyDto } from "../application/dto/list-company.dto";
@@ -20,6 +21,7 @@ export class CompanyController {
 		private readonly listUseCase: ListCompanyUseCase,
 		private readonly getUseCase: GetCompanyUseCase,
 		private readonly updateUseCase: UpdateCompanyUseCase,
+		private readonly inspectCertUseCase: InspectCertUseCase,
 		private readonly accessControlService: AccessControlService,
 	) { }
 
@@ -49,5 +51,20 @@ export class CompanyController {
 	async update(@Param('id') id: number, @Body() dto: UpdateCompanyDto, @Req() req: any) {
 		await this.assertCompanyAccess(req.user, Number(id));
 		return this.updateUseCase.execute(Number(id), dto);
+	}
+
+	@Post('inspect-cert')
+	async inspectCertNew(@Body() dto: InspectCertDto) {
+		return this.inspectCertUseCase.execute(null, dto);
+	}
+
+	@Post(':id/inspect-cert')
+	async inspectCert(
+		@Param('id') id: number,
+		@Body() dto: InspectCertDto,
+		@Req() req: any,
+	) {
+		await this.assertCompanyAccess(req.user, Number(id));
+		return this.inspectCertUseCase.execute(Number(id), dto);
 	}
 }

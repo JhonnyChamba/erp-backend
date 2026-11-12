@@ -6,6 +6,7 @@ import { CompanyOrmEntity } from "./infrastructure/persistence/company.orm-entit
 import { RolesOrmEntity, RoleModuleOrmEntity } from "../roles/infrastructure/persistence/roles.orm-entity";
 import { SubscriptionsOrmEntity } from "../subscriptions/infrastructure/persistence/subscriptions.orm-entity";
 import { GetCompanyUseCase } from "./application/use-cases/get-company.use-case";
+import { InspectCertUseCase } from "./application/use-cases/inspect-cert.use-case";
 import { CompanyRepository } from "./domain/repositories/company.repository";
 import { CompanyController } from "./presentation/company.controller";
 import { TypeOrmModule } from "@nestjs/typeorm";
@@ -26,6 +27,7 @@ import { Module } from "@nestjs/common";
 		ListCompanyUseCase,
 		GetCompanyUseCase,
 		UpdateCompanyUseCase,
+		InspectCertUseCase,
 		{
 			provide: CompanyRepository,
 			useClass: CompanyRepositoryImpl,

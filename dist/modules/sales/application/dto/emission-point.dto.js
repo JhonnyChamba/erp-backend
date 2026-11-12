@@ -12,12 +12,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateSequenceDto = exports.UpdateEmissionPointDto = exports.CreateEmissionPointDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateEmissionPointDto {
+    companyId;
     description;
     branch_id;
     serie;
     initial_correlative;
 }
 exports.CreateEmissionPointDto = CreateEmissionPointDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)({}, { message: 'El ID de la empresa debe ser numérico' }),
+    __metadata("design:type", Number)
+], CreateEmissionPointDto.prototype, "companyId", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'La descripción del punto de emisión es obligatoria' }),
     (0, class_validator_1.IsString)(),
@@ -41,12 +47,18 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateEmissionPointDto.prototype, "initial_correlative", void 0);
 class UpdateEmissionPointDto {
+    companyId;
     description;
     branch_id;
     serie;
     enabled;
 }
 exports.UpdateEmissionPointDto = UpdateEmissionPointDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateEmissionPointDto.prototype, "companyId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -67,9 +79,15 @@ __decorate([
     __metadata("design:type", Boolean)
 ], UpdateEmissionPointDto.prototype, "enabled", void 0);
 class UpdateSequenceDto {
+    companyId;
     correlative;
 }
 exports.UpdateSequenceDto = UpdateSequenceDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateSequenceDto.prototype, "companyId", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'El correlativo es obligatorio' }),
     (0, class_validator_1.IsNumber)({}, { message: 'El correlativo debe ser numérico' }),

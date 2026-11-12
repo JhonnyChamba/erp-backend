@@ -18,6 +18,7 @@ const roles_orm_entity_1 = require("../../../roles/infrastructure/persistence/ro
 const subscriptions_orm_entity_1 = require("../../../subscriptions/infrastructure/persistence/subscriptions.orm-entity");
 const company_entity_1 = require("../../domain/entities/company.entity");
 const secret_crypto_1 = require("../../../../common/crypto/secret-crypto");
+const cert_inspector_util_1 = require("../../application/cert-inspector.util");
 const typeorm_1 = require("@nestjs/typeorm");
 const common_1 = require("@nestjs/common");
 const typeorm_2 = require("typeorm");
@@ -56,6 +57,17 @@ let CompanyRepositoryImpl = class CompanyRepositoryImpl {
             cols.cert_p12_base64 = s.cert_p12_base64;
         if (s.cert_password)
             cols.cert_password_enc = (0, secret_crypto_1.encryptSecret)(s.cert_password);
+        if (s.cert_p12_base64 && s.cert_password) {
+            try {
+                const certInfo = (0, cert_inspector_util_1.inspectP12)(s.cert_p12_base64, s.cert_password);
+                if (certInfo.expires_at) {
+                    cols.cert_expires_at = certInfo.expires_at;
+                }
+            }
+            catch (certErr) {
+                console.warn('No se pudo auto-extraer fecha de caducidad del .p12:', certErr);
+            }
+        }
         if (s.smtp_password) {
             cols.smtp_password_enc = (0, secret_crypto_1.encryptSecret)(s.smtp_password);
             cols.smtp_has_password = true;

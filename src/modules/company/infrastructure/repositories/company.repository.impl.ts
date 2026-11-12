@@ -4,6 +4,7 @@ import { RolesOrmEntity, RoleModuleOrmEntity } from 'src/modules/roles/infrastru
 import { SubscriptionsOrmEntity } from 'src/modules/subscriptions/infrastructure/persistence/subscriptions.orm-entity';
 import { Company } from '../../domain/entities/company.entity';
 import { encryptSecret } from 'src/common/crypto/secret-crypto';
+import { inspectP12 } from '../../application/cert-inspector.util';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 import { In, Repository } from 'typeorm';
@@ -43,6 +44,16 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 		}
 		if (s.cert_p12_base64) cols.cert_p12_base64 = s.cert_p12_base64;
 		if (s.cert_password) cols.cert_password_enc = encryptSecret(s.cert_password);
+		if (s.cert_p12_base64 && s.cert_password) {
+			try {
+				const certInfo = inspectP12(s.cert_p12_base64, s.cert_password);
+				if (certInfo.expires_at) {
+					cols.cert_expires_at = certInfo.expires_at;
+				}
+			} catch (certErr) {
+				console.warn('No se pudo auto-extraer fecha de caducidad del .p12:', certErr);
+			}
+		}
 		if (s.smtp_password) {
 			cols.smtp_password_enc = encryptSecret(s.smtp_password);
 			cols.smtp_has_password = true;
