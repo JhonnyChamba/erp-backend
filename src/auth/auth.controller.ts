@@ -48,6 +48,7 @@ export class AuthController {
 			full_name: `${user.name_user} ${user.last_name_user}`.trim(),
 			email: user.email,
 			birth_date: user.birth_date ?? null,
+			photo_url: user.photo_url || null,
 			enabled: user.enabled,
 			super_admin: isSuperAdmin,
 			multi_company: !isSuperAdmin && Boolean(user.multi_company),

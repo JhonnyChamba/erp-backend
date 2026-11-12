@@ -46,6 +46,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			enabled: user.enabled,
 			theme_color: user.theme_color || 'Blue_Theme',
 			birth_date: user.birth_date || null,
+			photo_url: user.photo_url || '/controller/images/profile/user-1.jpg',
 			company: { id: user.companyId },
 			role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
 		});

@@ -27,6 +27,7 @@ class UpdateUsersDto {
     enabled;
     theme_color;
     birth_date;
+    photo_url;
 }
 exports.UpdateUsersDto = UpdateUsersDto;
 __decorate([
@@ -104,4 +105,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateUsersDto.prototype, "birth_date", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUsersDto.prototype, "photo_url", void 0);
 //# sourceMappingURL=update-users.dto.js.map

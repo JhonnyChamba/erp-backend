@@ -60,4 +60,8 @@ export class UpdateUsersDto {
 	@IsDateString({}, { message: 'birth_date debe tener formato AAAA-MM-DD' })
 	@IsOptional()
 	birth_date?: string | null;
+
+	@IsString()
+	@IsOptional()
+	photo_url?: string | null;
 }

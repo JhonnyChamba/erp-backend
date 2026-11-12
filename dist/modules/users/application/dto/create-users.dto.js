@@ -26,6 +26,7 @@ class CreateUsersDto {
     companyRoles;
     theme_color;
     birth_date;
+    photo_url;
 }
 exports.CreateUsersDto = CreateUsersDto;
 __decorate([
@@ -98,4 +99,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateUsersDto.prototype, "birth_date", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUsersDto.prototype, "photo_url", void 0);
 //# sourceMappingURL=create-users.dto.js.map

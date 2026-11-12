@@ -25,6 +25,7 @@ export declare class AuthController {
         full_name: string;
         email: string;
         birth_date: string;
+        photo_url: string;
         enabled: boolean;
         super_admin: boolean;
         multi_company: boolean;

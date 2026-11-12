@@ -16,4 +16,5 @@ export declare class CreateUsersDto {
     }[];
     theme_color?: string;
     birth_date?: string | null;
+    photo_url?: string | null;
 }
