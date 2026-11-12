@@ -74,10 +74,12 @@ let AuthService = class AuthService {
             multi_company: user.multi_company,
             theme_color: user.theme_color || 'Blue_Theme',
             company_id: user.companyId,
+            photo_url: user.photo_url || null,
         };
         return {
             access_token: this.jwtService.sign(payload),
             theme_color: user.theme_color || 'Blue_Theme',
+            photo_url: user.photo_url || null,
             super_admin: isSuperAdmin,
             multi_company: user.multi_company,
         };

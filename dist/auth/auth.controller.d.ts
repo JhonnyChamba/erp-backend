@@ -13,6 +13,7 @@ export declare class AuthController {
     login(body: any): Promise<{
         access_token: string;
         theme_color: string;
+        photo_url: string;
         super_admin: boolean;
         multi_company: boolean;
     }>;

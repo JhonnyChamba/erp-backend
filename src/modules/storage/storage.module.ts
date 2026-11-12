@@ -19,3 +19,4 @@ import { UsersOrmEntity } from '../users/infrastructure/persistence/users.orm-en
 	exports: [StorageService],
 })
 export class StorageModule {}
+
