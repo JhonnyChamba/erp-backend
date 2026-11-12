@@ -129,6 +129,14 @@ export function signXadesBes(xml: string, loaded: LoadedCert): string {
 		`<ds:Object Id="${sigId}-Object${rand()}"><etsi:QualifyingProperties Target="#${sigId}">` +
 		`${signedPropsInDoc}</etsi:QualifyingProperties></ds:Object></ds:Signature>`;
 
-	return xml.replace(/<\/factura>$/, `${signature}</factura>`);
+	// Inserta la firma digital antes de la etiqueta de cierre raíz del comprobante:
+	// </factura>, </notaCredito>, </notaDebito>, </guiaRemision>, </comprobanteRetencion>, etc.
+	const matchClosing = xml.match(/<\/([a-zA-Z0-9_]+)>$/);
+	if (matchClosing) {
+		const rootClosing = matchClosing[0];
+		return xml.replace(new RegExp(`${rootClosing}$`), `${signature}${rootClosing}`);
+	}
+
+	return xml + signature;
 }
 

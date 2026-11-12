@@ -128,6 +128,11 @@ function signXadesBes(xml, loaded) {
         `<ds:SignatureValue Id="${sigValueId}">\n${signatureValue}\n</ds:SignatureValue>${keyInfoInDoc}` +
         `<ds:Object Id="${sigId}-Object${rand()}"><etsi:QualifyingProperties Target="#${sigId}">` +
         `${signedPropsInDoc}</etsi:QualifyingProperties></ds:Object></ds:Signature>`;
-    return xml.replace(/<\/factura>$/, `${signature}</factura>`);
+    const matchClosing = xml.match(/<\/([a-zA-Z0-9_]+)>$/);
+    if (matchClosing) {
+        const rootClosing = matchClosing[0];
+        return xml.replace(new RegExp(`${rootClosing}$`), `${signature}${rootClosing}`);
+    }
+    return xml + signature;
 }
 //# sourceMappingURL=sri-signer.js.map
