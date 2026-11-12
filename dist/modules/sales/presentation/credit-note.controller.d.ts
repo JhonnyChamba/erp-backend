@@ -176,7 +176,12 @@ export declare class CreditNoteController {
         updated_at: Date;
     }>;
     findAll(companyIdQuery: string, branchIdQuery: string, invoiceIdQuery: string, search: string, req: any): Promise<import("../infrastructure/persistence/credit-note.orm-entity").CreditNoteOrmEntity[]>;
-    getNextSequential(branchIdQuery: string, emissionPointQuery: string, companyIdQuery: string, req: any): Promise<string>;
+    getNextSequential(branchIdQuery: string, emissionPointQuery: string, companyIdQuery: string, req: any): Promise<{
+        establishment: string;
+        emission_point: string;
+        sequential: string;
+        full_number: string;
+    }>;
     findOne(id: number, companyIdQuery: string, req: any): Promise<import("../infrastructure/persistence/credit-note.orm-entity").CreditNoteOrmEntity>;
     sendToSri(id: number, companyIdQuery: string, req: any): Promise<{
         id: number;

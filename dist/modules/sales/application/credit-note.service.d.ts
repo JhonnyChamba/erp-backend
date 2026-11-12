@@ -191,7 +191,12 @@ export declare class CreditNoteService {
         search?: string;
     }): Promise<CreditNoteOrmEntity[]>;
     findById(id: number, companyId: number): Promise<CreditNoteOrmEntity>;
-    getNextSequentialPreview(companyId: number, branchId: number, emissionPoint: string): Promise<string>;
+    getNextSequentialPreview(companyId: number, branchId: number, emissionPoint: string): Promise<{
+        establishment: string;
+        emission_point: string;
+        sequential: string;
+        full_number: string;
+    }>;
     sendToSri(id: number, companyId: number): Promise<{
         id: number;
         success: boolean;

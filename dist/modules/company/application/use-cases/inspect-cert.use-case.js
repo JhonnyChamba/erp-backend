@@ -16,6 +16,7 @@ exports.InspectCertUseCase = exports.InspectCertDto = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const class_validator_1 = require("class-validator");
 const company_orm_entity_1 = require("../../infrastructure/persistence/company.orm-entity");
 const secret_crypto_1 = require("../../../../common/crypto/secret-crypto");
 const cert_inspector_util_1 = require("../cert-inspector.util");
@@ -24,6 +25,16 @@ class InspectCertDto {
     cert_password;
 }
 exports.InspectCertDto = InspectCertDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], InspectCertDto.prototype, "cert_p12_base64", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], InspectCertDto.prototype, "cert_password", void 0);
 let InspectCertUseCase = class InspectCertUseCase {
     repo;
     constructor(repo) {

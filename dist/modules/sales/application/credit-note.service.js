@@ -102,7 +102,7 @@ let CreditNoteService = class CreditNoteService {
             if (!isNaN(parsed))
                 lastNum = parsed;
         }
-        const nextNum = Math.max(currentCorrelative + 1, lastNum + 1);
+        const nextNum = Math.max(currentCorrelative, lastNum) + 1;
         return String(nextNum).padStart(9, '0');
     }
     async create(dto, companyId, userId) {
@@ -297,7 +297,7 @@ let CreditNoteService = class CreditNoteService {
         try {
             const numericSeq = parseInt(sequential, 10);
             if (!isNaN(numericSeq)) {
-                await manager.query(`
+                const updateRes = await manager.query(`
 					UPDATE tab_emission_point_sequence s
 					SET correlative = $1, updated_at = NOW()
 					FROM tab_emission_point p
@@ -305,9 +305,17 @@ let CreditNoteService = class CreditNoteService {
 					  AND p.company_id = $2
 					  AND p.branch_id = $3
 					  AND p.serie = $4
-					  AND s.document_type = 'NOTAS DE CRÉDITO'
-					  AND s.correlative < $1;
+					  AND s.document_type = 'NOTAS DE CRÉDITO';
 				`, [numericSeq, companyId, branch.id, emissionPoint]);
+                if (!updateRes || updateRes[1] === 0) {
+                    await manager.query(`
+						INSERT INTO tab_emission_point_sequence (company_id, emission_point_id, document_type, document_code, serie, correlative, enabled, created_at, updated_at)
+						SELECT p.company_id, p.id, 'NOTAS DE CRÉDITO', '04', p.serie, $1, true, NOW(), NOW()
+						FROM tab_emission_point p
+						WHERE p.company_id = $2 AND p.branch_id = $3 AND p.serie = $4
+						ON CONFLICT DO NOTHING;
+					`, [numericSeq, companyId, branch.id, emissionPoint]);
+                }
             }
         }
         catch (seqErr) {
@@ -344,7 +352,17 @@ let CreditNoteService = class CreditNoteService {
         return cn;
     }
     async getNextSequentialPreview(companyId, branchId, emissionPoint) {
-        return this.getNextSequential(this.creditNoteRepo.manager, companyId, branchId, '001', emissionPoint);
+        const branch = await this.dataSource.getRepository(branch_company_orm_entity_1.BranchCompanyOrmEntity).findOne({
+            where: { id: branchId, company: { id: companyId }, deleted: false },
+        });
+        const establishment = branch ? branch.code.padStart(3, '0') : '001';
+        const sequential = await this.getNextSequential(this.creditNoteRepo.manager, companyId, branchId, establishment, emissionPoint);
+        return {
+            establishment,
+            emission_point: emissionPoint,
+            sequential,
+            full_number: `${establishment}-${emissionPoint}-${sequential}`,
+        };
     }
     async sendToSri(id, companyId) {
         const cn = await this.findById(id, companyId);
