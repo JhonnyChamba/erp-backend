@@ -30,6 +30,10 @@ export class AuthService {
 
 		const isSuperAdmin = user.super_admin || user.developer || false;
 
+		const jwtPhotoUrl = user.photo_url && !user.photo_url.startsWith('data:') && user.photo_url.length < 500
+			? user.photo_url
+			: null;
+
 		const payload = {
 			user_id: user.id,
 			user_name: `${user.name_user} ${user.last_name_user}`,
@@ -38,7 +42,7 @@ export class AuthService {
 			multi_company: user.multi_company,
 			theme_color: user.theme_color || 'Blue_Theme',
 			company_id: user.companyId,
-			photo_url: user.photo_url || null,
+			photo_url: jwtPhotoUrl,
 		};
 
 		return {

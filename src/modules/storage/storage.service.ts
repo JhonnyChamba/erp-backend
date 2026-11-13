@@ -89,7 +89,26 @@ export class StorageService {
 			}
 		}
 
-		// 2. Almacenamiento local de respaldo
+		// 2. Almacenamiento local o Data URI de respaldo
+		// Para fotos de perfil de usuario o archivos pequeños en entornos cloud/serverless (como Vercel sin disco persistente),
+		// una URI Data Base64 garantiza visualización inmediata en producción sin requerir servidor de archivos adicional.
+		if (file.buffer && (storagePath.startsWith('users/') || file.size <= 2.5 * 1024 * 1024)) {
+			try {
+				const fullLocalPath = path.join(this.localUploadsRoot, storagePath);
+				const dir = path.dirname(fullLocalPath);
+				if (!fs.existsSync(dir)) {
+					fs.mkdirSync(dir, { recursive: true });
+				}
+				fs.writeFileSync(fullLocalPath, file.buffer);
+			} catch (writeErr) {
+				this.logger.warn(`[Storage] No se pudo escribir en disco local (entorno serverless/efímero): ${writeErr.message}`);
+			}
+			const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+			this.logger.log(`[Storage] Archivo procesado como Data URI base64 (${Math.round(file.size / 1024)} KB)`);
+			return dataUri;
+		}
+
+		// Respaldo tradicional con ruta estática local
 		const fullLocalPath = path.join(this.localUploadsRoot, storagePath);
 		const dir = path.dirname(fullLocalPath);
 		if (!fs.existsSync(dir)) {

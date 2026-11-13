@@ -129,6 +129,22 @@ let StorageService = StorageService_1 = class StorageService {
                 this.logger.warn(`[Supabase Storage] Excepción al conectar: ${err.message}. Usando respaldo local.`);
             }
         }
+        if (file.buffer && (storagePath.startsWith('users/') || file.size <= 2.5 * 1024 * 1024)) {
+            try {
+                const fullLocalPath = path.join(this.localUploadsRoot, storagePath);
+                const dir = path.dirname(fullLocalPath);
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                fs.writeFileSync(fullLocalPath, file.buffer);
+            }
+            catch (writeErr) {
+                this.logger.warn(`[Storage] No se pudo escribir en disco local (entorno serverless/efímero): ${writeErr.message}`);
+            }
+            const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+            this.logger.log(`[Storage] Archivo procesado como Data URI base64 (${Math.round(file.size / 1024)} KB)`);
+            return dataUri;
+        }
         const fullLocalPath = path.join(this.localUploadsRoot, storagePath);
         const dir = path.dirname(fullLocalPath);
         if (!fs.existsSync(dir)) {
