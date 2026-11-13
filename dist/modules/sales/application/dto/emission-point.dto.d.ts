@@ -1,5 +1,6 @@
 export declare class CreateEmissionPointDto {
     companyId?: number;
+    company_id?: number;
     description: string;
     branch_id: number;
     serie: string;
@@ -7,6 +8,7 @@ export declare class CreateEmissionPointDto {
 }
 export declare class UpdateEmissionPointDto {
     companyId?: number;
+    company_id?: number;
     description?: string;
     branch_id?: number;
     serie?: string;

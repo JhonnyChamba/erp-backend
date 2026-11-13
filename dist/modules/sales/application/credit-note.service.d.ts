@@ -244,5 +244,8 @@ export declare class CreditNoteService {
         authorizationDate?: undefined;
         sri_authorization_date?: undefined;
     }>;
-    getSignedXml(id: number, companyId: number): Promise<string>;
+    getSignedXml(id: number, companyId: number): Promise<{
+        file_name: string;
+        xml: string;
+    }>;
 }

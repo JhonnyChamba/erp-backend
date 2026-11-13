@@ -558,7 +558,7 @@ export class CreditNoteService {
 		};
 	}
 
-	async getSignedXml(id: number, companyId: number): Promise<string> {
+	async getSignedXml(id: number, companyId: number): Promise<{ file_name: string; xml: string }> {
 		const cn = await this.creditNoteRepo
 			.createQueryBuilder('cn')
 			.addSelect('cn.signed_xml')
@@ -568,6 +568,7 @@ export class CreditNoteService {
 		if (!cn || !cn.signed_xml) {
 			throw new NotFoundException('La nota de crédito no tiene un XML firmado disponible.');
 		}
-		return cn.signed_xml;
+		const fileName = cn.access_key ? `${cn.access_key}.xml` : `NotaCredito_${cn.id}.xml`;
+		return { file_name: fileName, xml: cn.signed_xml };
 	}
 }

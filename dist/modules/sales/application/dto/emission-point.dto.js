@@ -13,6 +13,7 @@ exports.UpdateSequenceDto = exports.UpdateEmissionPointDto = exports.CreateEmiss
 const class_validator_1 = require("class-validator");
 class CreateEmissionPointDto {
     companyId;
+    company_id;
     description;
     branch_id;
     serie;
@@ -24,6 +25,11 @@ __decorate([
     (0, class_validator_1.IsNumber)({}, { message: 'El ID de la empresa debe ser numérico' }),
     __metadata("design:type", Number)
 ], CreateEmissionPointDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)({}, { message: 'El ID de la empresa debe ser numérico' }),
+    __metadata("design:type", Number)
+], CreateEmissionPointDto.prototype, "company_id", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'La descripción del punto de emisión es obligatoria' }),
     (0, class_validator_1.IsString)(),
@@ -48,6 +54,7 @@ __decorate([
 ], CreateEmissionPointDto.prototype, "initial_correlative", void 0);
 class UpdateEmissionPointDto {
     companyId;
+    company_id;
     description;
     branch_id;
     serie;
@@ -59,6 +66,11 @@ __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], UpdateEmissionPointDto.prototype, "companyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateEmissionPointDto.prototype, "company_id", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

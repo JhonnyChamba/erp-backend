@@ -5,6 +5,10 @@ export class CreateEmissionPointDto {
 	@IsNumber({}, { message: 'El ID de la empresa debe ser numérico' })
 	companyId?: number;
 
+	@IsOptional()
+	@IsNumber({}, { message: 'El ID de la empresa debe ser numérico' })
+	company_id?: number;
+
 	@IsNotEmpty({ message: 'La descripción del punto de emisión es obligatoria' })
 	@IsString()
 	description: string;
@@ -28,6 +32,10 @@ export class UpdateEmissionPointDto {
 	@IsOptional()
 	@IsNumber()
 	companyId?: number;
+
+	@IsOptional()
+	@IsNumber()
+	company_id?: number;
 
 	@IsOptional()
 	@IsString()

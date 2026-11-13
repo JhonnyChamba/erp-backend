@@ -488,7 +488,8 @@ let CreditNoteService = class CreditNoteService {
         if (!cn || !cn.signed_xml) {
             throw new common_1.NotFoundException('La nota de crédito no tiene un XML firmado disponible.');
         }
-        return cn.signed_xml;
+        const fileName = cn.access_key ? `${cn.access_key}.xml` : `NotaCredito_${cn.id}.xml`;
+        return { file_name: fileName, xml: cn.signed_xml };
     }
 };
 exports.CreditNoteService = CreditNoteService;

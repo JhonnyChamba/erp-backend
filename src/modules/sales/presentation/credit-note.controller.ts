@@ -74,9 +74,9 @@ export class CreditNoteController {
 		@Res() res: Response,
 	) {
 		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
-		const xml = await this.creditNoteService.getSignedXml(Number(id), companyId);
+		const { file_name, xml } = await this.creditNoteService.getSignedXml(Number(id), companyId);
 		res.setHeader('Content-Type', 'application/xml');
-		res.setHeader('Content-Disposition', `attachment; filename=NotaCredito_${id}.xml`);
+		res.setHeader('Content-Disposition', `attachment; filename="${file_name}"`);
 		return res.send(xml);
 	}
 }
