@@ -16,6 +16,7 @@ let ModuleOrmEntity = class ModuleOrmEntity {
     code;
     desc_icon;
     description;
+    order_index;
     created_by;
     enabled;
     deleted;
@@ -38,6 +39,10 @@ __decorate([
     (0, typeorm_1.Column)({ length: 150 }),
     __metadata("design:type", String)
 ], ModuleOrmEntity.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'order_index', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], ModuleOrmEntity.prototype, "order_index", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)

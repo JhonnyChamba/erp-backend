@@ -18,6 +18,7 @@ let subModulesOrmEntity = class subModulesOrmEntity {
     desc_icon;
     description;
     url_desc;
+    order_index;
     module;
     created_by;
     enabled;
@@ -45,6 +46,10 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], subModulesOrmEntity.prototype, "url_desc", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'order_index', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], subModulesOrmEntity.prototype, "order_index", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => module_orm_entity_1.ModuleOrmEntity, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'module_id' }),

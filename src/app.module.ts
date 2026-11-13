@@ -23,6 +23,8 @@ import { ContactsModule } from './modules/contacts/contacts.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { ConfigurationModule } from './modules/configuration/configuration.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { HumanResourcesModule } from './modules/human-resources/human-resources.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 
 @Module({
   imports: [
@@ -85,6 +87,8 @@ import { StorageModule } from './modules/storage/storage.module';
     PurchasesModule,
     ConfigurationModule,
     StorageModule,
+    HumanResourcesModule,
+    AppointmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

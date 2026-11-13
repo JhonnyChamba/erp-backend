@@ -150,16 +150,16 @@ export class AccessControlService {
 			dbUser ? dbUser.multi_company : userPayload?.multi_company,
 		);
 
-		// 2. Cargar catálogo activo de Módulos y Submódulos ordenado por ID
+		// 2. Cargar catálogo activo de Módulos y Submódulos ordenado por orden de menú y ID
 		const [allModules, allSubModules] = await Promise.all([
 			this.moduleRepo.find({
 				where: { deleted: false, enabled: true },
-				order: { id: 'ASC' },
+				order: { order_index: 'ASC', id: 'ASC' },
 			}),
 			this.subModuleRepo.find({
 				where: { deleted: false, enabled: true },
 				relations: ['module'],
-				order: { id: 'ASC' },
+				order: { order_index: 'ASC', id: 'ASC' },
 			}),
 		]);
 

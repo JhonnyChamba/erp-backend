@@ -70,19 +70,23 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
         const fullUser = await this.findById(saved.id, user.companyId);
         return fullUser;
     }
-    async findByCompany(companyId, page, limit) {
+    async findByCompany(companyId, page = 1, limit = 50) {
+        const targetCompanyId = Number(companyId);
+        const whereClause = targetCompanyId && targetCompanyId > 0
+            ? [
+                { company: { id: targetCompanyId }, deleted: false },
+                { userCompanies: { company: { id: targetCompanyId }, deleted: false, enabled: true } },
+            ]
+            : { deleted: false };
         const [users, total] = await this.repo.findAndCount({
-            where: [
-                { company: { id: companyId }, deleted: false },
-                { userCompanies: { company: { id: companyId }, deleted: false, enabled: true } },
-            ],
+            where: whereClause,
             relations: ['company', 'role', 'userCompanies', 'userCompanies.company', 'userCompanies.role'],
             skip: (page - 1) * limit,
             take: limit,
             order: { created_at: 'DESC' },
         });
         return {
-            data: users.map(user => this.toDomain(user, companyId)),
+            data: users.map(user => this.toDomain(user, targetCompanyId || undefined)),
             total,
         };
     }

@@ -5,12 +5,12 @@ export declare class DocumentTypeService {
     private readonly docTypeRepo;
     constructor(docTypeRepo: Repository<DocumentTypeOrmEntity>);
     private ensureDefaultDocumentTypes;
-    list(companyId: number, typeFilter?: string, onlyActive?: boolean): Promise<DocumentTypeOrmEntity[]>;
-    get(id: number, companyId: number): Promise<DocumentTypeOrmEntity>;
-    create(companyId: number, dto: CreateDocumentTypeDto): Promise<DocumentTypeOrmEntity>;
-    update(id: number, companyId: number, dto: UpdateDocumentTypeDto): Promise<DocumentTypeOrmEntity>;
-    toggleStatus(id: number, companyId: number): Promise<DocumentTypeOrmEntity>;
-    remove(id: number, companyId: number): Promise<{
+    list(typeFilter?: string, onlyActive?: boolean): Promise<DocumentTypeOrmEntity[]>;
+    get(id: number): Promise<DocumentTypeOrmEntity>;
+    create(dto: CreateDocumentTypeDto): Promise<DocumentTypeOrmEntity>;
+    update(id: number, dto: UpdateDocumentTypeDto): Promise<DocumentTypeOrmEntity>;
+    toggleStatus(id: number): Promise<DocumentTypeOrmEntity>;
+    remove(id: number): Promise<{
         success: boolean;
         message: string;
     }>;

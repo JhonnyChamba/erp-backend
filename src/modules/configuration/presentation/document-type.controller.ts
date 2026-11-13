@@ -8,69 +8,56 @@ import {
 	Patch,
 	Post,
 	Query,
-	Req,
 	UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { DocumentTypeService } from '../application/document-type.service';
 import { CreateDocumentTypeDto, UpdateDocumentTypeDto } from '../application/dto/document-type.dto';
 
-@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
+@UseGuards(AuthGuard('jwt'))
 @Controller('document-types')
 export class DocumentTypeController {
 	constructor(private readonly docTypeService: DocumentTypeService) {}
 
-	private resolveCompanyId(req: any, explicitId?: number): number {
-		const headerVal = req?.headers?.['x-company-id'];
-		const candidate = explicitId || Number(headerVal) || Number(req?.companyId) || Number(req?.user?.company_id) || 1;
-		return !Number.isNaN(candidate) && candidate > 0 ? candidate : 1;
-	}
-
+	/**
+	 * Catálogo General Oficial de Tipos de Documentos (SRI Ecuador).
+	 * Es general para todo el sistema, filtrable únicamente por estado activo o tipo de aplicación.
+	 */
 	@Get()
 	list(
-		@Query('companyId') companyIdQuery: string,
 		@Query('type') typeQuery: string,
 		@Query('active') activeQuery: string,
-		@Req() req: any,
 	) {
-		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
 		const onlyActive = activeQuery === 'true' || activeQuery === '1';
-		return this.docTypeService.list(companyId, typeQuery, onlyActive);
+		return this.docTypeService.list(typeQuery, onlyActive);
 	}
 
 	@Get(':id')
-	get(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-		const companyId = this.resolveCompanyId(req);
-		return this.docTypeService.get(id, companyId);
+	get(@Param('id', ParseIntPipe) id: number) {
+		return this.docTypeService.get(id);
 	}
 
 	@Post()
-	create(@Body() dto: CreateDocumentTypeDto, @Req() req: any) {
-		const companyId = this.resolveCompanyId(req);
-		return this.docTypeService.create(companyId, dto);
+	create(@Body() dto: CreateDocumentTypeDto) {
+		return this.docTypeService.create(dto);
 	}
 
 	@Patch(':id')
 	update(
 		@Param('id', ParseIntPipe) id: number,
 		@Body() dto: UpdateDocumentTypeDto,
-		@Req() req: any,
 	) {
-		const companyId = this.resolveCompanyId(req);
-		return this.docTypeService.update(id, companyId, dto);
+		return this.docTypeService.update(id, dto);
 	}
 
 	@Patch(':id/toggle-status')
-	toggleStatus(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-		const companyId = this.resolveCompanyId(req);
-		return this.docTypeService.toggleStatus(id, companyId);
+	toggleStatus(@Param('id', ParseIntPipe) id: number) {
+		return this.docTypeService.toggleStatus(id);
 	}
 
 	@Delete(':id')
-	remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-		const companyId = this.resolveCompanyId(req);
-		return this.docTypeService.remove(id, companyId);
+	remove(@Param('id', ParseIntPipe) id: number) {
+		return this.docTypeService.remove(id);
 	}
 }
 

@@ -71,7 +71,7 @@ export class StorageController {
 	}
 
 	/** Sirve archivos locales de respaldo (cuando no hay CDN de Supabase activo) */
-	@Get('uploads/*')
+	@Get('uploads/*path')
 	async serveLocalFile(@Req() req: any, @Res() res: any) {
 		const urlPath = req.url.split('?')[0];
 		const prefix = '/storage/uploads/';

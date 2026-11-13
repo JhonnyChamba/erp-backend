@@ -16,17 +16,17 @@ export class DocumentTypeService {
 	) {}
 
 	/**
-	 * Si la empresa no tiene tipos de documentos registrados, sembramos automáticamente los oficiales del SRI
+	 * Si no existen tipos de documentos registrados a nivel global, sembramos automáticamente los oficiales del SRI
 	 */
-	private async ensureDefaultDocumentTypes(companyId: number): Promise<void> {
+	private async ensureDefaultDocumentTypes(): Promise<void> {
 		const count = await this.docTypeRepo.count({
-			where: { company_id: companyId, deleted: false },
+			where: { deleted: false },
 		});
 		if (count > 0) return;
 
 		const defaults = [
-			{ name: 'Cédula de Identidad', code: '05', type: 'TODOS' },
 			{ name: 'RUC', code: '04', type: 'TODOS' },
+			{ name: 'Cédula de Identidad', code: '05', type: 'TODOS' },
 			{ name: 'Pasaporte', code: '06', type: 'TODOS' },
 			{ name: 'Consumidor Final', code: '07', type: 'CLIENTE' },
 			{ name: 'Identificación del Exterior', code: '08', type: 'TODOS' },
@@ -34,7 +34,6 @@ export class DocumentTypeService {
 
 		for (const d of defaults) {
 			const doc = this.docTypeRepo.create({
-				company_id: companyId,
 				name: d.name,
 				code: d.code,
 				type: d.type,
@@ -45,13 +44,12 @@ export class DocumentTypeService {
 		}
 	}
 
-	async list(companyId: number, typeFilter?: string, onlyActive = false): Promise<DocumentTypeOrmEntity[]> {
-		await this.ensureDefaultDocumentTypes(companyId);
+	async list(typeFilter?: string, onlyActive = false): Promise<DocumentTypeOrmEntity[]> {
+		await this.ensureDefaultDocumentTypes();
 
 		const query = this.docTypeRepo
 			.createQueryBuilder('dt')
-			.where('dt.company_id = :companyId', { companyId })
-			.andWhere('dt.deleted = false');
+			.where('dt.deleted = false');
 
 		if (onlyActive) {
 			query.andWhere('dt.status = :status', { status: 'ACTIVO' });
@@ -59,7 +57,7 @@ export class DocumentTypeService {
 
 		if (typeFilter && typeFilter !== 'TODOS') {
 			query.andWhere('(dt.type = :typeFilter OR dt.type = :todos)', {
-				typeFilter,
+				typeFilter: typeFilter.toUpperCase(),
 				todos: 'TODOS',
 			});
 		}
@@ -69,20 +67,19 @@ export class DocumentTypeService {
 		return query.getMany();
 	}
 
-	async get(id: number, companyId: number): Promise<DocumentTypeOrmEntity> {
+	async get(id: number): Promise<DocumentTypeOrmEntity> {
 		const doc = await this.docTypeRepo.findOne({
-			where: { id, company_id: companyId, deleted: false },
+			where: { id, deleted: false },
 		});
 		if (!doc) {
-			throw new NotFoundException(`El tipo de documento con ID ${id} no existe en la empresa.`);
+			throw new NotFoundException(`El tipo de documento con ID ${id} no existe.`);
 		}
 		return doc;
 	}
 
-	async create(companyId: number, dto: CreateDocumentTypeDto): Promise<DocumentTypeOrmEntity> {
+	async create(dto: CreateDocumentTypeDto): Promise<DocumentTypeOrmEntity> {
 		const existing = await this.docTypeRepo.findOne({
 			where: {
-				company_id: companyId,
 				code: dto.code.trim(),
 				type: dto.type.trim().toUpperCase(),
 				deleted: false,
@@ -95,7 +92,6 @@ export class DocumentTypeService {
 		}
 
 		const entity = this.docTypeRepo.create({
-			company_id: companyId,
 			name: dto.name.trim(),
 			code: dto.code.trim(),
 			type: dto.type.trim().toUpperCase(),
@@ -106,8 +102,8 @@ export class DocumentTypeService {
 		return this.docTypeRepo.save(entity);
 	}
 
-	async update(id: number, companyId: number, dto: UpdateDocumentTypeDto): Promise<DocumentTypeOrmEntity> {
-		const doc = await this.get(id, companyId);
+	async update(id: number, dto: UpdateDocumentTypeDto): Promise<DocumentTypeOrmEntity> {
+		const doc = await this.get(id);
 
 		if (dto.name) doc.name = dto.name.trim();
 		if (dto.type) doc.type = dto.type.trim().toUpperCase();
@@ -117,14 +113,14 @@ export class DocumentTypeService {
 		return this.docTypeRepo.save(doc);
 	}
 
-	async toggleStatus(id: number, companyId: number): Promise<DocumentTypeOrmEntity> {
-		const doc = await this.get(id, companyId);
+	async toggleStatus(id: number): Promise<DocumentTypeOrmEntity> {
+		const doc = await this.get(id);
 		doc.status = doc.status === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
 		return this.docTypeRepo.save(doc);
 	}
 
-	async remove(id: number, companyId: number): Promise<{ success: boolean; message: string }> {
-		const doc = await this.get(id, companyId);
+	async remove(id: number): Promise<{ success: boolean; message: string }> {
+		const doc = await this.get(id);
 		doc.deleted = true;
 		await this.docTypeRepo.save(doc);
 		return { success: true, message: 'Tipo de documento eliminado correctamente.' };

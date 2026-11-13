@@ -30,6 +30,7 @@ let subModulesRepositoryImpl = class subModulesRepositoryImpl {
             desc_icon: subModule.desc_icon,
             description: subModule.description,
             url_desc: subModule.url_desc,
+            order_index: subModule.order_index ?? subModule.orderIndex ?? 0,
             enabled: subModule.enabled,
             module: { id: subModule.moduleId },
             created_by: subModule.createdById,
@@ -77,7 +78,7 @@ let subModulesRepositoryImpl = class subModulesRepositoryImpl {
             relations: ['module'],
             skip: (page - 1) * limit,
             take: limit,
-            order: { created_at: 'DESC' },
+            order: { order_index: 'ASC', id: 'ASC' },
         });
         return {
             data: subModulees.map(subModule => this.toDomain(subModule)),
@@ -101,6 +102,7 @@ let subModulesRepositoryImpl = class subModulesRepositoryImpl {
             desc_icon: subModule.desc_icon,
             description: subModule.description,
             url_desc: subModule.url_desc,
+            order_index: subModule.order_index ?? subModule.orderIndex ?? 0,
             enabled: subModule.enabled,
         };
         if (subModule.moduleId) {
@@ -114,7 +116,9 @@ let subModulesRepositoryImpl = class subModulesRepositoryImpl {
         return this.toDomain(updated);
     }
     toDomain(entity) {
-        return new sub_module_entity_1.subModules(entity.id, entity.code, entity.desc_icon, entity.description, entity.url_desc, entity.module?.id, entity.enabled, entity.created_at);
+        const sm = new sub_module_entity_1.subModules(entity.id, entity.code, entity.desc_icon, entity.description, entity.url_desc, entity.module?.id, entity.enabled, entity.created_at);
+        sm.order_index = entity.order_index ?? 0;
+        return sm;
     }
 };
 exports.subModulesRepositoryImpl = subModulesRepositoryImpl;

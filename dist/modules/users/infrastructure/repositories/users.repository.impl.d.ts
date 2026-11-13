@@ -10,7 +10,7 @@ export declare class UsersRepositoryImpl implements UsersRepository {
     private readonly passwordService;
     constructor(repo: Repository<UsersOrmEntity>, userCompanyRepo: Repository<UserCompanyOrmEntity>, passwordService: PasswordService);
     create(user: Users): Promise<Users>;
-    findByCompany(companyId: number, page: number, limit: number): Promise<{
+    findByCompany(companyId?: number, page?: number, limit?: number): Promise<{
         data: Users[];
         total: number;
     }>;

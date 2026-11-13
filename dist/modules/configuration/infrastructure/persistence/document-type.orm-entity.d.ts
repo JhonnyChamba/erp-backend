@@ -1,8 +1,8 @@
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
 export declare class DocumentTypeOrmEntity {
     id: number;
-    company_id: number;
-    company: CompanyOrmEntity;
+    company_id?: number | null;
+    company?: CompanyOrmEntity | null;
     name: string;
     type: string;
     code: string;

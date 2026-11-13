@@ -20,6 +20,9 @@ export class subModulesOrmEntity {
 	@Column()
 	url_desc: string;
 
+	@Column({ name: 'order_index', type: 'int', default: 0 })
+	order_index: number;
+
 	// Relación con el modulo (genera module_id automáticamente)
 	@ManyToOne(() => ModuleOrmEntity, { nullable: true }) // <- relación
 	@JoinColumn({ name: 'module_id' })

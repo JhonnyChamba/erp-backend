@@ -36,8 +36,8 @@ let RolesController = class RolesController {
     }
     resolveCompanyId(req, explicitId) {
         const headerVal = req?.headers?.['x-company-id'];
-        const candidate = explicitId || Number(headerVal) || Number(req?.companyId) || Number(req?.user?.company_id) || 1;
-        return !Number.isNaN(candidate) && candidate > 0 ? candidate : 1;
+        const candidate = explicitId || Number(headerVal) || Number(req?.companyId) || Number(req?.user?.company_id);
+        return !Number.isNaN(candidate) && candidate > 0 ? candidate : 0;
     }
     create(dto, req) {
         dto.companyId = this.resolveCompanyId(req, dto.companyId);

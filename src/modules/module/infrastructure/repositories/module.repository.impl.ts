@@ -20,6 +20,7 @@ export class ModuleRepositoryImpl implements ModuleRepository {
 			code: nextCode,
 			desc_icon: modules.desc_icon,
 			description: modules.description,
+			order_index: (modules as any).order_index ?? (modules as any).orderIndex ?? 0,
 			enabled: modules.enabled,
 			created_by: modules.createdById,
 		});
@@ -66,7 +67,7 @@ export class ModuleRepositoryImpl implements ModuleRepository {
 			where: { deleted: false },
 			skip: (page - 1) * limit,
 			take: limit,
-			order: { created_at: 'DESC' },
+			order: { order_index: 'ASC', id: 'ASC' },
 		});
 
 		return {
@@ -88,6 +89,7 @@ export class ModuleRepositoryImpl implements ModuleRepository {
 				code: modules.code,
 				desc_icon: modules.desc_icon,
 				description: modules.description,
+				order_index: (modules as any).order_index ?? (modules as any).orderIndex ?? 0,
 				enabled: modules.enabled
 			}
 		);
@@ -97,7 +99,7 @@ export class ModuleRepositoryImpl implements ModuleRepository {
 	}
 
 	private toDomain(entity: ModuleOrmEntity): Module {
-		return new Module(
+		const m = new Module(
 			entity.id,
 			entity.code,
 			entity.desc_icon,
@@ -105,5 +107,7 @@ export class ModuleRepositoryImpl implements ModuleRepository {
 			entity.enabled,
 			entity.created_at,
 		);
+		(m as any).order_index = entity.order_index ?? 0;
+		return m;
 	}
 }

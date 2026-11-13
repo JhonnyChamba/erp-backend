@@ -21,6 +21,7 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 			desc_icon: subModule.desc_icon,
 			description: subModule.description,
 			url_desc: subModule.url_desc,
+			order_index: (subModule as any).order_index ?? (subModule as any).orderIndex ?? 0,
 			enabled: subModule.enabled,
 
 			module: { id: subModule.moduleId },
@@ -79,7 +80,7 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 			relations: ['module'],
 			skip: (page - 1) * limit,
 			take: limit,
-			order: { created_at: 'DESC' },
+			order: { order_index: 'ASC', id: 'ASC' },
 		});
 
 		return {
@@ -108,6 +109,7 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 			desc_icon: subModule.desc_icon,
 			description: subModule.description,
 			url_desc: subModule.url_desc,
+			order_index: (subModule as any).order_index ?? (subModule as any).orderIndex ?? 0,
 			enabled: subModule.enabled,
 		};
 		if (subModule.moduleId) {
@@ -125,7 +127,7 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 	}
 
 	private toDomain(entity: subModulesOrmEntity): subModules {
-		return new subModules(
+		const sm = new subModules(
 			entity.id,
 			entity.code,
 			entity.desc_icon,
@@ -135,5 +137,7 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 			entity.enabled,
 			entity.created_at,
 		);
+		(sm as any).order_index = entity.order_index ?? 0;
+		return sm;
 	}
 }

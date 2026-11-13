@@ -1,0 +1,30 @@
+import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
+import { BranchCompanyOrmEntity } from 'src/modules/branch-company/infrastructure/persistence/branch-company.orm-entity';
+import { CustomerOrmEntity } from 'src/modules/contacts/infrastructure/persistence/contacts.orm-entity';
+import { EmployeeOrmEntity } from 'src/modules/human-resources/infrastructure/persistence/employee.orm-entity';
+import { AppointmentItemOrmEntity } from './appointment-item.orm-entity';
+export declare class AppointmentOrmEntity {
+    id: number;
+    company_id: number;
+    company: CompanyOrmEntity;
+    branch_id: number | null;
+    branch: BranchCompanyOrmEntity | null;
+    customer_id: number;
+    customer: CustomerOrmEntity;
+    employee_id: number;
+    employee: EmployeeOrmEntity;
+    order_number: string;
+    appointment_date: string;
+    start_time: string;
+    end_time: string;
+    status: string;
+    subtotal: number;
+    tax_amount: number;
+    total_estimated: number;
+    notes: string | null;
+    invoice_id: number | null;
+    deleted: boolean;
+    items: AppointmentItemOrmEntity[];
+    created_at: Date;
+    updated_at: Date;
+}

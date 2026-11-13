@@ -3,6 +3,7 @@ export declare class ModuleOrmEntity {
     code: string;
     desc_icon: string;
     description: string;
+    order_index: number;
     created_by: number;
     enabled: boolean;
     deleted: boolean;

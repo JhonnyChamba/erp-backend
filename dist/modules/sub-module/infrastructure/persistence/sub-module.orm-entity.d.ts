@@ -5,6 +5,7 @@ export declare class subModulesOrmEntity {
     desc_icon: string;
     description: string;
     url_desc: string;
+    order_index: number;
     module: ModuleOrmEntity;
     created_by: number;
     enabled: boolean;

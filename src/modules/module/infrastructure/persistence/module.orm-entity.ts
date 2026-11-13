@@ -16,6 +16,9 @@ export class ModuleOrmEntity {
 	@Column({ length: 150 })
 	description: string;
 
+	@Column({ name: 'order_index', type: 'int', default: 0 })
+	order_index: number;
+
 	// Usuario creador
 	@Column({ nullable: true })
 	created_by: number;

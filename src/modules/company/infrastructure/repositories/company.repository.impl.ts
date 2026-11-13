@@ -356,28 +356,31 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 				}
 			}
 
-			// G. Tipos de Identificación SRI por Defecto
+			// G. Tipos de Identificación SRI por Defecto (Catálogo Global)
 			const defaultDocTypes = [
-				{ code: '05', name: 'Cédula', type: 'TODOS' },
+				{ code: '05', name: 'Cédula de Identidad', type: 'TODOS' },
 				{ code: '04', name: 'RUC', type: 'TODOS' },
 				{ code: '07', name: 'Consumidor Final', type: 'CLIENTE' },
 				{ code: '06', name: 'Pasaporte', type: 'TODOS' },
 			];
 			for (const dt of defaultDocTypes) {
-				const existingDt = await this.docTypeRepo.findOne({
-					where: { company_id: companyId, code: dt.code, type: dt.type, deleted: false },
-				});
-				if (!existingDt) {
-					await this.docTypeRepo.save(
-						this.docTypeRepo.create({
-							company_id: companyId,
-							code: dt.code,
-							name: dt.name,
-							type: dt.type,
-							status: 'ACTIVO',
-							deleted: false,
-						}),
-					);
+				try {
+					const existingDt = await this.docTypeRepo.findOne({
+						where: { code: dt.code, type: dt.type, deleted: false },
+					});
+					if (!existingDt) {
+						await this.docTypeRepo.save(
+							this.docTypeRepo.create({
+								code: dt.code,
+								name: dt.name,
+								type: dt.type,
+								status: 'ACTIVO',
+								deleted: false,
+							}),
+						);
+					}
+				} catch (docErr) {
+					// Si ya existe por concurrencia o constraint, ignorar
 				}
 			}
 

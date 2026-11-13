@@ -73,14 +73,36 @@ let RolesRepositoryImpl = class RolesRepositoryImpl {
         return candidate;
     }
     async findByCompany(companyId, page, limit) {
-        const targetCompanyId = Number(companyId) || 1;
+        let targetCompanyId = Number(companyId);
+        let validCompany = false;
+        if (targetCompanyId && targetCompanyId > 0) {
+            const check = await this.repo.manager.query('SELECT id FROM tab_company WHERE id = $1 AND (deleted = false OR deleted IS NULL)', [targetCompanyId]);
+            if (check && check.length > 0) {
+                validCompany = true;
+            }
+        }
+        if (!validCompany) {
+            const firstComp = await this.repo.manager.query('SELECT id FROM tab_company WHERE (deleted = false OR deleted IS NULL) ORDER BY id ASC LIMIT 1');
+            if (firstComp && firstComp.length > 0) {
+                targetCompanyId = Number(firstComp[0].id);
+                validCompany = true;
+            }
+            else {
+                return { data: [], total: 0 };
+            }
+        }
         await this.repo
             .createQueryBuilder()
             .update(roles_orm_entity_1.RolesOrmEntity)
             .set({ company: { id: targetCompanyId } })
             .where('company_id IS NULL')
             .execute();
-        await this.ensureCompanyAdminRoleSynced(targetCompanyId);
+        try {
+            await this.ensureCompanyAdminRoleSynced(targetCompanyId);
+        }
+        catch (syncErr) {
+            console.error('Advertencia al sincronizar rol administrador de empresa:', syncErr);
+        }
         const [branches, total] = await this.repo.findAndCount({
             where: { company: { id: targetCompanyId }, deleted: false },
             relations: ['company', 'roleModules', 'roleModules.module', 'roleModules.subModule'],
@@ -94,6 +116,11 @@ let RolesRepositoryImpl = class RolesRepositoryImpl {
         };
     }
     async ensureCompanyAdminRoleSynced(companyId) {
+        if (!companyId || companyId <= 0)
+            return;
+        const compExists = await this.repo.manager.query('SELECT id FROM tab_company WHERE id = $1 AND (deleted = false OR deleted IS NULL)', [companyId]);
+        if (!compExists || compExists.length === 0)
+            return;
         let adminRole = await this.repo
             .createQueryBuilder('r')
             .leftJoinAndSelect('r.roleModules', 'rm', 'rm.deleted = false AND rm.enabled = true')

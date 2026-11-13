@@ -120,12 +120,12 @@ let AccessControlService = class AccessControlService {
         const [allModules, allSubModules] = await Promise.all([
             this.moduleRepo.find({
                 where: { deleted: false, enabled: true },
-                order: { id: 'ASC' },
+                order: { order_index: 'ASC', id: 'ASC' },
             }),
             this.subModuleRepo.find({
                 where: { deleted: false, enabled: true },
                 relations: ['module'],
-                order: { id: 'ASC' },
+                order: { order_index: 'ASC', id: 'ASC' },
             }),
         ]);
         if (isSuperAdmin) {

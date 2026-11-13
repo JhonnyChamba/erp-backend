@@ -29,6 +29,7 @@ let ModuleRepositoryImpl = class ModuleRepositoryImpl {
             code: nextCode,
             desc_icon: modules.desc_icon,
             description: modules.description,
+            order_index: modules.order_index ?? modules.orderIndex ?? 0,
             enabled: modules.enabled,
             created_by: modules.createdById,
         });
@@ -66,7 +67,7 @@ let ModuleRepositoryImpl = class ModuleRepositoryImpl {
             where: { deleted: false },
             skip: (page - 1) * limit,
             take: limit,
-            order: { created_at: 'DESC' },
+            order: { order_index: 'ASC', id: 'ASC' },
         });
         return {
             data: branches.map(modules => this.toDomain(modules)),
@@ -82,13 +83,16 @@ let ModuleRepositoryImpl = class ModuleRepositoryImpl {
             code: modules.code,
             desc_icon: modules.desc_icon,
             description: modules.description,
+            order_index: modules.order_index ?? modules.orderIndex ?? 0,
             enabled: modules.enabled
         });
         const updated = await this.repo.findOne({ where: { id: modules.id } });
         return this.toDomain(updated);
     }
     toDomain(entity) {
-        return new module_entity_1.Module(entity.id, entity.code, entity.desc_icon, entity.description, entity.enabled, entity.created_at);
+        const m = new module_entity_1.Module(entity.id, entity.code, entity.desc_icon, entity.description, entity.enabled, entity.created_at);
+        m.order_index = entity.order_index ?? 0;
+        return m;
     }
 };
 exports.ModuleRepositoryImpl = ModuleRepositoryImpl;

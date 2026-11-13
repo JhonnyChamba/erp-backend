@@ -30,11 +30,11 @@ __decorate([
     __metadata("design:type", Number)
 ], DocumentTypeOrmEntity.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'company_id' }),
+    (0, typeorm_1.Column)({ name: 'company_id', nullable: true }),
     __metadata("design:type", Number)
 ], DocumentTypeOrmEntity.prototype, "company_id", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => company_orm_entity_1.CompanyOrmEntity, { nullable: false, onDelete: 'CASCADE' }),
+    (0, typeorm_1.ManyToOne)(() => company_orm_entity_1.CompanyOrmEntity, { nullable: true, onDelete: 'CASCADE' }),
     (0, typeorm_1.JoinColumn)({ name: 'company_id' }),
     __metadata("design:type", company_orm_entity_1.CompanyOrmEntity)
 ], DocumentTypeOrmEntity.prototype, "company", void 0);
@@ -67,7 +67,7 @@ __decorate([
     __metadata("design:type", Date)
 ], DocumentTypeOrmEntity.prototype, "updated_at", void 0);
 exports.DocumentTypeOrmEntity = DocumentTypeOrmEntity = __decorate([
-    (0, typeorm_1.Index)(['company_id', 'code', 'type'], { unique: true, where: '"deleted" = false' }),
+    (0, typeorm_1.Index)(['code', 'type'], { unique: true, where: '"deleted" = false' }),
     (0, typeorm_1.Entity)('tab_document_types')
 ], DocumentTypeOrmEntity);
 //# sourceMappingURL=document-type.orm-entity.js.map

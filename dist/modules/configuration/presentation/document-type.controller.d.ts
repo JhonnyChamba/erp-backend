@@ -3,13 +3,12 @@ import { CreateDocumentTypeDto, UpdateDocumentTypeDto } from '../application/dto
 export declare class DocumentTypeController {
     private readonly docTypeService;
     constructor(docTypeService: DocumentTypeService);
-    private resolveCompanyId;
-    list(companyIdQuery: string, typeQuery: string, activeQuery: string, req: any): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity[]>;
-    get(id: number, req: any): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
-    create(dto: CreateDocumentTypeDto, req: any): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
-    update(id: number, dto: UpdateDocumentTypeDto, req: any): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
-    toggleStatus(id: number, req: any): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
-    remove(id: number, req: any): Promise<{
+    list(typeQuery: string, activeQuery: string): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity[]>;
+    get(id: number): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
+    create(dto: CreateDocumentTypeDto): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
+    update(id: number, dto: UpdateDocumentTypeDto): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
+    toggleStatus(id: number): Promise<import("../infrastructure/persistence/document-type.orm-entity").DocumentTypeOrmEntity>;
+    remove(id: number): Promise<{
         success: boolean;
         message: string;
     }>;
