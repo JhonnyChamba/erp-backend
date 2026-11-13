@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class CreateInitialTables1771133236710 implements MigrationInterface {
-    name = 'CreateInitialTables1771133236710'
+    name = 'CreateInitialTables1771133236710';
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "tab_roles" ("id" SERIAL NOT NULL, "description" character varying NOT NULL, "enabled" boolean NOT NULL DEFAULT true, "deleted" boolean NOT NULL DEFAULT false, "created_user" character varying NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "user_id" integer, CONSTRAINT "PK_d6bfbe213fdf5db0b886832f898" PRIMARY KEY ("id"))`);
