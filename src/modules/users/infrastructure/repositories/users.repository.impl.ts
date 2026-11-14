@@ -131,24 +131,26 @@ export class UsersRepositoryImpl implements UsersRepository {
 			}
 		}
 
-		await this.repo.update(
-			{ id: user.id! },
-			{
-				num_document: user.num_document,
-				name_user: user.name_user,
-				last_name_user: user.last_name_user,
-				email: user.email,
-				password: user.password,
-				developer: isSuperAdmin,
-				super_admin: isSuperAdmin,
-				multi_company: isMultiCompany,
-				enabled: user.enabled,
-				theme_color: user.theme_color || 'Blue_Theme',
-				birth_date: user.birth_date || null,
-				photo_url: user.photo_url || null,
-				role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
-			},
-		);
+		const updateData: any = {
+			num_document: user.num_document,
+			name_user: user.name_user,
+			last_name_user: user.last_name_user,
+			email: user.email,
+			password: user.password,
+			developer: isSuperAdmin,
+			super_admin: isSuperAdmin,
+			multi_company: isMultiCompany,
+			enabled: user.enabled,
+			theme_color: user.theme_color || 'Blue_Theme',
+			birth_date: user.birth_date || null,
+			photo_url: user.photo_url || null,
+			role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
+		};
+		if (user.companyId) {
+			updateData.company = { id: user.companyId };
+		}
+
+		await this.repo.update({ id: user.id! }, updateData);
 
 		if (isSuperAdmin) {
 			await this.userCompanyRepo

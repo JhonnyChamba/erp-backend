@@ -128,40 +128,6 @@ let AccessControlService = class AccessControlService {
                 order: { order_index: 'ASC', id: 'ASC' },
             }),
         ]);
-        if (isSuperAdmin) {
-            const menu = allModules.map((mod) => ({
-                id: mod.id,
-                code: mod.code,
-                description: mod.description,
-                icon: mod.desc_icon || 'solar:widget-4-line-duotone',
-                children: allSubModules
-                    .filter((sm) => sm.module?.id === mod.id)
-                    .map((sm) => ({
-                    id: sm.id,
-                    code: sm.code,
-                    description: sm.description,
-                    icon: sm.desc_icon || 'solar:round-alt-arrow-right-line-duotone',
-                    url: sm.url_desc || '/',
-                })),
-            }));
-            const result = {
-                companyId: targetCompanyId,
-                isSuperAdmin: true,
-                isMultiCompany: true,
-                roleId: null,
-                roleCode: 'SUPER-ADMIN',
-                roleName: 'Super Admin',
-                moduleCodes: allModules.map((m) => m.code),
-                subModuleCodes: allSubModules.map((sm) => sm.code),
-                allowedUrls: allSubModules.map((sm) => sm.url_desc).filter(Boolean),
-                menu,
-            };
-            AccessControlService_1.cache.set(cacheKey, {
-                expiresAt: Date.now() + AccessControlService_1.CACHE_TTL_MS,
-                data: result,
-            });
-            return result;
-        }
         const activeSubs = await this.subscriptionsRepo.find({
             where: { company: { id: targetCompanyId }, deleted: false, enabled: true },
             relations: ['subscriptionModules', 'subscriptionModules.module', 'subscriptionModules.subModule'],
@@ -179,6 +145,47 @@ let AccessControlService = class AccessControlService {
             }
         }
         const hasSubscriptionRestriction = subscribedModIds.size > 0 || subscribedSubModIds.size > 0;
+        if (isSuperAdmin) {
+            const allowedMods = hasSubscriptionRestriction
+                ? allModules.filter((m) => subscribedModIds.has(m.id))
+                : allModules;
+            const allowedSubMods = hasSubscriptionRestriction
+                ? allSubModules.filter((sm) => subscribedSubModIds.has(sm.id) ||
+                    (sm.module?.id && subscribedModIds.has(Number(sm.module.id))))
+                : allSubModules;
+            const menu = allowedMods.map((mod) => ({
+                id: mod.id,
+                code: mod.code,
+                description: mod.description,
+                icon: mod.desc_icon || 'solar:widget-4-line-duotone',
+                children: allowedSubMods
+                    .filter((sm) => sm.module?.id === mod.id)
+                    .map((sm) => ({
+                    id: sm.id,
+                    code: sm.code,
+                    description: sm.description,
+                    icon: sm.desc_icon || 'solar:round-alt-arrow-right-line-duotone',
+                    url: sm.url_desc || '/',
+                })),
+            }));
+            const result = {
+                companyId: targetCompanyId,
+                isSuperAdmin: true,
+                isMultiCompany: true,
+                roleId: null,
+                roleCode: 'SUPER-ADMIN',
+                roleName: 'Super Admin',
+                moduleCodes: allowedMods.map((m) => m.code),
+                subModuleCodes: allowedSubMods.map((sm) => sm.code),
+                allowedUrls: allowedSubMods.map((sm) => sm.url_desc).filter(Boolean),
+                menu,
+            };
+            AccessControlService_1.cache.set(cacheKey, {
+                expiresAt: Date.now() + AccessControlService_1.CACHE_TTL_MS,
+                data: result,
+            });
+            return result;
+        }
         const userCompany = userId
             ? await this.userCompanyRepo.findOne({
                 where: {

@@ -117,7 +117,7 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
                 primaryRoleId = matchPrimary.roleId ? Number(matchPrimary.roleId) : null;
             }
         }
-        await this.repo.update({ id: user.id }, {
+        const updateData = {
             num_document: user.num_document,
             name_user: user.name_user,
             last_name_user: user.last_name_user,
@@ -131,7 +131,11 @@ let UsersRepositoryImpl = class UsersRepositoryImpl {
             birth_date: user.birth_date || null,
             photo_url: user.photo_url || null,
             role: primaryRoleId ? { id: primaryRoleId } : null,
-        });
+        };
+        if (user.companyId) {
+            updateData.company = { id: user.companyId };
+        }
+        await this.repo.update({ id: user.id }, updateData);
         if (isSuperAdmin) {
             await this.userCompanyRepo
                 .createQueryBuilder()

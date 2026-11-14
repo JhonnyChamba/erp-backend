@@ -33,16 +33,35 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         this.roleModuleRepo = roleModuleRepo;
     }
     async create(subscriptions) {
+        if (subscriptions.companyId) {
+            await this.repo
+                .createQueryBuilder()
+                .update(subscriptions_orm_entity_1.SubscriptionsOrmEntity)
+                .set({ enabled: false })
+                .where('company_id = :companyId AND deleted = false', { companyId: subscriptions.companyId })
+                .execute();
+        }
         const entity = this.repo.create({
             begin_date: subscriptions.begin_date,
             end_date: subscriptions.end_date,
-            enabled: subscriptions.enabled,
+            enabled: subscriptions.enabled !== false,
             plan: { id: subscriptions.planId },
             company: { id: subscriptions.companyId },
             createdBy: { id: subscriptions.createdById }
         });
         const saved = await this.repo.save(entity);
-        await this.syncSubscriptionAccess(saved.id, subscriptions.moduleIds || [], subscriptions.subModuleIds || [], subscriptions.companyId);
+        let targetModIds = subscriptions.moduleIds || [];
+        let targetSubModIds = subscriptions.subModuleIds || [];
+        if (subscriptions.planId) {
+            const planMods = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [subscriptions.planId]);
+            if (planMods && planMods.length > 0) {
+                const planModIdSet = new Set(planMods.map((r) => Number(r.module_id)));
+                targetModIds = Array.from(planModIdSet);
+                const subMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)', [targetModIds]);
+                targetSubModIds = (subMods || []).map((r) => Number(r.id));
+            }
+        }
+        await this.syncSubscriptionAccess(saved.id, targetModIds, targetSubModIds, subscriptions.companyId);
         const full = await this.findById(saved.id, subscriptions.companyId);
         return full || this.toDomain(saved);
     }
@@ -81,8 +100,18 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
             end_date: subscriptions.end_date,
             enabled: subscriptions.enabled,
         });
-        if (subscriptions.moduleIds !== undefined || subscriptions.subModuleIds !== undefined) {
-            await this.syncSubscriptionAccess(subscriptions.id, subscriptions.moduleIds || [], subscriptions.subModuleIds || [], subscriptions.companyId);
+        if (subscriptions.moduleIds !== undefined || subscriptions.subModuleIds !== undefined || subscriptions.planId) {
+            let targetModIds = subscriptions.moduleIds || [];
+            let targetSubModIds = subscriptions.subModuleIds || [];
+            if (subscriptions.planId && targetModIds.length === 0) {
+                const planMods = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [subscriptions.planId]);
+                if (planMods && planMods.length > 0) {
+                    targetModIds = Array.from(new Set(planMods.map((r) => Number(r.module_id))));
+                    const subMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)', [targetModIds]);
+                    targetSubModIds = (subMods || []).map((r) => Number(r.id));
+                }
+            }
+            await this.syncSubscriptionAccess(subscriptions.id, targetModIds, targetSubModIds, subscriptions.companyId);
         }
         const updated = await this.findById(subscriptions.id, subscriptions.companyId);
         return updated;
@@ -178,6 +207,53 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
                 enabled: true,
                 deleted: false,
             }));
+        }
+        const otherRoles = await this.rolesRepo
+            .createQueryBuilder('r')
+            .where('r.company_id = :companyId AND r.id != :adminId AND r.deleted = false', {
+            companyId,
+            adminId: adminRole.id,
+        })
+            .getMany();
+        for (const r of otherRoles) {
+            if (moduleIds.length > 0) {
+                await this.roleModuleRepo
+                    .createQueryBuilder()
+                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
+                    .set({ enabled: false, has_access: false })
+                    .where('role_id = :roleId AND module_id IS NOT NULL AND module_id NOT IN (:...modIds)', {
+                    roleId: r.id,
+                    modIds: moduleIds,
+                })
+                    .execute();
+            }
+            else {
+                await this.roleModuleRepo
+                    .createQueryBuilder()
+                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
+                    .set({ enabled: false, has_access: false })
+                    .where('role_id = :roleId AND module_id IS NOT NULL', { roleId: r.id })
+                    .execute();
+            }
+            if (subModuleIds.length > 0) {
+                await this.roleModuleRepo
+                    .createQueryBuilder()
+                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
+                    .set({ enabled: false, has_access: false })
+                    .where('role_id = :roleId AND sub_module_id IS NOT NULL AND sub_module_id NOT IN (:...subModIds)', {
+                    roleId: r.id,
+                    subModIds: subModuleIds,
+                })
+                    .execute();
+            }
+            else {
+                await this.roleModuleRepo
+                    .createQueryBuilder()
+                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
+                    .set({ enabled: false, has_access: false })
+                    .where('role_id = :roleId AND sub_module_id IS NOT NULL', { roleId: r.id })
+                    .execute();
+            }
         }
     }
     toDomain(entity) {

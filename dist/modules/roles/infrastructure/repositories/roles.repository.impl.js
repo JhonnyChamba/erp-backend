@@ -160,12 +160,40 @@ let RolesRepositoryImpl = class RolesRepositoryImpl {
         const currentActive = (adminRole.roleModules || []).filter((rm) => !rm.deleted && rm.enabled !== false && rm.has_access);
         const currentModSet = new Set(currentActive.filter((rm) => rm.module?.id || rm.module_id).map((rm) => Number(rm.module?.id || rm.module_id)));
         const currentSubModSet = new Set(currentActive.filter((rm) => rm.subModule?.id || rm.sub_module_id).map((rm) => Number(rm.subModule?.id || rm.sub_module_id)));
+        const hasExtraMods = Array.from(currentModSet).some((id) => !modIds.has(id));
+        const hasMissingMods = Array.from(modIds).some((id) => !currentModSet.has(id));
+        const hasExtraSubMods = Array.from(currentSubModSet).some((id) => !subModIds.has(id));
+        const hasMissingSubMods = Array.from(subModIds).some((id) => !currentSubModSet.has(id));
         const needsSync = (modIds.size > 0 || subModIds.size > 0) &&
             (currentActive.length === 0 ||
-                Array.from(modIds).some((id) => !currentModSet.has(id)) ||
-                Array.from(subModIds).some((id) => !currentSubModSet.has(id)));
+                hasExtraMods ||
+                hasMissingMods ||
+                hasExtraSubMods ||
+                hasMissingSubMods);
         if (needsSync) {
             await this.syncRoleAccess(adminRole.id, Array.from(modIds), Array.from(subModIds));
+        }
+        if (modIds.size > 0) {
+            await this.roleModuleRepo
+                .createQueryBuilder()
+                .update(roles_orm_entity_1.RoleModuleOrmEntity)
+                .set({ enabled: false, has_access: false })
+                .where('role_id IN (SELECT id FROM tab_role WHERE company_id = :companyId AND deleted = false)', { companyId })
+                .andWhere('module_id IS NOT NULL AND module_id NOT IN (:...allowedMods)', {
+                allowedMods: Array.from(modIds),
+            })
+                .execute();
+        }
+        if (subModIds.size > 0) {
+            await this.roleModuleRepo
+                .createQueryBuilder()
+                .update(roles_orm_entity_1.RoleModuleOrmEntity)
+                .set({ enabled: false, has_access: false })
+                .where('role_id IN (SELECT id FROM tab_role WHERE company_id = :companyId AND deleted = false)', { companyId })
+                .andWhere('sub_module_id IS NOT NULL AND sub_module_id NOT IN (:...allowedSubMods)', {
+                allowedSubMods: Array.from(subModIds),
+            })
+                .execute();
         }
     }
     async findById(id, companyId) {

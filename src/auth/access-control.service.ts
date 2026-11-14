@@ -163,45 +163,7 @@ export class AccessControlService {
 			}),
 		]);
 
-		// CASO 1: SUPER ADMIN -> Acceso absoluto a todos los módulos y submódulos del sistema
-		if (isSuperAdmin) {
-			const menu: MenuModuleItem[] = allModules.map((mod) => ({
-				id: mod.id,
-				code: mod.code,
-				description: mod.description,
-				icon: mod.desc_icon || 'solar:widget-4-line-duotone',
-				children: allSubModules
-					.filter((sm) => sm.module?.id === mod.id)
-					.map((sm) => ({
-						id: sm.id,
-						code: sm.code,
-						description: sm.description,
-						icon: sm.desc_icon || 'solar:round-alt-arrow-right-line-duotone',
-						url: sm.url_desc || '/',
-					})),
-			}));
-
-			const result: UserCompanyAccessResponse = {
-				companyId: targetCompanyId,
-				isSuperAdmin: true,
-				isMultiCompany: true,
-				roleId: null,
-				roleCode: 'SUPER-ADMIN',
-				roleName: 'Super Admin',
-				moduleCodes: allModules.map((m) => m.code),
-				subModuleCodes: allSubModules.map((sm) => sm.code),
-				allowedUrls: allSubModules.map((sm) => sm.url_desc).filter(Boolean),
-				menu,
-			};
-
-			AccessControlService.cache.set(cacheKey, {
-				expiresAt: Date.now() + AccessControlService.CACHE_TTL_MS,
-				data: result,
-			});
-			return result;
-		}
-
-		// CASO 2: USUARIO REGULAR O MULTI-EMPRESA -> Intersección entre Suscripción de la Empresa (si existe) y Rol en esa Empresa
+		// Consultar la suscripción activa de la empresa para determinar los módulos contratados
 		const activeSubs = await this.subscriptionsRepo.find({
 			where: { company: { id: targetCompanyId }, deleted: false, enabled: true },
 			relations: ['subscriptionModules', 'subscriptionModules.module', 'subscriptionModules.subModule'],
@@ -220,6 +182,55 @@ export class AccessControlService {
 		}
 
 		const hasSubscriptionRestriction = subscribedModIds.size > 0 || subscribedSubModIds.size > 0;
+
+		// CASO 1: SUPER ADMIN -> Acceso a todos los módulos contratados en la suscripción de la empresa activa
+		if (isSuperAdmin) {
+			const allowedMods = hasSubscriptionRestriction
+				? allModules.filter((m) => subscribedModIds.has(m.id))
+				: allModules;
+			const allowedSubMods = hasSubscriptionRestriction
+				? allSubModules.filter(
+						(sm) =>
+							subscribedSubModIds.has(sm.id) ||
+							(sm.module?.id && subscribedModIds.has(Number(sm.module.id))),
+				  )
+				: allSubModules;
+
+			const menu: MenuModuleItem[] = allowedMods.map((mod) => ({
+				id: mod.id,
+				code: mod.code,
+				description: mod.description,
+				icon: mod.desc_icon || 'solar:widget-4-line-duotone',
+				children: allowedSubMods
+					.filter((sm) => sm.module?.id === mod.id)
+					.map((sm) => ({
+						id: sm.id,
+						code: sm.code,
+						description: sm.description,
+						icon: sm.desc_icon || 'solar:round-alt-arrow-right-line-duotone',
+						url: sm.url_desc || '/',
+					})),
+			}));
+
+			const result: UserCompanyAccessResponse = {
+				companyId: targetCompanyId,
+				isSuperAdmin: true,
+				isMultiCompany: true,
+				roleId: null,
+				roleCode: 'SUPER-ADMIN',
+				roleName: 'Super Admin',
+				moduleCodes: allowedMods.map((m) => m.code),
+				subModuleCodes: allowedSubMods.map((sm) => sm.code),
+				allowedUrls: allowedSubMods.map((sm) => sm.url_desc).filter(Boolean),
+				menu,
+			};
+
+			AccessControlService.cache.set(cacheKey, {
+				expiresAt: Date.now() + AccessControlService.CACHE_TTL_MS,
+				data: result,
+			});
+			return result;
+		}
 
 		// Buscar la relación usuario-empresa para obtener el rol específico en esta empresa
 		const userCompany = userId
