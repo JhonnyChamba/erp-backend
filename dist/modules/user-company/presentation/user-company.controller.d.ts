@@ -13,19 +13,7 @@ export declare class UserCompanyController {
     constructor(createUseCase: CreateUserCompanyUseCase, listUseCase: ListUserCompanyUseCase, getUseCase: GetUserCompanyUseCase, updateUseCase: UpdateUserCompanyUseCase);
     create(dto: CreateUserCompanyDto, req: any): Promise<import("../domain/entities/user-company.entity").UserCompany>;
     list(query: ListUserCompanyDto, req: any): Promise<{
-        data: {
-            id: number;
-            company: import("../../company/infrastructure/persistence/company.orm-entity").CompanyOrmEntity;
-            enabled: boolean;
-        }[];
-        meta: {
-            total: number;
-            page: number;
-            limit: number;
-            totalPages: number;
-        };
-    } | {
-        data: import("../domain/entities/user-company.entity").UserCompany[];
+        data: any[];
         meta: {
             total: number;
             page: number;

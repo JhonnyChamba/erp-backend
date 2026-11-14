@@ -36,12 +36,13 @@ let ListUserCompanyUseCase = class ListUserCompanyUseCase {
                 take: limit,
                 order: { business_name: 'ASC' },
             });
+            const rawData = companies.map(comp => ({
+                id: comp.id,
+                company: comp,
+                enabled: true,
+            }));
             return {
-                data: companies.map(comp => ({
-                    id: comp.id,
-                    company: comp,
-                    enabled: true,
-                })),
+                data: await this.attachSubscriptionInfo(rawData),
                 meta: {
                     total,
                     page,
@@ -72,14 +73,15 @@ let ListUserCompanyUseCase = class ListUserCompanyUseCase {
                 where: { id: dto.companyId, deleted: false },
             });
             if (singleComp) {
+                const singleData = [{ id: 0, company: singleComp, enabled: true }];
                 return {
-                    data: [{ id: 0, company: singleComp, enabled: true }],
+                    data: await this.attachSubscriptionInfo(singleData),
                     meta: { total: 1, page: 1, limit, totalPages: 1 },
                 };
             }
         }
         return {
-            data: result.data,
+            data: await this.attachSubscriptionInfo(result.data),
             meta: {
                 total: result.total,
                 page,
@@ -87,6 +89,66 @@ let ListUserCompanyUseCase = class ListUserCompanyUseCase {
                 totalPages: Math.ceil(result.total / limit),
             },
         };
+    }
+    async attachSubscriptionInfo(items) {
+        if (!items.length)
+            return items;
+        const compIds = items.map((i) => i.company?.id || i.id).filter(Boolean);
+        if (!compIds.length)
+            return items;
+        const now = new Date();
+        const subs = await this.companyRepo.manager.query(`SELECT s.id, s.company_id, s.begin_date, s.end_date, s.enabled, p.description as plan_name
+			 FROM tab_subscriptions s
+			 LEFT JOIN tab_plans p ON p.id = s.plan_id
+			 WHERE s.company_id = ANY($1) AND s.deleted = false
+			 ORDER BY s.id DESC`, [compIds]);
+        return items.map((item) => {
+            const cId = Number(item.company?.id || item.id);
+            const compSubs = subs.filter((s) => Number(s.company_id) === cId);
+            const activeSub = compSubs.find((s) => {
+                if (s.enabled === false)
+                    return false;
+                if (!s.end_date)
+                    return true;
+                const end = new Date(s.end_date);
+                if (isNaN(end.getTime()))
+                    return true;
+                end.setHours(23, 59, 59, 999);
+                return end >= now;
+            });
+            let subscriptionInfo;
+            if (activeSub) {
+                subscriptionInfo = {
+                    hasActiveSubscription: true,
+                    status: 'active',
+                    planName: activeSub.plan_name,
+                    endDate: activeSub.end_date,
+                };
+            }
+            else if (compSubs.length > 0) {
+                subscriptionInfo = {
+                    hasActiveSubscription: false,
+                    status: 'expired',
+                    planName: compSubs[0].plan_name,
+                    endDate: compSubs[0].end_date,
+                };
+            }
+            else {
+                subscriptionInfo = {
+                    hasActiveSubscription: false,
+                    status: 'no_subscription',
+                    planName: null,
+                    endDate: null,
+                };
+            }
+            return {
+                ...item,
+                subscription: subscriptionInfo,
+                company: item.company
+                    ? { ...item.company, subscription: subscriptionInfo }
+                    : item.company,
+            };
+        });
     }
 };
 exports.ListUserCompanyUseCase = ListUserCompanyUseCase;

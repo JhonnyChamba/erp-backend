@@ -23,6 +23,9 @@ export interface UserCompanyAccessResponse {
     companyId: number;
     isSuperAdmin: boolean;
     isMultiCompany: boolean;
+    hasActiveSubscription: boolean;
+    subscriptionStatus?: 'active' | 'no_subscription' | 'expired';
+    subscriptionMessage?: string;
     roleId: number | null;
     roleCode: string | null;
     roleName: string | null;

@@ -7,19 +7,7 @@ export declare class ListUserCompanyUseCase {
     private readonly companyRepo;
     constructor(repository: UserCompanyRepository, companyRepo: Repository<CompanyOrmEntity>);
     execute(dto: ListUserCompanyDto, user: any): Promise<{
-        data: {
-            id: number;
-            company: CompanyOrmEntity;
-            enabled: boolean;
-        }[];
-        meta: {
-            total: number;
-            page: number;
-            limit: number;
-            totalPages: number;
-        };
-    } | {
-        data: import("../../domain/entities/user-company.entity").UserCompany[];
+        data: any[];
         meta: {
             total: number;
             page: number;
@@ -27,4 +15,5 @@ export declare class ListUserCompanyUseCase {
             totalPages: number;
         };
     }>;
+    private attachSubscriptionInfo;
 }
