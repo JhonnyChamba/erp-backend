@@ -172,9 +172,18 @@ export class RolesRepositoryImpl implements RolesRepository {
 			relations: ['subscriptionModules', 'subscriptionModules.module', 'subscriptionModules.subModule'],
 		});
 
+		const now = new Date();
+		const validSubs = activeSubs.filter((s) => {
+			if (!s.end_date) return true;
+			const end = new Date(s.end_date);
+			if (isNaN(end.getTime())) return true;
+			end.setHours(23, 59, 59, 999);
+			return end >= now;
+		});
+
 		const subModIds = new Set<number>();
 		const modIds = new Set<number>();
-		for (const sub of activeSubs) {
+		for (const sub of validSubs) {
 			for (const sm of sub.subscriptionModules || []) {
 				if (!sm.deleted && sm.enabled !== false) {
 					if (sm.module?.id) modIds.add(Number(sm.module.id));
@@ -194,12 +203,11 @@ export class RolesRepositoryImpl implements RolesRepository {
 		const hasMissingSubMods = Array.from(subModIds).some((id) => !currentSubModSet.has(id));
 
 		const needsSync =
-			(modIds.size > 0 || subModIds.size > 0) &&
-			(currentActive.length === 0 ||
-				hasExtraMods ||
-				hasMissingMods ||
-				hasExtraSubMods ||
-				hasMissingSubMods);
+			hasExtraMods ||
+			hasMissingMods ||
+			hasExtraSubMods ||
+			hasMissingSubMods ||
+			(modIds.size > 0 && currentActive.length === 0);
 
 		if (needsSync) {
 			await this.syncRoleAccess(
@@ -220,7 +228,16 @@ export class RolesRepositoryImpl implements RolesRepository {
 					allowedMods: Array.from(modIds),
 				})
 				.execute();
+		} else {
+			// Si la empresa no tiene suscripción activa o vigente, desactivar todos los accesos en los roles
+			await this.roleModuleRepo
+				.createQueryBuilder()
+				.update(RoleModuleOrmEntity)
+				.set({ enabled: false, has_access: false })
+				.where('role_id IN (SELECT id FROM tab_role WHERE company_id = :companyId AND deleted = false)', { companyId })
+				.execute();
 		}
+
 		if (subModIds.size > 0) {
 			await this.roleModuleRepo
 				.createQueryBuilder()
