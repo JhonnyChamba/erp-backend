@@ -35,22 +35,54 @@ let PlansRepositoryImpl = class PlansRepositoryImpl {
             createdBy: { id: company.createdById }
         });
         const saved = await this.repo.save(entity);
-        return this.toDomain(saved);
+        if (company.moduleIds && company.moduleIds.length > 0) {
+            for (const modId of company.moduleIds) {
+                await this.repo.manager.query('INSERT INTO tab_plans_module (plans_id, module_id) VALUES ($1, $2)', [saved.id, modId]);
+            }
+        }
+        const domain = this.toDomain(saved);
+        domain.moduleIds = company.moduleIds || [];
+        return domain;
     }
-    async findByPlans(page, limit) {
-        const [branches, total] = await this.repo.findAndCount({
-            skip: (page - 1) * limit,
-            take: limit,
-            order: { createdAt: 'DESC' },
-        });
+    async findByPlans(page, limit, search) {
+        const qb = this.repo.createQueryBuilder('p');
+        if (search && search.trim()) {
+            qb.where('LOWER(p.description) LIKE :search', {
+                search: `%${search.trim().toLowerCase()}%`,
+            });
+        }
+        qb.orderBy('p.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit);
+        const [branches, total] = await qb.getManyAndCount();
+        const planIds = branches.map((b) => b.id);
+        const modMap = {};
+        if (planIds.length > 0) {
+            const pms = await this.repo.manager.query('SELECT plans_id, module_id FROM tab_plans_module WHERE plans_id = ANY($1)', [planIds]);
+            for (const row of pms || []) {
+                const pId = Number(row.plans_id);
+                if (!modMap[pId])
+                    modMap[pId] = [];
+                modMap[pId].push(Number(row.module_id));
+            }
+        }
         return {
-            data: branches.map(company => this.toDomain(company)),
+            data: branches.map((company) => {
+                const d = this.toDomain(company);
+                d.moduleIds = modMap[d.id] || [];
+                return d;
+            }),
             total,
         };
     }
     async findById(id) {
         const company = await this.repo.findOne({ where: { id } });
-        return company ? this.toDomain(company) : null;
+        if (!company)
+            return null;
+        const domain = this.toDomain(company);
+        const pms = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [id]);
+        domain.moduleIds = (pms || []).map((r) => Number(r.module_id));
+        return domain;
     }
     async update(company) {
         await this.repo.update({ id: company.id }, {

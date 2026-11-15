@@ -13,6 +13,7 @@ export declare class AuthController {
     login(body: any): Promise<{
         access_token: string;
         theme_color: string;
+        theme_mode: any;
         photo_url: string;
         super_admin: boolean;
         multi_company: boolean;
@@ -26,12 +27,21 @@ export declare class AuthController {
         email: string;
         birth_date: string;
         photo_url: string;
+        theme_color: string;
+        theme_mode: string;
         enabled: boolean;
         super_admin: boolean;
         multi_company: boolean;
         role_name: string;
         company_name: string;
         created_at: Date;
+    }>;
+    updateTheme(req: any, body: {
+        theme_color?: string;
+        theme_mode?: string;
+    }): Promise<{
+        theme_color: string;
+        theme_mode: string;
     }>;
     getAccess(queryCompanyId: string, headerCompanyId: string, req: any): Promise<import("./access-control.service").UserCompanyAccessResponse>;
 }

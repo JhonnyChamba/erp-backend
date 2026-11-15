@@ -45,6 +45,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			multi_company: isMultiCompany,
 			enabled: user.enabled,
 			theme_color: user.theme_color || 'Blue_Theme',
+			theme_mode: user.theme_mode || 'dark',
 			birth_date: user.birth_date || null,
 			photo_url: user.photo_url || '/controller/images/profile/user-1.jpg',
 			company: { id: user.companyId },
@@ -142,6 +143,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			multi_company: isMultiCompany,
 			enabled: user.enabled,
 			theme_color: user.theme_color || 'Blue_Theme',
+			theme_mode: user.theme_mode || 'dark',
 			birth_date: user.birth_date || null,
 			photo_url: user.photo_url || null,
 			role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
@@ -299,6 +301,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			companyRoles,
 			entity.birth_date ?? null,
 			entity.photo_url ?? null,
+			entity.theme_mode || 'dark',
 		);
 	}
 }

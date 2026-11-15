@@ -13,11 +13,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ListUserCompanyUseCase = void 0;
-const user_company_repository_1 = require("../../domain/repositories/user-company.repository");
-const common_1 = require("@nestjs/common");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
 const company_orm_entity_1 = require("../../../company/infrastructure/persistence/company.orm-entity");
+const user_company_repository_1 = require("../../domain/repositories/user-company.repository");
+const typeorm_1 = require("@nestjs/typeorm");
+const common_1 = require("@nestjs/common");
+const typeorm_2 = require("typeorm");
 let ListUserCompanyUseCase = class ListUserCompanyUseCase {
     repository;
     companyRepo;
@@ -54,9 +54,7 @@ let ListUserCompanyUseCase = class ListUserCompanyUseCase {
         const targetUserId = user?.user_id ?? dto.usersId;
         const result = await this.repository.findByCompany(targetUserId, page, limit);
         if (user?.company_id && !result.data.some(d => d.company?.id === user.company_id)) {
-            const primaryComp = await this.companyRepo.findOne({
-                where: { id: user.company_id, deleted: false },
-            });
+            const primaryComp = await this.companyRepo.findOne({ where: { id: user.company_id, deleted: false } });
             if (primaryComp) {
                 result.data.unshift({
                     id: 0,
@@ -69,9 +67,7 @@ let ListUserCompanyUseCase = class ListUserCompanyUseCase {
             }
         }
         if (result.total === 0 && dto.companyId) {
-            const singleComp = await this.companyRepo.findOne({
-                where: { id: dto.companyId, deleted: false },
-            });
+            const singleComp = await this.companyRepo.findOne({ where: { id: dto.companyId, deleted: false } });
             if (singleComp) {
                 const singleData = [{ id: 0, company: singleComp, enabled: true }];
                 return {

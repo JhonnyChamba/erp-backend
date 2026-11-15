@@ -12,7 +12,8 @@ class Roles {
     moduleIds;
     subModuleIds;
     details;
-    constructor(id, code, description, companyId, enabled, createdAt, createdById, moduleIds, subModuleIds, details) {
+    is_company_admin;
+    constructor(id, code, description, companyId, enabled, createdAt, createdById, moduleIds, subModuleIds, details, is_company_admin = false) {
         this.id = id;
         this.code = code;
         this.description = description;
@@ -23,6 +24,7 @@ class Roles {
         this.moduleIds = moduleIds;
         this.subModuleIds = subModuleIds;
         this.details = details;
+        this.is_company_admin = is_company_admin;
     }
 }
 exports.Roles = Roles;

@@ -21,6 +21,7 @@ let RolesOrmEntity = class RolesOrmEntity {
     company;
     roleModules;
     created_by;
+    is_company_admin;
     enabled;
     deleted;
     created_at;
@@ -51,6 +52,10 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
 ], RolesOrmEntity.prototype, "created_by", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false, name: 'is_company_admin' }),
+    __metadata("design:type", Boolean)
+], RolesOrmEntity.prototype, "is_company_admin", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)

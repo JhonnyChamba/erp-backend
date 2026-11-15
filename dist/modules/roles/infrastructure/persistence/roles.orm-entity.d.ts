@@ -8,6 +8,7 @@ export declare class RolesOrmEntity {
     company: CompanyOrmEntity;
     roleModules: RoleModuleOrmEntity[];
     created_by: number;
+    is_company_admin: boolean;
     enabled: boolean;
     deleted: boolean;
     created_at: Date;

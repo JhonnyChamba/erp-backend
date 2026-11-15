@@ -1,9 +1,9 @@
+import { CompanyOrmEntity } from "src/modules/company/infrastructure/persistence/company.orm-entity";
 import { UserCompanyRepository } from "../../domain/repositories/user-company.repository";
 import { ListUserCompanyDto } from "../dto/list-user-company.dto";
-import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { Injectable } from "@nestjs/common";
 import { Repository } from "typeorm";
-import { CompanyOrmEntity } from "src/modules/company/infrastructure/persistence/company.orm-entity";
 
 @Injectable()
 export class ListUserCompanyUseCase {
@@ -50,9 +50,7 @@ export class ListUserCompanyUseCase {
 
 		// Si tiene una empresa principal asignada (company_id) y no está en la lista de result.data, incluirla
 		if (user?.company_id && !result.data.some(d => d.company?.id === user.company_id)) {
-			const primaryComp = await this.companyRepo.findOne({
-				where: { id: user.company_id, deleted: false },
-			});
+			const primaryComp = await this.companyRepo.findOne({ where: { id: user.company_id, deleted: false } });
 			if (primaryComp) {
 				result.data.unshift({
 					id: 0,
@@ -67,9 +65,7 @@ export class ListUserCompanyUseCase {
 
 		// Si después de todo result.total sigue en 0 pero se encuentra por dto.companyId
 		if (result.total === 0 && dto.companyId) {
-			const singleComp = await this.companyRepo.findOne({
-				where: { id: dto.companyId, deleted: false },
-			});
+			const singleComp = await this.companyRepo.findOne({ where: { id: dto.companyId, deleted: false } });
 			if (singleComp) {
 				const singleData = [{ id: 0, company: singleComp, enabled: true }];
 				return {

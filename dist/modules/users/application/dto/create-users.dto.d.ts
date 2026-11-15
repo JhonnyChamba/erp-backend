@@ -15,6 +15,7 @@ export declare class CreateUsersDto {
         roleId?: number | null;
     }[];
     theme_color?: string;
+    theme_mode?: string;
     birth_date?: string | null;
     photo_url?: string | null;
 }

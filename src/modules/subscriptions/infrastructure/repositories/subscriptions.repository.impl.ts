@@ -48,7 +48,7 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 		let targetSubModIds = subscriptions.subModuleIds || [];
 
 		// Si se especifica un plan, respetar los módulos configurados en tab_plans_module
-		if (subscriptions.planId) {
+		if (subscriptions.planId && targetModIds.length === 0) {
 			const planMods = await this.repo.manager.query(
 				'SELECT module_id FROM tab_plans_module WHERE plans_id = $1',
 				[subscriptions.planId],
@@ -63,6 +63,19 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 				);
 				targetSubModIds = (subMods || []).map((r: any) => Number(r.id));
 			}
+		}
+
+		// Si sigue vacío (el plan no tenía módulos específicos o no se pasaron), asignar TODOS los módulos activos
+		if (targetModIds.length === 0) {
+			const allActiveMods = await this.repo.manager.query(
+				'SELECT id FROM tab_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+			);
+			targetModIds = (allActiveMods || []).map((m: any) => Number(m.id));
+
+			const allActiveSubMods = await this.repo.manager.query(
+				'SELECT id FROM tab_sub_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+			);
+			targetSubModIds = (allActiveSubMods || []).map((sm: any) => Number(sm.id));
 		}
 
 		await this.syncSubscriptionAccess(
@@ -141,6 +154,19 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 				}
 			}
 
+			// Si sigue vacío, asignar todos los módulos y submódulos activos del sistema
+			if (targetModIds.length === 0) {
+				const allActiveMods = await this.repo.manager.query(
+					'SELECT id FROM tab_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+				);
+				targetModIds = (allActiveMods || []).map((m: any) => Number(m.id));
+
+				const allActiveSubMods = await this.repo.manager.query(
+					'SELECT id FROM tab_sub_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+				);
+				targetSubModIds = (allActiveSubMods || []).map((sm: any) => Number(sm.id));
+			}
+
 			await this.syncSubscriptionAccess(
 				subscriptions.id!,
 				targetModIds,
@@ -160,18 +186,54 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 		companyId?: number,
 	): Promise<void> {
 		AccessControlService.clearCache(companyId);
-		const targetModIds = Array.from(
+		let targetModIds = Array.from(
 			new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)),
 		);
-		const targetSubModIds = Array.from(
+		let targetSubModIds = Array.from(
 			new Set((subModuleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)),
 		);
 
-		// Desactivar asignaciones previas de esta suscripción
+		// Si no se pasaron módulos explícitos, consultar los módulos del plan en tab_plans_module
+		if (targetModIds.length === 0) {
+			const subRow = await this.repo.findOne({
+				where: { id: subscriptionId },
+				relations: ['plan'],
+			});
+			const planId = subRow?.plan?.id || (subRow as any)?.plan_id;
+			if (planId) {
+				const planMods = await this.repo.manager.query(
+					'SELECT module_id FROM tab_plans_module WHERE plans_id = $1',
+					[planId],
+				);
+				if (planMods && planMods.length > 0) {
+					targetModIds = Array.from(new Set(planMods.map((r: any) => Number(r.module_id))));
+					const subMods = await this.repo.manager.query(
+						'SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)',
+						[targetModIds],
+					);
+					targetSubModIds = (subMods || []).map((r: any) => Number(r.id));
+				}
+			}
+		}
+
+		// Si sigue vacío, asignar todos los módulos y submódulos activos del sistema
+		if (targetModIds.length === 0) {
+			const allActiveMods = await this.repo.manager.query(
+				'SELECT id FROM tab_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+			);
+			targetModIds = (allActiveMods || []).map((m: any) => Number(m.id));
+
+			const allActiveSubMods = await this.repo.manager.query(
+				'SELECT id FROM tab_sub_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+			);
+			targetSubModIds = (allActiveSubMods || []).map((sm: any) => Number(sm.id));
+		}
+
+		// Borrar asignaciones previas de esta suscripción
 		await this.subModuleRepo
 			.createQueryBuilder()
-			.update(SubscriptionsModuleOrmEntity)
-			.set({ deleted: true, enabled: false })
+			.delete()
+			.from(SubscriptionsModuleOrmEntity)
 			.where('subscriptions_id = :subscriptionId', { subscriptionId })
 			.execute();
 
@@ -199,7 +261,7 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 			await this.subModuleRepo.save(entity);
 		}
 
-		// Asegurar que el rol "Administrador" de la empresa tenga acceso (true) a todo lo que tiene la suscripción
+		// Asegurar sincronización completa de roles con la nueva configuración
 		let effectiveCompanyId = companyId;
 		if (!effectiveCompanyId) {
 			const subRow = await this.repo.findOne({
@@ -209,20 +271,23 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 			effectiveCompanyId = subRow?.company?.id;
 		}
 		if (effectiveCompanyId) {
-			await this.syncAdminRoleWithSubscription(effectiveCompanyId, targetModIds, targetSubModIds);
+			await this.syncCompanyRolesWithSubscription(effectiveCompanyId, targetModIds, targetSubModIds);
 		}
 	}
 
-	private async syncAdminRoleWithSubscription(
+	private async syncCompanyRolesWithSubscription(
 		companyId: number,
 		moduleIds: number[],
 		subModuleIds: number[],
 	): Promise<void> {
+		AccessControlService.clearCache(companyId);
+
+		// 1. Obtener o crear el rol Administrador predeterminado de la empresa
 		let adminRole = await this.rolesRepo
 			.createQueryBuilder('r')
 			.where('r.company_id = :companyId', { companyId })
 			.andWhere('r.deleted = false')
-			.andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+			.andWhere('(r.is_company_admin = true OR LOWER(r.description) LIKE :desc)', { desc: 'administrador%' })
 			.getOne();
 
 		if (!adminRole) {
@@ -239,20 +304,26 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 				this.rolesRepo.create({
 					code: nextCode,
 					description: 'Administrador',
+					is_company_admin: true,
 					enabled: true,
 					deleted: false,
 					company: { id: companyId } as any,
 				}),
 			);
+		} else if (!adminRole.is_company_admin) {
+			await this.rolesRepo.update({ id: adminRole.id }, { is_company_admin: true });
+			adminRole.is_company_admin = true;
 		}
 
+		// 2. Borrar asignaciones previas del rol Administrador
 		await this.roleModuleRepo
 			.createQueryBuilder()
-			.update(RoleModuleOrmEntity)
-			.set({ deleted: true, enabled: false })
+			.delete()
+			.from(RoleModuleOrmEntity)
 			.where('role_id = :roleId', { roleId: adminRole.id })
 			.execute();
 
+		// 3. Insertar la nueva configuración de la suscripción con has_access = true en el Administrador
 		for (const modId of moduleIds) {
 			await this.roleModuleRepo.save(
 				this.roleModuleRepo.create({
@@ -279,7 +350,8 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 			);
 		}
 
-		// Para el resto de roles de la empresa, desactivar accesos a módulos o submódulos que no estén en la suscripción
+		// 4. Para TODOS los demás roles de la empresa:
+		// Borrar y volver a insertar la nueva configuración de la suscripción con has_access = false
 		const otherRoles = await this.rolesRepo
 			.createQueryBuilder('r')
 			.where('r.company_id = :companyId AND r.id != :adminId AND r.deleted = false', {
@@ -289,42 +361,37 @@ export class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
 			.getMany();
 
 		for (const r of otherRoles) {
-			if (moduleIds.length > 0) {
-				await this.roleModuleRepo
-					.createQueryBuilder()
-					.update(RoleModuleOrmEntity)
-					.set({ enabled: false, has_access: false })
-					.where('role_id = :roleId AND module_id IS NOT NULL AND module_id NOT IN (:...modIds)', {
-						roleId: r.id,
-						modIds: moduleIds,
-					})
-					.execute();
-			} else {
-				await this.roleModuleRepo
-					.createQueryBuilder()
-					.update(RoleModuleOrmEntity)
-					.set({ enabled: false, has_access: false })
-					.where('role_id = :roleId AND module_id IS NOT NULL', { roleId: r.id })
-					.execute();
+			await this.roleModuleRepo
+				.createQueryBuilder()
+				.delete()
+				.from(RoleModuleOrmEntity)
+				.where('role_id = :roleId', { roleId: r.id })
+				.execute();
+
+			for (const modId of moduleIds) {
+				await this.roleModuleRepo.save(
+					this.roleModuleRepo.create({
+						role: { id: r.id } as any,
+						module: { id: modId } as any,
+						subModule: null as any,
+						has_access: false,
+						enabled: true,
+						deleted: false,
+					}),
+				);
 			}
 
-			if (subModuleIds.length > 0) {
-				await this.roleModuleRepo
-					.createQueryBuilder()
-					.update(RoleModuleOrmEntity)
-					.set({ enabled: false, has_access: false })
-					.where('role_id = :roleId AND sub_module_id IS NOT NULL AND sub_module_id NOT IN (:...subModIds)', {
-						roleId: r.id,
-						subModIds: subModuleIds,
-					})
-					.execute();
-			} else {
-				await this.roleModuleRepo
-					.createQueryBuilder()
-					.update(RoleModuleOrmEntity)
-					.set({ enabled: false, has_access: false })
-					.where('role_id = :roleId AND sub_module_id IS NOT NULL', { roleId: r.id })
-					.execute();
+			for (const subModId of subModuleIds) {
+				await this.roleModuleRepo.save(
+					this.roleModuleRepo.create({
+						role: { id: r.id } as any,
+						module: null as any,
+						subModule: { id: subModId } as any,
+						has_access: false,
+						enabled: true,
+						deleted: false,
+					}),
+				);
 			}
 		}
 	}

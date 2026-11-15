@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsEnum, IsInt, Min, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsInt, Min, Matches, IsOptional, IsArray } from 'class-validator';
 import { BillingCycleGeneral } from 'src/common/enum/enum';
 import { Type } from 'class-transformer';
 
@@ -23,4 +23,8 @@ export class CreatePlansDto {
 	@IsInt()
 	@Min(1)
 	max_branches: number;
+
+	@IsOptional()
+	@IsArray()
+	moduleIds?: number[];
 }

@@ -19,7 +19,7 @@ let CreatePlansUseCase = class CreatePlansUseCase {
         this.repository = repository;
     }
     async execute(dto, user) {
-        const company = new plans_entity_1.Plans(null, dto.price, dto.billing_cycle, dto.description, dto.max_users, dto.max_branches, true, user.user_name, user.user_id);
+        const company = new plans_entity_1.Plans(null, dto.price, dto.billing_cycle, dto.description, dto.max_users, dto.max_branches, true, user.user_name, undefined, user.user_id, dto.moduleIds);
         return this.repository.create(company);
     }
 };

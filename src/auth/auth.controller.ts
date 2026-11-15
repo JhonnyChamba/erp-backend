@@ -1,6 +1,6 @@
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { CreateUsersUseCase } from 'src/modules/users/application/use-cases/create-users.use-case';
-import { Controller, Post, Body, Get, Query, Headers, Req, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Get, Query, Headers, Req, UseGuards, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsersOrmEntity } from 'src/modules/users/infrastructure/persistence/users.orm-entity';
@@ -49,6 +49,8 @@ export class AuthController {
 			email: user.email,
 			birth_date: user.birth_date ?? null,
 			photo_url: user.photo_url || null,
+			theme_color: user.theme_color || 'Blue_Theme',
+			theme_mode: user.theme_mode || 'dark',
 			enabled: user.enabled,
 			super_admin: isSuperAdmin,
 			multi_company: !isSuperAdmin && Boolean(user.multi_company),
@@ -56,6 +58,19 @@ export class AuthController {
 			company_name: user.company?.trade_name || user.company?.business_name || null,
 			created_at: user.created_at,
 		};
+	}
+
+	/** Permite al usuario activo guardar su preferencia de color de tema y modo de apariencia */
+	@UseGuards(AuthGuard('jwt'))
+	@Patch('theme')
+	async updateTheme(@Req() req: any, @Body() body: { theme_color?: string; theme_mode?: string }) {
+		const userId = Number(req.user?.user_id);
+		const user = await this.usersRepo.findOne({ where: { id: userId, deleted: false } });
+		if (!user) throw new NotFoundException('Usuario no encontrado');
+		if (body.theme_color) user.theme_color = body.theme_color;
+		if (body.theme_mode) user.theme_mode = body.theme_mode;
+		await this.usersRepo.save(user);
+		return { theme_color: user.theme_color, theme_mode: user.theme_mode };
 	}
 
 	@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)

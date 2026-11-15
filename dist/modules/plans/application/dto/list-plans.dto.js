@@ -15,6 +15,7 @@ const class_transformer_1 = require("class-transformer");
 class ListPlansDto {
     page = 1;
     limit = 10;
+    search;
 }
 exports.ListPlansDto = ListPlansDto;
 __decorate([
@@ -31,4 +32,9 @@ __decorate([
     (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], ListPlansDto.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ListPlansDto.prototype, "search", void 0);
 //# sourceMappingURL=list-plans.dto.js.map

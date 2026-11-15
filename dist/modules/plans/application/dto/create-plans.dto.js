@@ -19,6 +19,7 @@ class CreatePlansDto {
     description;
     max_users;
     max_branches;
+    moduleIds;
 }
 exports.CreatePlansDto = CreatePlansDto;
 __decorate([
@@ -47,4 +48,9 @@ __decorate([
     (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], CreatePlansDto.prototype, "max_branches", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    __metadata("design:type", Array)
+], CreatePlansDto.prototype, "moduleIds", void 0);
 //# sourceMappingURL=create-plans.dto.js.map

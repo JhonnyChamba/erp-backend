@@ -25,6 +25,7 @@ class CreateUsersDto {
     roleId;
     companyRoles;
     theme_color;
+    theme_mode;
     birth_date;
     photo_url;
 }
@@ -94,6 +95,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateUsersDto.prototype, "theme_color", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUsersDto.prototype, "theme_mode", void 0);
 __decorate([
     (0, class_validator_1.IsDateString)({}, { message: 'birth_date debe tener formato AAAA-MM-DD' }),
     (0, class_validator_1.IsOptional)(),

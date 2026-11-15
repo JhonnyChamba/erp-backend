@@ -6,7 +6,7 @@ export declare class PlansRepositoryImpl implements PlansRepository {
     private readonly repo;
     constructor(repo: Repository<PlansOrmEntity>);
     create(company: Plans): Promise<Plans>;
-    findByPlans(page: number, limit: number): Promise<{
+    findByPlans(page: number, limit: number, search?: string): Promise<{
         data: Plans[];
         total: number;
     }>;

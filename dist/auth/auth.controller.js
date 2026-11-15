@@ -57,6 +57,8 @@ let AuthController = class AuthController {
             email: user.email,
             birth_date: user.birth_date ?? null,
             photo_url: user.photo_url || null,
+            theme_color: user.theme_color || 'Blue_Theme',
+            theme_mode: user.theme_mode || 'dark',
             enabled: user.enabled,
             super_admin: isSuperAdmin,
             multi_company: !isSuperAdmin && Boolean(user.multi_company),
@@ -64,6 +66,18 @@ let AuthController = class AuthController {
             company_name: user.company?.trade_name || user.company?.business_name || null,
             created_at: user.created_at,
         };
+    }
+    async updateTheme(req, body) {
+        const userId = Number(req.user?.user_id);
+        const user = await this.usersRepo.findOne({ where: { id: userId, deleted: false } });
+        if (!user)
+            throw new common_1.NotFoundException('Usuario no encontrado');
+        if (body.theme_color)
+            user.theme_color = body.theme_color;
+        if (body.theme_mode)
+            user.theme_mode = body.theme_mode;
+        await this.usersRepo.save(user);
+        return { theme_color: user.theme_color, theme_mode: user.theme_mode };
     }
     async getAccess(queryCompanyId, headerCompanyId, req) {
         const companyId = Number(queryCompanyId || headerCompanyId || req.user?.company_id || 1);
@@ -93,6 +107,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "me", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Patch)('theme'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateTheme", null);
 __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt'), company_access_guard_1.CompanyAccessGuard),
     (0, common_1.Get)('access'),

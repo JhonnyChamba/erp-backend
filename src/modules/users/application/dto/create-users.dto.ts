@@ -53,6 +53,10 @@ export class CreateUsersDto {
 	@IsOptional()
 	theme_color?: string;
 
+	@IsString()
+	@IsOptional()
+	theme_mode?: string;
+
 	@IsDateString({}, { message: 'birth_date debe tener formato AAAA-MM-DD' })
 	@IsOptional()
 	birth_date?: string | null;

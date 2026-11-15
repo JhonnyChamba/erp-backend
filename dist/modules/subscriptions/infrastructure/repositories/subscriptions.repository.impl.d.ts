@@ -18,6 +18,6 @@ export declare class SubscriptionsRepositoryImpl implements SubscriptionsReposit
     findById(id: number, companyId?: number): Promise<Subscriptions | null>;
     update(subscriptions: Subscriptions): Promise<Subscriptions>;
     private syncSubscriptionAccess;
-    private syncAdminRoleWithSubscription;
+    private syncCompanyRolesWithSubscription;
     private toDomain;
 }

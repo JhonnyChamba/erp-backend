@@ -30,6 +30,7 @@ let UsersOrmEntity = class UsersOrmEntity {
     enabled;
     deleted;
     theme_color;
+    theme_mode;
     birth_date;
     photo_url;
     created_at;
@@ -97,6 +98,10 @@ __decorate([
     (0, typeorm_1.Column)({ default: 'Blue_Theme', nullable: true }),
     __metadata("design:type", String)
 ], UsersOrmEntity.prototype, "theme_color", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 'dark', nullable: true }),
+    __metadata("design:type", String)
+], UsersOrmEntity.prototype, "theme_mode", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", String)

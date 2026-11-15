@@ -9,7 +9,7 @@ export class ListPlansUseCase {
 	) { }
 
 	async execute(dto: ListPlansDto, user: any) {
-		const result = await this.repository.findByPlans(dto.page, dto.limit);
+		const result = await this.repository.findByPlans(dto.page, dto.limit, dto.search);
 		return {
 			data: result.data,
 			meta: {

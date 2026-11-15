@@ -14,5 +14,6 @@ export declare class Roles {
     moduleIds?: number[];
     subModuleIds?: number[];
     details?: RoleAccessDetail[];
-    constructor(id: number | null, code: string, description: string, companyId: number, enabled: boolean, createdAt?: Date, createdById?: number, moduleIds?: number[], subModuleIds?: number[], details?: RoleAccessDetail[]);
+    is_company_admin: boolean;
+    constructor(id: number | null, code: string, description: string, companyId: number, enabled: boolean, createdAt?: Date, createdById?: number, moduleIds?: number[], subModuleIds?: number[], details?: RoleAccessDetail[], is_company_admin?: boolean);
 }

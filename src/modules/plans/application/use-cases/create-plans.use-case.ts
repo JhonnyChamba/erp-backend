@@ -17,8 +17,9 @@ export class CreatePlansUseCase {
 			dto.max_branches,
 			true,
 			user.user_name, // 🔥 siempre del token
-			// undefined,
+			undefined,
 			user.user_id, // 🔥 siempre del token
+			dto.moduleIds,
 		);
 
 		return this.repository.create(company);

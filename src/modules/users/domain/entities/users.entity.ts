@@ -26,5 +26,6 @@ export class Users {
 		public companyRoles: UserCompanyRoleItem[] = [],
 		public birth_date: string | null = null,
 		public photo_url: string | null = null,
+		public theme_mode: string = 'dark',
 	) { }
 }

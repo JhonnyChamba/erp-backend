@@ -22,7 +22,8 @@ class Users {
     companyRoles;
     birth_date;
     photo_url;
-    constructor(id, num_document, name_user, last_name_user, email, password, companyId, developer, multi_company, enabled, deleted, createdAt, theme_color = 'Blue_Theme', super_admin = false, companyIds = [], roleId, roleName, companyRoles = [], birth_date = null, photo_url = null) {
+    theme_mode;
+    constructor(id, num_document, name_user, last_name_user, email, password, companyId, developer, multi_company, enabled, deleted, createdAt, theme_color = 'Blue_Theme', super_admin = false, companyIds = [], roleId, roleName, companyRoles = [], birth_date = null, photo_url = null, theme_mode = 'dark') {
         this.id = id;
         this.num_document = num_document;
         this.name_user = name_user;
@@ -43,6 +44,7 @@ class Users {
         this.companyRoles = companyRoles;
         this.birth_date = birth_date;
         this.photo_url = photo_url;
+        this.theme_mode = theme_mode;
     }
 }
 exports.Users = Users;

@@ -52,7 +52,7 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         const saved = await this.repo.save(entity);
         let targetModIds = subscriptions.moduleIds || [];
         let targetSubModIds = subscriptions.subModuleIds || [];
-        if (subscriptions.planId) {
+        if (subscriptions.planId && targetModIds.length === 0) {
             const planMods = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [subscriptions.planId]);
             if (planMods && planMods.length > 0) {
                 const planModIdSet = new Set(planMods.map((r) => Number(r.module_id)));
@@ -60,6 +60,12 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
                 const subMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)', [targetModIds]);
                 targetSubModIds = (subMods || []).map((r) => Number(r.id));
             }
+        }
+        if (targetModIds.length === 0) {
+            const allActiveMods = await this.repo.manager.query('SELECT id FROM tab_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC');
+            targetModIds = (allActiveMods || []).map((m) => Number(m.id));
+            const allActiveSubMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC');
+            targetSubModIds = (allActiveSubMods || []).map((sm) => Number(sm.id));
         }
         await this.syncSubscriptionAccess(saved.id, targetModIds, targetSubModIds, subscriptions.companyId);
         const full = await this.findById(saved.id, subscriptions.companyId);
@@ -111,6 +117,12 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
                     targetSubModIds = (subMods || []).map((r) => Number(r.id));
                 }
             }
+            if (targetModIds.length === 0) {
+                const allActiveMods = await this.repo.manager.query('SELECT id FROM tab_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC');
+                targetModIds = (allActiveMods || []).map((m) => Number(m.id));
+                const allActiveSubMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC');
+                targetSubModIds = (allActiveSubMods || []).map((sm) => Number(sm.id));
+            }
             await this.syncSubscriptionAccess(subscriptions.id, targetModIds, targetSubModIds, subscriptions.companyId);
         }
         const updated = await this.findById(subscriptions.id, subscriptions.companyId);
@@ -118,12 +130,33 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
     }
     async syncSubscriptionAccess(subscriptionId, moduleIds, subModuleIds, companyId) {
         access_control_service_1.AccessControlService.clearCache(companyId);
-        const targetModIds = Array.from(new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
-        const targetSubModIds = Array.from(new Set((subModuleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
+        let targetModIds = Array.from(new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
+        let targetSubModIds = Array.from(new Set((subModuleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
+        if (targetModIds.length === 0) {
+            const subRow = await this.repo.findOne({
+                where: { id: subscriptionId },
+                relations: ['plan'],
+            });
+            const planId = subRow?.plan?.id || subRow?.plan_id;
+            if (planId) {
+                const planMods = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [planId]);
+                if (planMods && planMods.length > 0) {
+                    targetModIds = Array.from(new Set(planMods.map((r) => Number(r.module_id))));
+                    const subMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)', [targetModIds]);
+                    targetSubModIds = (subMods || []).map((r) => Number(r.id));
+                }
+            }
+        }
+        if (targetModIds.length === 0) {
+            const allActiveMods = await this.repo.manager.query('SELECT id FROM tab_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC');
+            targetModIds = (allActiveMods || []).map((m) => Number(m.id));
+            const allActiveSubMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC');
+            targetSubModIds = (allActiveSubMods || []).map((sm) => Number(sm.id));
+        }
         await this.subModuleRepo
             .createQueryBuilder()
-            .update(subscriptions_module_orm_entity_1.SubscriptionsModuleOrmEntity)
-            .set({ deleted: true, enabled: false })
+            .delete()
+            .from(subscriptions_module_orm_entity_1.SubscriptionsModuleOrmEntity)
             .where('subscriptions_id = :subscriptionId', { subscriptionId })
             .execute();
         for (const modId of targetModIds) {
@@ -155,15 +188,16 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
             effectiveCompanyId = subRow?.company?.id;
         }
         if (effectiveCompanyId) {
-            await this.syncAdminRoleWithSubscription(effectiveCompanyId, targetModIds, targetSubModIds);
+            await this.syncCompanyRolesWithSubscription(effectiveCompanyId, targetModIds, targetSubModIds);
         }
     }
-    async syncAdminRoleWithSubscription(companyId, moduleIds, subModuleIds) {
+    async syncCompanyRolesWithSubscription(companyId, moduleIds, subModuleIds) {
+        access_control_service_1.AccessControlService.clearCache(companyId);
         let adminRole = await this.rolesRepo
             .createQueryBuilder('r')
             .where('r.company_id = :companyId', { companyId })
             .andWhere('r.deleted = false')
-            .andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+            .andWhere('(r.is_company_admin = true OR LOWER(r.description) LIKE :desc)', { desc: 'administrador%' })
             .getOne();
         if (!adminRole) {
             const existingRoles = await this.rolesRepo.find({
@@ -177,15 +211,20 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
             adminRole = await this.rolesRepo.save(this.rolesRepo.create({
                 code: nextCode,
                 description: 'Administrador',
+                is_company_admin: true,
                 enabled: true,
                 deleted: false,
                 company: { id: companyId },
             }));
         }
+        else if (!adminRole.is_company_admin) {
+            await this.rolesRepo.update({ id: adminRole.id }, { is_company_admin: true });
+            adminRole.is_company_admin = true;
+        }
         await this.roleModuleRepo
             .createQueryBuilder()
-            .update(roles_orm_entity_1.RoleModuleOrmEntity)
-            .set({ deleted: true, enabled: false })
+            .delete()
+            .from(roles_orm_entity_1.RoleModuleOrmEntity)
             .where('role_id = :roleId', { roleId: adminRole.id })
             .execute();
         for (const modId of moduleIds) {
@@ -216,43 +255,31 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         })
             .getMany();
         for (const r of otherRoles) {
-            if (moduleIds.length > 0) {
-                await this.roleModuleRepo
-                    .createQueryBuilder()
-                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
-                    .set({ enabled: false, has_access: false })
-                    .where('role_id = :roleId AND module_id IS NOT NULL AND module_id NOT IN (:...modIds)', {
-                    roleId: r.id,
-                    modIds: moduleIds,
-                })
-                    .execute();
+            await this.roleModuleRepo
+                .createQueryBuilder()
+                .delete()
+                .from(roles_orm_entity_1.RoleModuleOrmEntity)
+                .where('role_id = :roleId', { roleId: r.id })
+                .execute();
+            for (const modId of moduleIds) {
+                await this.roleModuleRepo.save(this.roleModuleRepo.create({
+                    role: { id: r.id },
+                    module: { id: modId },
+                    subModule: null,
+                    has_access: false,
+                    enabled: true,
+                    deleted: false,
+                }));
             }
-            else {
-                await this.roleModuleRepo
-                    .createQueryBuilder()
-                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
-                    .set({ enabled: false, has_access: false })
-                    .where('role_id = :roleId AND module_id IS NOT NULL', { roleId: r.id })
-                    .execute();
-            }
-            if (subModuleIds.length > 0) {
-                await this.roleModuleRepo
-                    .createQueryBuilder()
-                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
-                    .set({ enabled: false, has_access: false })
-                    .where('role_id = :roleId AND sub_module_id IS NOT NULL AND sub_module_id NOT IN (:...subModIds)', {
-                    roleId: r.id,
-                    subModIds: subModuleIds,
-                })
-                    .execute();
-            }
-            else {
-                await this.roleModuleRepo
-                    .createQueryBuilder()
-                    .update(roles_orm_entity_1.RoleModuleOrmEntity)
-                    .set({ enabled: false, has_access: false })
-                    .where('role_id = :roleId AND sub_module_id IS NOT NULL', { roleId: r.id })
-                    .execute();
+            for (const subModId of subModuleIds) {
+                await this.roleModuleRepo.save(this.roleModuleRepo.create({
+                    role: { id: r.id },
+                    module: null,
+                    subModule: { id: subModId },
+                    has_access: false,
+                    enabled: true,
+                    deleted: false,
+                }));
             }
         }
     }

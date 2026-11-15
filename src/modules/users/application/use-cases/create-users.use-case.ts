@@ -33,6 +33,7 @@ export class CreateUsersUseCase {
 			isSuperAdmin ? [] : dto.companyRoles || [],
 			dto.birth_date || null,
 			dto.photo_url || '/controller/images/profile/user-1.jpg',
+			dto.theme_mode || 'dark',
 		);
 
 		return this.repository.create(user);

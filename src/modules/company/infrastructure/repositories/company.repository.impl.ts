@@ -114,7 +114,7 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 			.createQueryBuilder('r')
 			.where('r.company_id = :companyId', { companyId })
 			.andWhere('r.deleted = false')
-			.andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+			.andWhere('(r.is_company_admin = true OR LOWER(r.description) LIKE :desc)', { desc: 'administrador%' })
 			.getOne();
 
 		if (!adminRole) {
@@ -128,12 +128,16 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 				this.rolesRepo.create({
 					code: nextCode,
 					description: 'Administrador',
+					is_company_admin: true,
 					enabled: true,
 					deleted: false,
 					company: { id: companyId } as any,
 					created_by: createdById,
 				}),
 			);
+		} else if (!adminRole.is_company_admin) {
+			await this.rolesRepo.update({ id: adminRole.id }, { is_company_admin: true });
+			adminRole.is_company_admin = true;
 		}
 
 		// Si la empresa ya tiene suscripción activa, asignar todos sus módulos y submódulos en true al rol Administrador

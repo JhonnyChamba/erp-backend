@@ -1,7 +1,7 @@
 import { Plans } from "../entities/plans.entity";
 export declare abstract class PlansRepository {
     abstract create(company: Plans): Promise<Plans>;
-    abstract findByPlans(page: number, limit: number): Promise<{
+    abstract findByPlans(page: number, limit: number, search?: string): Promise<{
         data: Plans[];
         total: number;
     }>;
