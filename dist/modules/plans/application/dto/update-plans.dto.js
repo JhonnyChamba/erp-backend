@@ -20,29 +20,34 @@ class UpdatePlansDto {
     max_users;
     max_branches;
     enabled;
+    moduleIds;
+    subModuleIds;
 }
 exports.UpdatePlansDto = UpdatePlansDto;
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Matches)(/^\d+(\.\d{1,2})?$/, { message: 'El precio debe ser un número válido con hasta 2 decimales' }),
     __metadata("design:type", String)
 ], UpdatePlansDto.prototype, "price", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(enum_1.BillingCycleGeneral),
     __metadata("design:type", String)
 ], UpdatePlansDto.prototype, "billing_cycle", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], UpdatePlansDto.prototype, "description", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], UpdatePlansDto.prototype, "max_users", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
@@ -52,4 +57,14 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdatePlansDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    __metadata("design:type", Array)
+], UpdatePlansDto.prototype, "moduleIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    __metadata("design:type", Array)
+], UpdatePlansDto.prototype, "subModuleIds", void 0);
 //# sourceMappingURL=update-plans.dto.js.map

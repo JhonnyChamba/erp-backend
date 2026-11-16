@@ -6,4 +6,5 @@ export declare class CreatePlansDto {
     max_users: number;
     max_branches: number;
     moduleIds?: number[];
+    subModuleIds?: number[];
 }

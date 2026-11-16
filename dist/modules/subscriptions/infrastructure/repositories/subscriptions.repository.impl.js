@@ -52,13 +52,21 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         const saved = await this.repo.save(entity);
         let targetModIds = subscriptions.moduleIds || [];
         let targetSubModIds = subscriptions.subModuleIds || [];
-        if (subscriptions.planId && targetModIds.length === 0) {
-            const planMods = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [subscriptions.planId]);
-            if (planMods && planMods.length > 0) {
-                const planModIdSet = new Set(planMods.map((r) => Number(r.module_id)));
-                targetModIds = Array.from(planModIdSet);
-                const subMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)', [targetModIds]);
-                targetSubModIds = (subMods || []).map((r) => Number(r.id));
+        if (subscriptions.planId && (targetModIds.length === 0 || targetSubModIds.length === 0)) {
+            const planPms = await this.repo.manager.query('SELECT module_id, sub_module_id FROM tab_plans_module WHERE plans_id = $1', [subscriptions.planId]);
+            if (planPms && planPms.length > 0) {
+                const pModIds = [];
+                const pSubModIds = [];
+                for (const r of planPms) {
+                    if (r.sub_module_id)
+                        pSubModIds.push(Number(r.sub_module_id));
+                    else if (r.module_id)
+                        pModIds.push(Number(r.module_id));
+                }
+                if (targetModIds.length === 0)
+                    targetModIds = Array.from(new Set(pModIds));
+                if (targetSubModIds.length === 0)
+                    targetSubModIds = Array.from(new Set(pSubModIds));
             }
         }
         if (targetModIds.length === 0) {
@@ -100,6 +108,17 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         if (subscriptions.companyId) {
             whereClause.company = { id: subscriptions.companyId };
         }
+        if (subscriptions.companyId && subscriptions.enabled === true) {
+            await this.repo
+                .createQueryBuilder()
+                .update(subscriptions_orm_entity_1.SubscriptionsOrmEntity)
+                .set({ enabled: false })
+                .where('company_id = :companyId AND id != :id AND deleted = false', {
+                companyId: subscriptions.companyId,
+                id: subscriptions.id,
+            })
+                .execute();
+        }
         await this.repo.update(whereClause, {
             plan: subscriptions.planId ? { id: subscriptions.planId } : undefined,
             begin_date: subscriptions.begin_date,
@@ -109,12 +128,21 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         if (subscriptions.moduleIds !== undefined || subscriptions.subModuleIds !== undefined || subscriptions.planId) {
             let targetModIds = subscriptions.moduleIds || [];
             let targetSubModIds = subscriptions.subModuleIds || [];
-            if (subscriptions.planId && targetModIds.length === 0) {
-                const planMods = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [subscriptions.planId]);
-                if (planMods && planMods.length > 0) {
-                    targetModIds = Array.from(new Set(planMods.map((r) => Number(r.module_id))));
-                    const subMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)', [targetModIds]);
-                    targetSubModIds = (subMods || []).map((r) => Number(r.id));
+            if (subscriptions.planId && (targetModIds.length === 0 || targetSubModIds.length === 0)) {
+                const planPms = await this.repo.manager.query('SELECT module_id, sub_module_id FROM tab_plans_module WHERE plans_id = $1', [subscriptions.planId]);
+                if (planPms && planPms.length > 0) {
+                    const pModIds = [];
+                    const pSubModIds = [];
+                    for (const r of planPms) {
+                        if (r.sub_module_id)
+                            pSubModIds.push(Number(r.sub_module_id));
+                        else if (r.module_id)
+                            pModIds.push(Number(r.module_id));
+                    }
+                    if (targetModIds.length === 0)
+                        targetModIds = Array.from(new Set(pModIds));
+                    if (targetSubModIds.length === 0)
+                        targetSubModIds = Array.from(new Set(pSubModIds));
                 }
             }
             if (targetModIds.length === 0) {
@@ -132,18 +160,27 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
         access_control_service_1.AccessControlService.clearCache(companyId);
         let targetModIds = Array.from(new Set((moduleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
         let targetSubModIds = Array.from(new Set((subModuleIds || []).map(Number).filter((id) => !isNaN(id) && id > 0)));
-        if (targetModIds.length === 0) {
+        if (targetModIds.length === 0 || targetSubModIds.length === 0) {
             const subRow = await this.repo.findOne({
                 where: { id: subscriptionId },
                 relations: ['plan'],
             });
             const planId = subRow?.plan?.id || subRow?.plan_id;
             if (planId) {
-                const planMods = await this.repo.manager.query('SELECT module_id FROM tab_plans_module WHERE plans_id = $1', [planId]);
-                if (planMods && planMods.length > 0) {
-                    targetModIds = Array.from(new Set(planMods.map((r) => Number(r.module_id))));
-                    const subMods = await this.repo.manager.query('SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)', [targetModIds]);
-                    targetSubModIds = (subMods || []).map((r) => Number(r.id));
+                const planPms = await this.repo.manager.query('SELECT module_id, sub_module_id FROM tab_plans_module WHERE plans_id = $1', [planId]);
+                if (planPms && planPms.length > 0) {
+                    const pModIds = [];
+                    const pSubModIds = [];
+                    for (const r of planPms) {
+                        if (r.sub_module_id)
+                            pSubModIds.push(Number(r.sub_module_id));
+                        else if (r.module_id)
+                            pModIds.push(Number(r.module_id));
+                    }
+                    if (targetModIds.length === 0)
+                        targetModIds = Array.from(new Set(pModIds));
+                    if (targetSubModIds.length === 0)
+                        targetSubModIds = Array.from(new Set(pSubModIds));
                 }
             }
         }
@@ -254,32 +291,58 @@ let SubscriptionsRepositoryImpl = class SubscriptionsRepositoryImpl {
             adminId: adminRole.id,
         })
             .getMany();
+        const validModSet = new Set(moduleIds);
+        const validSubModSet = new Set(subModuleIds);
         for (const r of otherRoles) {
-            await this.roleModuleRepo
-                .createQueryBuilder()
-                .delete()
-                .from(roles_orm_entity_1.RoleModuleOrmEntity)
-                .where('role_id = :roleId', { roleId: r.id })
-                .execute();
+            const existingRoleModules = await this.roleModuleRepo.find({
+                where: { role: { id: r.id }, deleted: false },
+                relations: ['module', 'subModule'],
+            });
+            const existingModIds = new Set();
+            const existingSubModIds = new Set();
+            for (const rm of existingRoleModules) {
+                if (rm.subModule?.id) {
+                    const smId = Number(rm.subModule.id);
+                    if (!validSubModSet.has(smId)) {
+                        await this.roleModuleRepo.delete({ id: rm.id });
+                    }
+                    else {
+                        existingSubModIds.add(smId);
+                    }
+                }
+                else if (rm.module?.id) {
+                    const mId = Number(rm.module.id);
+                    if (!validModSet.has(mId)) {
+                        await this.roleModuleRepo.delete({ id: rm.id });
+                    }
+                    else {
+                        existingModIds.add(mId);
+                    }
+                }
+            }
             for (const modId of moduleIds) {
-                await this.roleModuleRepo.save(this.roleModuleRepo.create({
-                    role: { id: r.id },
-                    module: { id: modId },
-                    subModule: null,
-                    has_access: false,
-                    enabled: true,
-                    deleted: false,
-                }));
+                if (!existingModIds.has(modId)) {
+                    await this.roleModuleRepo.save(this.roleModuleRepo.create({
+                        role: { id: r.id },
+                        module: { id: modId },
+                        subModule: null,
+                        has_access: false,
+                        enabled: true,
+                        deleted: false,
+                    }));
+                }
             }
             for (const subModId of subModuleIds) {
-                await this.roleModuleRepo.save(this.roleModuleRepo.create({
-                    role: { id: r.id },
-                    module: null,
-                    subModule: { id: subModId },
-                    has_access: false,
-                    enabled: true,
-                    deleted: false,
-                }));
+                if (!existingSubModIds.has(subModId)) {
+                    await this.roleModuleRepo.save(this.roleModuleRepo.create({
+                        role: { id: r.id },
+                        module: null,
+                        subModule: { id: subModId },
+                        has_access: false,
+                        enabled: true,
+                        deleted: false,
+                    }));
+                }
             }
         }
     }

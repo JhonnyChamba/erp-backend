@@ -188,10 +188,27 @@ let AccessControlService = class AccessControlService {
                 }
             }
         }
+        const isSubModuleInSubscription = (sm) => {
+            if (subscribedSubModIds.has(sm.id))
+                return true;
+            const parentId = sm.module?.id ? Number(sm.module.id) : null;
+            if (!parentId || !subscribedModIds.has(parentId))
+                return false;
+            const hasSpecificSubModsForThisMod = allSubModules.some((other) => other.module?.id === parentId && subscribedSubModIds.has(other.id));
+            if (hasSpecificSubModsForThisMod)
+                return false;
+            return true;
+        };
         if (isSuperAdmin) {
-            const allowedMods = allModules.filter((m) => subscribedModIds.has(m.id));
-            const allowedSubMods = allSubModules.filter((sm) => subscribedSubModIds.has(sm.id) ||
-                (sm.module?.id && subscribedModIds.has(Number(sm.module.id))));
+            const allowedSubMods = allSubModules.filter((sm) => isSubModuleInSubscription(sm));
+            const allowedSubModParentIds = new Set(allowedSubMods.map((sm) => Number(sm.module?.id)).filter(Boolean));
+            const allowedMods = allModules.filter((mod) => {
+                const hasCatalogSubmodules = allSubModules.some((sm) => sm.module?.id === mod.id);
+                if (hasCatalogSubmodules) {
+                    return allowedSubModParentIds.has(mod.id);
+                }
+                return subscribedModIds.has(mod.id);
+            });
             const menu = allowedMods.map((mod) => ({
                 id: mod.id,
                 code: mod.code,
@@ -207,6 +224,12 @@ let AccessControlService = class AccessControlService {
                     url: sm.url_desc || '/',
                 })),
             }));
+            const allowedUrls = allowedSubMods.map((sm) => sm.url_desc).filter(Boolean);
+            for (const mod of allowedMods) {
+                if (mod.code === 'MOD-007' && !allowedUrls.includes('/reportes')) {
+                    allowedUrls.push('/reportes');
+                }
+            }
             const result = {
                 companyId: targetCompanyId,
                 isSuperAdmin: true,
@@ -219,7 +242,7 @@ let AccessControlService = class AccessControlService {
                 roleName: 'Super Admin',
                 moduleCodes: allowedMods.map((m) => m.code),
                 subModuleCodes: allowedSubMods.map((sm) => sm.code),
-                allowedUrls: allowedSubMods.map((sm) => sm.url_desc).filter(Boolean),
+                allowedUrls,
                 menu,
             };
             AccessControlService_1.cache.set(cacheKey, {
@@ -239,8 +262,13 @@ let AccessControlService = class AccessControlService {
                 relations: ['role'],
             })
             : null;
-        const assignedRoleId = userCompany?.role?.id ||
-            (dbUser?.role?.id ? Number(dbUser.role.id) : null);
+        let assignedRoleId = null;
+        if (userCompany?.role?.id) {
+            assignedRoleId = Number(userCompany.role.id);
+        }
+        else if (dbUser?.company?.id && Number(dbUser.company.id) === targetCompanyId && dbUser?.role?.id) {
+            assignedRoleId = Number(dbUser.role.id);
+        }
         let roleEntity = null;
         if (assignedRoleId) {
             roleEntity = await this.rolesRepo.findOne({
@@ -277,8 +305,14 @@ let AccessControlService = class AccessControlService {
         const roleAllowedModIds = new Set();
         const roleAllowedSubModIds = new Set();
         if (isAdminRole) {
+            allSubModules.forEach((sm) => {
+                if (isSubModuleInSubscription(sm)) {
+                    roleAllowedSubModIds.add(sm.id);
+                    if (sm.module?.id)
+                        roleAllowedModIds.add(Number(sm.module.id));
+                }
+            });
             subscribedModIds.forEach((id) => roleAllowedModIds.add(id));
-            subscribedSubModIds.forEach((id) => roleAllowedSubModIds.add(id));
         }
         else {
             for (const rm of activeRoleModules) {
@@ -289,23 +323,25 @@ let AccessControlService = class AccessControlService {
             }
         }
         const effectiveSubModules = allSubModules.filter((sm) => {
-            const parentModId = sm.module?.id;
-            const inSubscription = subscribedSubModIds.has(sm.id) ||
-                (parentModId ? subscribedModIds.has(parentModId) : false);
-            const inRole = isAdminRole ||
-                roleAllowedSubModIds.has(sm.id) ||
+            const inSubscription = isSubModuleInSubscription(sm);
+            if (!inSubscription)
+                return false;
+            if (isAdminRole)
+                return true;
+            const parentModId = sm.module?.id ? Number(sm.module.id) : null;
+            const inRole = roleAllowedSubModIds.has(sm.id) ||
                 (roleAllowedSubModIds.size === 0 && parentModId ? roleAllowedModIds.has(parentModId) : false);
-            return inSubscription && inRole;
+            return inRole;
         });
         const effectiveModIdsFromChildren = new Set(effectiveSubModules.map((sm) => Number(sm.module?.id)).filter(Boolean));
-        const hasSystemSubmodules = (modId) => allSubModules.some((sm) => sm.module?.id === modId);
         const effectiveModules = allModules.filter((mod) => {
-            const inSubscription = subscribedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-            const inRole = isAdminRole || roleAllowedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-            const hasAccessToChildrenOrStandalone = hasSystemSubmodules(mod.id)
-                ? effectiveModIdsFromChildren.has(mod.id)
-                : (subscribedModIds.has(mod.id) && (isAdminRole || roleAllowedModIds.has(mod.id)));
-            return inSubscription && inRole && hasAccessToChildrenOrStandalone;
+            const hasCatalogSubmodules = allSubModules.some((sm) => sm.module?.id === mod.id);
+            if (hasCatalogSubmodules) {
+                return effectiveModIdsFromChildren.has(mod.id);
+            }
+            const inSubscription = subscribedModIds.has(mod.id);
+            const inRole = isAdminRole || roleAllowedModIds.has(mod.id);
+            return inSubscription && inRole;
         });
         const menu = effectiveModules.map((mod) => ({
             id: mod.id,
@@ -322,6 +358,12 @@ let AccessControlService = class AccessControlService {
                 url: sm.url_desc || '/',
             })),
         }));
+        const allowedUrls = effectiveSubModules.map((sm) => sm.url_desc).filter(Boolean);
+        for (const mod of effectiveModules) {
+            if (mod.code === 'MOD-007' && !allowedUrls.includes('/reportes')) {
+                allowedUrls.push('/reportes');
+            }
+        }
         const result = {
             companyId: targetCompanyId,
             isSuperAdmin: false,
@@ -334,7 +376,7 @@ let AccessControlService = class AccessControlService {
             roleName: roleEntity.description,
             moduleCodes: effectiveModules.map((m) => m.code),
             subModuleCodes: effectiveSubModules.map((sm) => sm.code),
-            allowedUrls: effectiveSubModules.map((sm) => sm.url_desc).filter(Boolean),
+            allowedUrls,
             menu,
         };
         AccessControlService_1.cache.set(cacheKey, {

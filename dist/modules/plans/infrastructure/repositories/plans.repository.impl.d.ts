@@ -12,5 +12,6 @@ export declare class PlansRepositoryImpl implements PlansRepository {
     }>;
     findById(id: number): Promise<Plans | null>;
     update(company: Plans): Promise<Plans>;
+    private syncPlanChangesToSubscribedCompanies;
     private toDomain;
 }

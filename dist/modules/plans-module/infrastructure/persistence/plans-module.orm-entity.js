@@ -12,11 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlansModulesOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const module_orm_entity_1 = require("../../../module/infrastructure/persistence/module.orm-entity");
+const sub_module_orm_entity_1 = require("../../../sub-module/infrastructure/persistence/sub-module.orm-entity");
 const plans_orm_entity_1 = require("../../../plans/infrastructure/persistence/plans.orm-entity");
 let PlansModulesOrmEntity = class PlansModulesOrmEntity {
     id;
     plans;
     module;
+    subModule;
     created_at;
 };
 exports.PlansModulesOrmEntity = PlansModulesOrmEntity;
@@ -34,6 +36,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'module_id' }),
     __metadata("design:type", module_orm_entity_1.ModuleOrmEntity)
 ], PlansModulesOrmEntity.prototype, "module", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => sub_module_orm_entity_1.subModulesOrmEntity, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'sub_module_id' }),
+    __metadata("design:type", sub_module_orm_entity_1.subModulesOrmEntity)
+], PlansModulesOrmEntity.prototype, "subModule", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }),
     __metadata("design:type", Date)

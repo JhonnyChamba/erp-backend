@@ -34,6 +34,7 @@ const configuration_module_1 = require("./modules/configuration/configuration.mo
 const storage_module_1 = require("./modules/storage/storage.module");
 const human_resources_module_1 = require("./modules/human-resources/human-resources.module");
 const appointments_module_1 = require("./modules/appointments/appointments.module");
+const technical_service_module_1 = require("./modules/technical-service/technical-service.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -97,6 +98,7 @@ exports.AppModule = AppModule = __decorate([
             storage_module_1.StorageModule,
             human_resources_module_1.HumanResourcesModule,
             appointments_module_1.AppointmentsModule,
+            technical_service_module_1.TechnicalServiceModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

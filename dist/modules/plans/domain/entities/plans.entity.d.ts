@@ -11,5 +11,6 @@ export declare class Plans {
     readonly createdAt?: Date;
     readonly createdById?: number;
     moduleIds?: number[];
-    constructor(id: number | null, price: string, billing_cycle: BillingCycleGeneral, description: string, max_users: number, max_branches: number, enabled: boolean, created_name?: string, createdAt?: Date, createdById?: number, moduleIds?: number[]);
+    subModuleIds?: number[];
+    constructor(id: number | null, price: string, billing_cycle: BillingCycleGeneral, description: string, max_users: number, max_branches: number, enabled: boolean, created_name?: string, createdAt?: Date, createdById?: number, moduleIds?: number[], subModuleIds?: number[]);
 }

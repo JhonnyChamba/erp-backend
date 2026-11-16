@@ -42,8 +42,8 @@ let PermissionsGuard = class PermissionsGuard {
             user.company_id ||
             1);
         const access = await this.accessControlService.getUserCompanyAccess(user, companyId);
-        if (access.isSuperAdmin) {
-            return true;
+        if (!access.hasActiveSubscription) {
+            throw new common_1.ForbiddenException('La empresa no cuenta con una suscripción activa.');
         }
         const allowedCodes = new Set([
             ...access.moduleCodes.map((c) => c.toUpperCase()),

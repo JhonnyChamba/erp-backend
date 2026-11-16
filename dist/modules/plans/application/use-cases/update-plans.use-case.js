@@ -27,6 +27,12 @@ let UpdatePlansUseCase = class UpdatePlansUseCase {
         company.max_users = dto.max_users ?? company.max_users;
         company.max_branches = dto.max_branches ?? company.max_branches;
         company.enabled = dto.enabled ?? company.enabled;
+        if (dto.moduleIds !== undefined) {
+            company.moduleIds = dto.moduleIds;
+        }
+        if (dto.subModuleIds !== undefined) {
+            company.subModuleIds = dto.subModuleIds;
+        }
         return this.repository.update(company);
     }
 };

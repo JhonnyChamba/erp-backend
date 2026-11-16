@@ -25,6 +25,7 @@ import { ConfigurationModule } from './modules/configuration/configuration.modul
 import { StorageModule } from './modules/storage/storage.module';
 import { HumanResourcesModule } from './modules/human-resources/human-resources.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { TechnicalServiceModule } from './modules/technical-service/technical-service.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
     StorageModule,
     HumanResourcesModule,
     AppointmentsModule,
+    TechnicalServiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -231,14 +231,35 @@ export class AccessControlService {
 			}
 		}
 
-		// CASO 1: SUPER ADMIN -> Acceso únicamente a los módulos contratados en la suscripción de la empresa activa
-		if (isSuperAdmin) {
-			const allowedMods = allModules.filter((m) => subscribedModIds.has(m.id));
-			const allowedSubMods = allSubModules.filter(
-				(sm) =>
-					subscribedSubModIds.has(sm.id) ||
-					(sm.module?.id && subscribedModIds.has(Number(sm.module.id))),
+		// Determina si un submódulo específico está incluido en la suscripción activa
+		const isSubModuleInSubscription = (sm: subModulesOrmEntity): boolean => {
+			if (subscribedSubModIds.has(sm.id)) return true;
+			const parentId = sm.module?.id ? Number(sm.module.id) : null;
+			if (!parentId || !subscribedModIds.has(parentId)) return false;
+			// Si la suscripción ya tiene submódulos específicos para este módulo padre,
+			// solo los que estén en subscribedSubModIds están autorizados:
+			const hasSpecificSubModsForThisMod = allSubModules.some(
+				(other) => other.module?.id === parentId && subscribedSubModIds.has(other.id),
 			);
+			if (hasSpecificSubModsForThisMod) return false;
+			// Si el módulo no tiene submódulos explícitos en la suscripción (compatibilidad legacy), se incluye:
+			return true;
+		};
+
+		// CASO 1: SUPER ADMIN -> Acceso completo a TODOS y ÚNICAMENTE los módulos y submódulos de la suscripción de la empresa activa
+		if (isSuperAdmin) {
+			const allowedSubMods = allSubModules.filter((sm) => isSubModuleInSubscription(sm));
+			const allowedSubModParentIds = new Set<number>(
+				allowedSubMods.map((sm) => Number(sm.module?.id)).filter(Boolean),
+			);
+			const allowedMods = allModules.filter((mod) => {
+				const hasCatalogSubmodules = allSubModules.some((sm) => sm.module?.id === mod.id);
+				if (hasCatalogSubmodules) {
+					return allowedSubModParentIds.has(mod.id);
+				}
+				// Módulos independientes sin submódulos en catálogo (ej. MOD-007 Reportes)
+				return subscribedModIds.has(mod.id);
+			});
 
 			const menu: MenuModuleItem[] = allowedMods.map((mod) => ({
 				id: mod.id,
@@ -256,6 +277,13 @@ export class AccessControlService {
 					})),
 			}));
 
+			const allowedUrls = allowedSubMods.map((sm) => sm.url_desc).filter(Boolean);
+			for (const mod of allowedMods) {
+				if (mod.code === 'MOD-007' && !allowedUrls.includes('/reportes')) {
+					allowedUrls.push('/reportes');
+				}
+			}
+
 			const result: UserCompanyAccessResponse = {
 				companyId: targetCompanyId,
 				isSuperAdmin: true,
@@ -268,7 +296,7 @@ export class AccessControlService {
 				roleName: 'Super Admin',
 				moduleCodes: allowedMods.map((m) => m.code),
 				subModuleCodes: allowedSubMods.map((sm) => sm.code),
-				allowedUrls: allowedSubMods.map((sm) => sm.url_desc).filter(Boolean),
+				allowedUrls,
 				menu,
 			};
 
@@ -279,7 +307,7 @@ export class AccessControlService {
 			return result;
 		}
 
-		// CASO 2: USUARIO REGULAR O MULTI-EMPRESA -> Intersección entre Suscripción activa y Rol asignado
+		// CASO 2: USUARIO REGULAR O MULTI-EMPRESA -> Resolución de Rol estricta por Empresa
 		const userCompany = userId
 			? await this.userCompanyRepo.findOne({
 					where: {
@@ -292,9 +320,14 @@ export class AccessControlService {
 				})
 			: null;
 
-		const assignedRoleId: number | null =
-			userCompany?.role?.id ||
-			(dbUser?.role?.id ? Number(dbUser.role.id) : null);
+		// El rol debe provenir estrictamente de la relación con esta empresa específica (tab_users_company).
+		// Solo si targetCompanyId es la empresa principal en la ficha del usuario se toma dbUser.role.id como fallback.
+		let assignedRoleId: number | null = null;
+		if (userCompany?.role?.id) {
+			assignedRoleId = Number(userCompany.role.id);
+		} else if (dbUser?.company?.id && Number(dbUser.company.id) === targetCompanyId && dbUser?.role?.id) {
+			assignedRoleId = Number(dbUser.role.id);
+		}
 
 		let roleEntity: RolesOrmEntity | null = null;
 		if (assignedRoleId) {
@@ -339,9 +372,14 @@ export class AccessControlService {
 		const roleAllowedSubModIds = new Set<number>();
 
 		if (isAdminRole) {
-			// El Administrador de la empresa tiene acceso a TODOS y ÚNICAMENTE los módulos de la suscripción activa
+			// El Administrador de la empresa tiene acceso a TODOS y ÚNICAMENTE los módulos y submódulos de la suscripción activa
+			allSubModules.forEach((sm) => {
+				if (isSubModuleInSubscription(sm)) {
+					roleAllowedSubModIds.add(sm.id);
+					if (sm.module?.id) roleAllowedModIds.add(Number(sm.module.id));
+				}
+			});
 			subscribedModIds.forEach((id) => roleAllowedModIds.add(id));
-			subscribedSubModIds.forEach((id) => roleAllowedSubModIds.add(id));
 		} else {
 			for (const rm of activeRoleModules) {
 				if (rm.module?.id) roleAllowedModIds.add(Number(rm.module.id));
@@ -351,30 +389,32 @@ export class AccessControlService {
 
 		// Intersección estricta: solo módulos y submódulos permitidos simultáneamente por la suscripción y el rol
 		const effectiveSubModules = allSubModules.filter((sm) => {
-			const parentModId = sm.module?.id;
-			const inSubscription =
-				subscribedSubModIds.has(sm.id) ||
-				(parentModId ? subscribedModIds.has(parentModId) : false);
+			const inSubscription = isSubModuleInSubscription(sm);
+			if (!inSubscription) return false;
+
+			if (isAdminRole) return true;
+
+			const parentModId = sm.module?.id ? Number(sm.module.id) : null;
 			const inRole =
-				isAdminRole ||
 				roleAllowedSubModIds.has(sm.id) ||
 				(roleAllowedSubModIds.size === 0 && parentModId ? roleAllowedModIds.has(parentModId) : false);
-			return inSubscription && inRole;
+			return inRole;
 		});
 
 		const effectiveModIdsFromChildren = new Set<number>(
 			effectiveSubModules.map((sm) => Number(sm.module?.id)).filter(Boolean),
 		);
 
-		const hasSystemSubmodules = (modId: number) => allSubModules.some((sm) => sm.module?.id === modId);
-
 		const effectiveModules = allModules.filter((mod) => {
-			const inSubscription = subscribedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-			const inRole = isAdminRole || roleAllowedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-			const hasAccessToChildrenOrStandalone = hasSystemSubmodules(mod.id)
-				? effectiveModIdsFromChildren.has(mod.id)
-				: (subscribedModIds.has(mod.id) && (isAdminRole || roleAllowedModIds.has(mod.id)));
-			return inSubscription && inRole && hasAccessToChildrenOrStandalone;
+			const hasCatalogSubmodules = allSubModules.some((sm) => sm.module?.id === mod.id);
+			if (hasCatalogSubmodules) {
+				// Solo se incluye si al menos un submódulo fue autorizado para este rol
+				return effectiveModIdsFromChildren.has(mod.id);
+			}
+			// Módulos independientes sin submódulos en catálogo (ej. MOD-007 Reportes)
+			const inSubscription = subscribedModIds.has(mod.id);
+			const inRole = isAdminRole || roleAllowedModIds.has(mod.id);
+			return inSubscription && inRole;
 		});
 
 		const menu: MenuModuleItem[] = effectiveModules.map((mod) => ({
@@ -393,6 +433,13 @@ export class AccessControlService {
 				})),
 		}));
 
+		const allowedUrls = effectiveSubModules.map((sm) => sm.url_desc).filter(Boolean);
+		for (const mod of effectiveModules) {
+			if (mod.code === 'MOD-007' && !allowedUrls.includes('/reportes')) {
+				allowedUrls.push('/reportes');
+			}
+		}
+
 		const result: UserCompanyAccessResponse = {
 			companyId: targetCompanyId,
 			isSuperAdmin: false,
@@ -405,7 +452,7 @@ export class AccessControlService {
 			roleName: roleEntity.description,
 			moduleCodes: effectiveModules.map((m) => m.code),
 			subModuleCodes: effectiveSubModules.map((sm) => sm.code),
-			allowedUrls: effectiveSubModules.map((sm) => sm.url_desc).filter(Boolean),
+			allowedUrls,
 			menu,
 		};
 

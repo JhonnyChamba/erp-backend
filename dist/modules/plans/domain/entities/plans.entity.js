@@ -13,7 +13,8 @@ class Plans {
     createdAt;
     createdById;
     moduleIds;
-    constructor(id, price, billing_cycle, description, max_users, max_branches, enabled, created_name, createdAt, createdById, moduleIds) {
+    subModuleIds;
+    constructor(id, price, billing_cycle, description, max_users, max_branches, enabled, created_name, createdAt, createdById, moduleIds, subModuleIds) {
         this.id = id;
         this.price = price;
         this.billing_cycle = billing_cycle;
@@ -25,6 +26,7 @@ class Plans {
         this.createdAt = createdAt;
         this.createdById = createdById;
         this.moduleIds = moduleIds;
+        this.subModuleIds = subModuleIds;
     }
 }
 exports.Plans = Plans;
