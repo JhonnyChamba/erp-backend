@@ -16,5 +16,6 @@ export class Roles {
 		public moduleIds?: number[],
 		public subModuleIds?: number[],
 		public details?: RoleAccessDetail[],
+		public is_company_admin: boolean = false,
 	) { }
 }

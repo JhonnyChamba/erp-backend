@@ -270,11 +270,13 @@ let AccessControlService = class AccessControlService {
             });
             return emptyResult;
         }
-        const isAdminRole = roleEntity.description?.trim().toLowerCase().startsWith('administrador');
+        const isAdminRole = Boolean(roleEntity.is_company_admin) ||
+            roleEntity.description?.trim().toLowerCase().startsWith('administrador') ||
+            roleEntity.code === 'ROL-001';
         const activeRoleModules = (roleEntity.roleModules || []).filter((rm) => !rm.deleted && rm.enabled !== false && rm.has_access !== false);
         const roleAllowedModIds = new Set();
         const roleAllowedSubModIds = new Set();
-        if (isAdminRole && activeRoleModules.length === 0) {
+        if (isAdminRole) {
             subscribedModIds.forEach((id) => roleAllowedModIds.add(id));
             subscribedSubModIds.forEach((id) => roleAllowedSubModIds.add(id));
         }
@@ -290,15 +292,20 @@ let AccessControlService = class AccessControlService {
             const parentModId = sm.module?.id;
             const inSubscription = subscribedSubModIds.has(sm.id) ||
                 (parentModId ? subscribedModIds.has(parentModId) : false);
-            const inRole = roleAllowedSubModIds.has(sm.id) ||
+            const inRole = isAdminRole ||
+                roleAllowedSubModIds.has(sm.id) ||
                 (roleAllowedSubModIds.size === 0 && parentModId ? roleAllowedModIds.has(parentModId) : false);
             return inSubscription && inRole;
         });
         const effectiveModIdsFromChildren = new Set(effectiveSubModules.map((sm) => Number(sm.module?.id)).filter(Boolean));
+        const hasSystemSubmodules = (modId) => allSubModules.some((sm) => sm.module?.id === modId);
         const effectiveModules = allModules.filter((mod) => {
             const inSubscription = subscribedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-            const inRole = roleAllowedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
-            return inSubscription && inRole && effectiveModIdsFromChildren.has(mod.id);
+            const inRole = isAdminRole || roleAllowedModIds.has(mod.id) || effectiveModIdsFromChildren.has(mod.id);
+            const hasAccessToChildrenOrStandalone = hasSystemSubmodules(mod.id)
+                ? effectiveModIdsFromChildren.has(mod.id)
+                : (subscribedModIds.has(mod.id) && (isAdminRole || roleAllowedModIds.has(mod.id)));
+            return inSubscription && inRole && hasAccessToChildrenOrStandalone;
         });
         const menu = effectiveModules.map((mod) => ({
             id: mod.id,

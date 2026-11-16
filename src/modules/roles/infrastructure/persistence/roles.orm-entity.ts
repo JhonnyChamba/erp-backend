@@ -28,6 +28,9 @@ export class RolesOrmEntity {
 	@Column({ nullable: true })
 	created_by: number;
 
+	@Column({ default: false, name: 'is_company_admin' })
+	is_company_admin: boolean;
+
 	@Column({ default: true })
 	enabled: boolean;
 

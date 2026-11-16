@@ -41,6 +41,7 @@ export class AuthService {
 			super_admin: isSuperAdmin,
 			multi_company: user.multi_company,
 			theme_color: user.theme_color || 'Blue_Theme',
+			theme_mode: (user as any).theme_mode || 'dark',
 			company_id: user.companyId,
 			photo_url: jwtPhotoUrl,
 		};
@@ -48,6 +49,7 @@ export class AuthService {
 		return {
 			access_token: this.jwtService.sign(payload),
 			theme_color: user.theme_color || 'Blue_Theme',
+			theme_mode: (user as any).theme_mode || 'dark',
 			photo_url: user.photo_url || null,
 			super_admin: isSuperAdmin,
 			multi_company: user.multi_company,

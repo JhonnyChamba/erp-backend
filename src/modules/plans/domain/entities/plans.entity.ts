@@ -12,5 +12,6 @@ export class Plans {
 		public readonly created_name?: string,
 		public readonly createdAt?: Date,
 		public readonly createdById?: number,
+		public moduleIds?: number[],
 	) { }
 }

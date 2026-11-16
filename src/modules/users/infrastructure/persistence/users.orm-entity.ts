@@ -55,6 +55,9 @@ export class UsersOrmEntity {
 	@Column({ default: 'Blue_Theme', nullable: true })
 	theme_color: string;
 
+	@Column({ default: 'dark', nullable: true })
+	theme_mode: string;
+
 	// Fecha de nacimiento (opcional), formato YYYY-MM-DD
 	@Column({ type: 'date', nullable: true })
 	birth_date: string | null;

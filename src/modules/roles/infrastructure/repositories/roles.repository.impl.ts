@@ -149,7 +149,7 @@ export class RolesRepositoryImpl implements RolesRepository {
 			.leftJoinAndSelect('rm.subModule', 'subMod')
 			.where('r.company_id = :companyId', { companyId })
 			.andWhere('r.deleted = false')
-			.andWhere('LOWER(r.description) LIKE :desc', { desc: 'administrador%' })
+			.andWhere('(r.is_company_admin = true OR LOWER(r.description) LIKE :desc)', { desc: 'administrador%' })
 			.getOne();
 
 		if (!adminRole) {
@@ -158,12 +158,16 @@ export class RolesRepositoryImpl implements RolesRepository {
 				this.repo.create({
 					code: nextCode,
 					description: 'Administrador',
+					is_company_admin: true,
 					enabled: true,
 					deleted: false,
 					company: { id: companyId } as any,
 				}),
 			);
 			adminRole.roleModules = [];
+		} else if (!adminRole.is_company_admin) {
+			await this.repo.update({ id: adminRole.id }, { is_company_admin: true });
+			adminRole.is_company_admin = true;
 		}
 
 		// Obtener los módulos y submódulos activos de la suscripción de la empresa
@@ -188,6 +192,53 @@ export class RolesRepositoryImpl implements RolesRepository {
 				if (!sm.deleted && sm.enabled !== false) {
 					if (sm.module?.id) modIds.add(Number(sm.module.id));
 					if (sm.subModule?.id) subModIds.add(Number(sm.subModule.id));
+				}
+			}
+		}
+
+		// Si la empresa tiene suscripción válida pero sus subscriptionModules quedaron vacíos, auto-poblar según tab_plans_module
+		if (validSubs.length > 0 && modIds.size === 0) {
+			for (const sub of validSubs) {
+				const planId = sub.plan?.id || (sub as any).plan_id;
+				let targetMods: any[] = [];
+				if (planId) {
+					targetMods = await this.repo.manager.query(
+						'SELECT module_id FROM tab_plans_module WHERE plans_id = $1',
+						[planId],
+					);
+				}
+				let mIds = (targetMods || []).map((r: any) => Number(r.module_id));
+				let smIds: number[] = [];
+				if (mIds.length > 0) {
+					const subMods = await this.repo.manager.query(
+						'SELECT id FROM tab_sub_module WHERE module_id = ANY($1) AND (deleted = false OR deleted IS NULL)',
+						[mIds],
+					);
+					smIds = (subMods || []).map((r: any) => Number(r.id));
+				} else {
+					const allActiveMods = await this.repo.manager.query(
+						'SELECT id FROM tab_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+					);
+					mIds = (allActiveMods || []).map((m: any) => Number(m.id));
+					const allActiveSubMods = await this.repo.manager.query(
+						'SELECT id FROM tab_sub_module WHERE enabled = true AND (deleted = false OR deleted IS NULL) ORDER BY id ASC',
+					);
+					smIds = (allActiveSubMods || []).map((sm: any) => Number(sm.id));
+				}
+
+				for (const mid of mIds) {
+					await this.repo.manager.query(
+						'INSERT INTO tab_subscription_module (subscriptions_id, module_id, sub_module_id, enabled, deleted) VALUES ($1, $2, NULL, true, false)',
+						[sub.id, mid],
+					);
+					modIds.add(Number(mid));
+				}
+				for (const smId of smIds) {
+					await this.repo.manager.query(
+						'INSERT INTO tab_subscription_module (subscriptions_id, module_id, sub_module_id, enabled, deleted) VALUES ($1, NULL, $2, true, false)',
+						[sub.id, smId],
+					);
+					subModIds.add(Number(smId));
 				}
 			}
 		}
@@ -266,10 +317,13 @@ export class RolesRepositoryImpl implements RolesRepository {
 	}
 
 	async update(roles: Roles): Promise<Roles> {
+		const existing = await this.repo.findOne({ where: { id: roles.id! } });
+		const isCompanyAdmin = Boolean(existing?.is_company_admin || roles.is_company_admin);
+
 		const updatePayload: any = {
 			code: roles.code,
 			description: roles.description,
-			enabled: roles.enabled,
+			enabled: isCompanyAdmin ? true : roles.enabled,
 		};
 		if (roles.companyId) {
 			updatePayload.company = { id: roles.companyId };
@@ -282,12 +336,19 @@ export class RolesRepositoryImpl implements RolesRepository {
 			roles.subModuleIds !== undefined ||
 			roles.details !== undefined
 		) {
-			await this.syncRoleAccess(
-				roles.id!,
-				roles.moduleIds || [],
-				roles.subModuleIds || [],
-				roles.details,
-			);
+			if (isCompanyAdmin) {
+				// El rol Administrador predeterminado no se edita manualmente: se mantiene sincronizado con la suscripción
+				if (roles.companyId) {
+					await this.ensureCompanyAdminRoleSynced(roles.companyId);
+				}
+			} else {
+				await this.syncRoleAccess(
+					roles.id!,
+					roles.moduleIds || [],
+					roles.subModuleIds || [],
+					roles.details,
+				);
+			}
 		}
 
 		const updated = await this.findById(roles.id!, roles.companyId);
@@ -393,6 +454,7 @@ export class RolesRepositoryImpl implements RolesRepository {
 			moduleIds,
 			subModuleIds,
 			details,
+			Boolean(entity.is_company_admin),
 		);
 	}
 }
