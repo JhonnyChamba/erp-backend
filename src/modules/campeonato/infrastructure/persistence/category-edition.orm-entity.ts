@@ -1,0 +1,79 @@
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { EditionStatus } from '../../common/enum/campeonato.enum';
+import { CategoryOrmEntity } from './category.orm-entity';
+
+@Entity('tab_campeonato_category_editions')
+export class CategoryEditionOrmEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'company_id', type: 'int', nullable: true })
+  companyId: number;
+
+  @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
+  tournamentId: string;
+
+  @Column({ name: 'category_id', type: 'uuid' })
+  categoryId: string;
+
+  @ManyToOne(() => CategoryOrmEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'category_id' })
+  category: CategoryOrmEntity;
+
+  @Column({ type: 'varchar', length: 150 })
+  name: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column({ name: 'start_date', type: 'date', nullable: true })
+  startDate: Date;
+
+  @Column({ name: 'end_date', type: 'date', nullable: true })
+  endDate: Date;
+
+  @Column({ type: 'enum', enum: EditionStatus, default: EditionStatus.PENDING })
+  status: EditionStatus;
+
+  @Column({ name: 'min_players_per_team', type: 'int', default: 7 })
+  minPlayersPerTeam: number;
+
+  @Column({ name: 'max_players_per_team', type: 'int', default: 25 })
+  maxPlayersPerTeam: number;
+
+  @Column({ name: 'min_players_per_match', type: 'int', default: 7 })
+  minPlayersPerMatch: number;
+
+  @Column({ name: 'registration_fee', type: 'numeric', precision: 10, scale: 2, default: 0 })
+  registrationFee: number;
+
+  @Column({ name: 'guarantee_fee', type: 'numeric', precision: 10, scale: 2, default: 0 })
+  guaranteeFee: number;
+
+  @Column({ name: 'points_win', type: 'int', default: 3 })
+  pointsWin: number;
+
+  @Column({ name: 'points_draw', type: 'int', default: 1 })
+  pointsDraw: number;
+
+  @Column({ name: 'points_loss', type: 'int', default: 0 })
+  pointsLoss: number;
+
+  @Column({ name: 'created_name', type: 'varchar', nullable: true })
+  createdName: string;
+
+  @Column({ name: 'created_by', type: 'varchar', nullable: true })
+  createdBy: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @Column({ name: 'update_name', type: 'varchar', nullable: true })
+  updateName: string;
+
+  @Column({ name: 'updated_by', type: 'varchar', nullable: true })
+  updatedBy: string;
+
+  @UpdateDateColumn({ name: 'updated_at', nullable: true })
+  updatedAt: Date;
+}

@@ -1,0 +1,134 @@
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { TeamOrigin, StageFormat, IntersectionType } from '../../../common/enum/campeonato.enum';
+
+export class CreateStageDto {
+  @IsNotEmpty({ message: 'El ID de la edición es obligatorio' })
+  @IsString()
+  categoryEditionId: string;
+
+  @IsNotEmpty({ message: 'El nombre de la etapa es obligatorio' })
+  @IsString()
+  @MaxLength(150)
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsInt()
+  stageOrder?: number;
+
+  @IsOptional()
+  @IsEnum(TeamOrigin)
+  teamOrigin?: TeamOrigin;
+
+  @IsOptional()
+  @IsString()
+  previousStageId?: string;
+
+  @IsOptional()
+  @IsInt()
+  numberOfExpectedTeams?: number;
+
+  @IsOptional()
+  @IsEnum(StageFormat)
+  format?: StageFormat;
+
+  @IsOptional()
+  @IsInt()
+  numberOfLaps?: number;
+
+  @IsOptional()
+  @IsInt()
+  numberOfGroups?: number;
+
+  @IsOptional()
+  @IsEnum(IntersectionType)
+  intersectionType?: IntersectionType;
+
+  @IsOptional()
+  predefinedCrosses?: any;
+
+  @IsOptional()
+  @IsInt()
+  matchDurationMinutes?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  allowExtraTime?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  allowPenalties?: boolean;
+}
+
+export class UpdateStageDto {
+  @IsOptional()
+  @IsString()
+  categoryEditionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsInt()
+  stageOrder?: number;
+
+  @IsOptional()
+  @IsEnum(TeamOrigin)
+  teamOrigin?: TeamOrigin;
+
+  @IsOptional()
+  @IsString()
+  previousStageId?: string;
+
+  @IsOptional()
+  @IsInt()
+  numberOfExpectedTeams?: number;
+
+  @IsOptional()
+  @IsEnum(StageFormat)
+  format?: StageFormat;
+
+  @IsOptional()
+  @IsInt()
+  numberOfLaps?: number;
+
+  @IsOptional()
+  @IsInt()
+  numberOfGroups?: number;
+
+  @IsOptional()
+  @IsEnum(IntersectionType)
+  intersectionType?: IntersectionType;
+
+  @IsOptional()
+  predefinedCrosses?: any;
+
+  @IsOptional()
+  @IsInt()
+  matchDurationMinutes?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  allowExtraTime?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  allowPenalties?: boolean;
+}
