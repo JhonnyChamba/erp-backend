@@ -1,12 +1,37 @@
+const path = require('path');
 require('reflect-metadata');
 require('pg');
 require('argon2');
 require('class-validator');
 require('class-transformer');
 
+let appHandler = null;
+
+function getHandler() {
+  if (!appHandler) {
+    const mainPath = path.resolve(__dirname, '../dist/main');
+    const mainModule = require(mainPath);
+    appHandler = mainModule.default || mainModule;
+  }
+  return appHandler;
+}
+
 module.exports = async function vercelHandler(req, res) {
+  // Encabezados CORS universales para Vercel Serverless
+  const origin = req.headers.origin || 'https://deskounta.vercel.app';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-company-id, Accept, Origin, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // Responder de inmediato al preflight OPTIONS
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    return res.end();
+  }
+
   try {
-    const handler = require('../dist/main').default;
+    const handler = getHandler();
     return await handler(req, res);
   } catch (error) {
     console.error('Vercel Handler Error:', error);

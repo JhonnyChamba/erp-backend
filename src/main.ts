@@ -16,13 +16,30 @@ async function createApp() {
     }),
   );
 
-  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+  const envOrigins = (process.env.FRONTEND_URL || '')
     .split(',')
-    .map((origin) => origin.trim());
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://deskounta.vercel.app',
+  ];
 
   app.enableCors({
-    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (defaultOrigins.includes(origin) || envOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      if (origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization,x-company-id,Accept,Origin,X-Requested-With',
     credentials: true,
   });
 
