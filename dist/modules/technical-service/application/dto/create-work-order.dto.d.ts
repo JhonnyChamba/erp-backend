@@ -1,0 +1,45 @@
+export declare class WorkOrderItemDto {
+    id?: number;
+    itemType: 'SERVICIO' | 'REPUESTO';
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    subtotal?: number;
+}
+export declare class CreateWorkOrderDto {
+    companyId?: number;
+    branchId?: number | null;
+    customerId: number;
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    technicianId?: number | null;
+    technicianName?: string | null;
+    orderNumber?: string;
+    serviceType: string;
+    priority: string;
+    status?: string;
+    equipmentType: string;
+    brand?: string;
+    model?: string;
+    serialNumber?: string;
+    color?: string;
+    securityPin?: string;
+    accessories?: string;
+    physicalCondition?: string;
+    reportedFailure: string;
+    technicalDiagnosis?: string;
+    solutionApplied?: string;
+    entryDate?: string;
+    estimatedDeliveryDate?: string | null;
+    warrantyDays?: number;
+    laborCost?: number;
+    partsCost?: number;
+    subtotal?: number;
+    taxAmount?: number;
+    totalAmount?: number;
+    advancePayment?: number;
+    pendingBalance?: number;
+    notes?: string;
+    items?: WorkOrderItemDto[];
+}

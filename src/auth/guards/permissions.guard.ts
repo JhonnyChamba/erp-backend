@@ -48,8 +48,8 @@ export class PermissionsGuard implements CanActivate {
 		);
 
 		const access = await this.accessControlService.getUserCompanyAccess(user, companyId);
-		if (access.isSuperAdmin) {
-			return true;
+		if (!access.hasActiveSubscription) {
+			throw new ForbiddenException('La empresa no cuenta con una suscripción activa.');
 		}
 
 		const allowedCodes = new Set<string>([

@@ -26,6 +26,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { HumanResourcesModule } from './modules/human-resources/human-resources.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { CampeonatoModule } from './modules/campeonato/campeonato.module';
+import { TechnicalServiceModule } from './modules/technical-service/technical-service.module';
 
 @Module({
   imports: [
@@ -53,12 +54,12 @@ import { CampeonatoModule } from './modules/campeonato/campeonato.module';
           ...(databaseUrl
             ? { url: databaseUrl }
             : {
-                host,
-                port: Number(config.get<number>('DATABASE_PORT', 5432)),
-                username: config.get<string>('DATABASE_USER', 'postgres'),
-                password: config.getOrThrow<string>('DATABASE_PASSWORD'),
-                database: config.get<string>('DATABASE_NAME', 'db_deskounta'),
-              }),
+              host,
+              port: Number(config.get<number>('DATABASE_PORT', 5432)),
+              username: config.get<string>('DATABASE_USER', 'postgres'),
+              password: config.getOrThrow<string>('DATABASE_PASSWORD'),
+              database: config.get<string>('DATABASE_NAME', 'db_deskounta'),
+            }),
           ssl: useSsl ? { rejectUnauthorized: false } : false,
           retryAttempts: 2,
           retryDelay: 1000,
@@ -91,6 +92,7 @@ import { CampeonatoModule } from './modules/campeonato/campeonato.module';
     HumanResourcesModule,
     AppointmentsModule,
     CampeonatoModule,
+    TechnicalServiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

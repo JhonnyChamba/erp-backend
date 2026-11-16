@@ -1,29 +1,40 @@
 import { Type } from "class-transformer";
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Min } from "class-validator";
+import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Min } from "class-validator";
 import { BillingCycleGeneral } from "src/common/enum/enum";
 
 export class UpdatePlansDto {
-	@IsNotEmpty()
+	@IsOptional()
 	@Matches(/^\d+(\.\d{1,2})?$/, { message: 'El precio debe ser un número válido con hasta 2 decimales' })
-	price: string;
+	price?: string;
 
+	@IsOptional()
 	@IsEnum(BillingCycleGeneral)
-	billing_cycle: BillingCycleGeneral;
+	billing_cycle?: BillingCycleGeneral;
 
+	@IsOptional()
 	@IsString()
-	@IsNotEmpty()
-	description: string;
+	description?: string;
 
+	@IsOptional()
 	@Type(() => Number)
 	@IsInt()
 	@Min(1)
-	max_users: number;
+	max_users?: number;
 
+	@IsOptional()
 	@Type(() => Number)
 	@IsInt()
 	@Min(1)
-	max_branches: number;
+	max_branches?: number;
 
 	@IsOptional()
 	enabled?: boolean;
+
+	@IsOptional()
+	@IsArray()
+	moduleIds?: number[];
+
+	@IsOptional()
+	@IsArray()
+	subModuleIds?: number[];
 }

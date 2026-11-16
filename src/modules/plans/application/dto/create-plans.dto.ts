@@ -27,4 +27,8 @@ export class CreatePlansDto {
 	@IsOptional()
 	@IsArray()
 	moduleIds?: number[];
+
+	@IsOptional()
+	@IsArray()
+	subModuleIds?: number[];
 }
