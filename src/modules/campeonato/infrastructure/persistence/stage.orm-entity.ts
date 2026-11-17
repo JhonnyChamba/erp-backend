@@ -60,6 +60,9 @@ export class StageOrmEntity {
   @Column({ name: 'match_duration_minutes', type: 'int', default: 90 })
   matchDurationMinutes: number;
 
+  @Column({ name: 'max_players_per_team', type: 'int', nullable: true, default: 30 })
+  maxPlayersPerTeam: number;
+
   @Column({ name: 'allow_extra_time', type: 'boolean', default: false })
   allowExtraTime: boolean;
 

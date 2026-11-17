@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { EditionStatus } from '../../common/enum/campeonato.enum';
 import { CategoryOrmEntity } from './category.orm-entity';
+import { EditionCategoryDetailOrmEntity } from './edition-category-detail.orm-entity';
 
 @Entity('tab_campeonato_category_editions')
 export class CategoryEditionOrmEntity {
@@ -13,12 +14,15 @@ export class CategoryEditionOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'category_id', type: 'uuid' })
+  @Column({ name: 'category_id', type: 'uuid', nullable: true })
   categoryId: string;
 
-  @ManyToOne(() => CategoryOrmEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CategoryOrmEntity, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_id' })
   category: CategoryOrmEntity;
+
+  @OneToMany(() => EditionCategoryDetailOrmEntity, (detail) => detail.edition, { cascade: true })
+  categoriesDetail: EditionCategoryDetailOrmEntity[];
 
   @Column({ type: 'varchar', length: 150 })
   name: string;
@@ -32,7 +36,7 @@ export class CategoryEditionOrmEntity {
   @Column({ name: 'end_date', type: 'date', nullable: true })
   endDate: Date;
 
-  @Column({ type: 'enum', enum: EditionStatus, default: EditionStatus.PENDING })
+  @Column({ type: 'enum', enum: EditionStatus, default: EditionStatus.IN_PROGRESS })
   status: EditionStatus;
 
   @Column({ name: 'min_players_per_team', type: 'int', default: 7 })

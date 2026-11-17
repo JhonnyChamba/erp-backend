@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsDateString,
   IsEnum,
   IsInt,
@@ -7,13 +8,65 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { EditionStatus } from '../../../common/enum/campeonato.enum';
 
-export class CreateCategoryEditionDto {
+export class EditionCategoryClassificationItemDto {
+  @IsNotEmpty({ message: 'El ID de clasificación es obligatorio' })
+  @IsString()
+  playerClassificationId: string;
+
+  @IsNotEmpty({ message: 'La cantidad máxima de jugadores es obligatoria' })
+  @IsInt()
+  maxPlayers: number;
+
+  @IsOptional()
+  @IsInt()
+  maxInactivityMonths?: number;
+
+  @IsOptional()
+  @IsInt()
+  maxMonths?: number;
+}
+
+export class EditionCategoryDetailItemDto {
   @IsNotEmpty({ message: 'El ID de la categoría es obligatorio' })
   @IsString()
   categoryId: string;
+
+  @IsOptional()
+  @IsString()
+  categoryDescription?: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  registrationFee?: number;
+
+  @IsOptional()
+  @IsInt()
+  maxPlayers?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EditionCategoryClassificationItemDto)
+  classifications?: EditionCategoryClassificationItemDto[];
+}
+
+export class CreateCategoryEditionDto {
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
 
   @IsNotEmpty({ message: 'El nombre de la edición es obligatorio' })
   @IsString()
@@ -23,6 +76,12 @@ export class CreateCategoryEditionDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EditionCategoryDetailItemDto)
+  categoriesDetail?: EditionCategoryDetailItemDto[];
 
   @IsOptional()
   @IsDateString()
@@ -82,6 +141,12 @@ export class UpdateCategoryEditionDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EditionCategoryDetailItemDto)
+  categoriesDetail?: EditionCategoryDetailItemDto[];
 
   @IsOptional()
   @IsDateString()

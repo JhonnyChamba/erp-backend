@@ -14,12 +14,15 @@ export class TeamManagementOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'position_id', type: 'uuid' })
+  @Column({ name: 'position_id', type: 'uuid', nullable: true })
   positionId: string;
 
-  @ManyToOne(() => PositionOrmEntity, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => PositionOrmEntity, { nullable: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'position_id' })
   position: PositionOrmEntity;
+
+  @Column({ name: 'role_title', type: 'varchar', length: 100, nullable: true })
+  roleTitle: string;
 
   @Column({ name: 'team_id', type: 'uuid' })
   teamId: string;

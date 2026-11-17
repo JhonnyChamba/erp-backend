@@ -2,6 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { PlayerRegistrationStatus } from '../../common/enum/campeonato.enum';
 import { TeamRegistrationOrmEntity } from './team-registration.orm-entity';
 import { PlayerOrmEntity } from './player.orm-entity';
+import { PlayerClassificationOrmEntity } from './player-classification.orm-entity';
+import { StageOrmEntity } from './stage.orm-entity';
 
 @Entity('tab_campeonato_player_registrations')
 @Unique(['teamRegistrationId', 'playerId'])
@@ -28,6 +30,20 @@ export class PlayerRegistrationOrmEntity {
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })
   player: PlayerOrmEntity;
+
+  @Column({ name: 'stage_id', type: 'uuid', nullable: true })
+  stageId: string;
+
+  @ManyToOne(() => StageOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'stage_id' })
+  stage: StageOrmEntity;
+
+  @Column({ name: 'player_classification_id', type: 'uuid', nullable: true })
+  playerClassificationId: string;
+
+  @ManyToOne(() => PlayerClassificationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'player_classification_id' })
+  playerClassification: PlayerClassificationOrmEntity;
 
   @Column({ name: 'jersey_number', type: 'int' })
   jerseyNumber: number;

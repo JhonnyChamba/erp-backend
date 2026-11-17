@@ -37,7 +37,8 @@ export class PlayersService {
       .createQueryBuilder('p')
       .leftJoinAndSelect('p.demarcation', 'demarcation')
       .leftJoinAndSelect('p.currentTeam', 'currentTeam')
-      .leftJoinAndSelect('p.passOwnerTeam', 'passOwnerTeam');
+      .leftJoinAndSelect('p.passOwnerTeam', 'passOwnerTeam')
+      .leftJoinAndSelect('p.playerClassification', 'playerClassification');
 
     if (companyId) {
       qb.andWhere('(p.companyId = :companyId OR p.companyId IS NULL)', { companyId });
@@ -56,7 +57,7 @@ export class PlayersService {
   async get(id: string) {
     const item = await this.repo.findOne({
       where: { id },
-      relations: ['demarcation', 'currentTeam', 'passOwnerTeam'],
+      relations: ['demarcation', 'currentTeam', 'passOwnerTeam', 'playerClassification'],
     });
     if (!item) throw new NotFoundException('Jugador no encontrado');
     return item;

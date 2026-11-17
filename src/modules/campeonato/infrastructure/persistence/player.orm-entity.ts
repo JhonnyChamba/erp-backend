@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Gender, DominantFoot } from '../../common/enum/campeonato.enum';
 import { DemarcationOrmEntity } from './demarcation.orm-entity';
 import { TeamOrmEntity } from './team.orm-entity';
+import { PlayerClassificationOrmEntity } from './player-classification.orm-entity';
 
 @Entity('tab_campeonato_players')
 export class PlayerOrmEntity {
@@ -20,6 +21,13 @@ export class PlayerOrmEntity {
   @ManyToOne(() => DemarcationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'demarcation_id' })
   demarcation: DemarcationOrmEntity;
+
+  @Column({ name: 'player_classification_id', type: 'uuid', nullable: true })
+  playerClassificationId: string;
+
+  @ManyToOne(() => PlayerClassificationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'player_classification_id' })
+  playerClassification: PlayerClassificationOrmEntity;
 
   @Column({ name: 'current_team_id', type: 'uuid', nullable: true })
   currentTeamId: string;

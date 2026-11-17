@@ -8,9 +8,14 @@ import {
 } from 'class-validator';
 
 export class CreateTeamManagementDto {
-  @IsNotEmpty({ message: 'El ID del cargo es obligatorio' })
+  @IsOptional()
   @IsString()
-  positionId: string;
+  positionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  roleTitle?: string;
 
   @IsNotEmpty({ message: 'El ID del equipo es obligatorio' })
   @IsString()
@@ -64,6 +69,11 @@ export class UpdateTeamManagementDto {
   @IsOptional()
   @IsString()
   positionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  roleTitle?: string;
 
   @IsOptional()
   @IsString()

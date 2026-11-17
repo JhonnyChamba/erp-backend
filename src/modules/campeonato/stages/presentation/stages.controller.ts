@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Delete,
   Param,
   Body,
@@ -13,7 +14,12 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { StagesService } from '../application/stages.service';
-import { CreateStageDto, UpdateStageDto } from '../application/dto/stage.dto';
+import {
+  CreateStageDto,
+  UpdateStageDto,
+  CreateStagePlayerClassificationDto,
+  UpdateStagePlayerClassificationDto,
+} from '../application/dto/stage.dto';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('campeonato/stages')
@@ -46,8 +52,42 @@ export class StagesController {
     return this.service.update(id, dto, req.user);
   }
 
+  @Put(':id')
+  updatePut(@Param('id') id: string, @Body() dto: UpdateStageDto, @Req() req: any) {
+    return this.service.update(id, dto, req.user);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
+  }
+
+  // Endpoints para clasificaciones por etapa
+  @Get(':id/classifications')
+  listClassifications(@Param('id') id: string) {
+    return this.service.listClassifications(id);
+  }
+
+  @Post(':id/classifications')
+  addClassification(
+    @Param('id') id: string,
+    @Body() dto: CreateStagePlayerClassificationDto,
+    @Req() req: any,
+  ) {
+    return this.service.addClassification(id, dto, req.user, this.resolveCompanyId(req));
+  }
+
+  @Put('classifications/:classificationId')
+  updateClassification(
+    @Param('classificationId') classificationId: string,
+    @Body() dto: UpdateStagePlayerClassificationDto,
+    @Req() req: any,
+  ) {
+    return this.service.updateClassification(classificationId, dto, req.user);
+  }
+
+  @Delete('classifications/:classificationId')
+  removeClassification(@Param('classificationId') classificationId: string) {
+    return this.service.removeClassification(classificationId);
   }
 }

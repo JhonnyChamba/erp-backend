@@ -63,6 +63,10 @@ export class CreateStageDto {
   matchDurationMinutes?: number;
 
   @IsOptional()
+  @IsInt()
+  maxPlayersPerTeam?: number;
+
+  @IsOptional()
   @IsBoolean()
   allowExtraTime?: boolean;
 
@@ -125,10 +129,30 @@ export class UpdateStageDto {
   matchDurationMinutes?: number;
 
   @IsOptional()
+  @IsInt()
+  maxPlayersPerTeam?: number;
+
+  @IsOptional()
   @IsBoolean()
   allowExtraTime?: boolean;
 
   @IsOptional()
   @IsBoolean()
   allowPenalties?: boolean;
+}
+
+export class CreateStagePlayerClassificationDto {
+  @IsNotEmpty({ message: 'La clasificación de futbolista es obligatoria' })
+  @IsString()
+  playerClassificationId: string;
+
+  @IsNotEmpty({ message: 'La cantidad máxima permitida es obligatoria' })
+  @IsInt({ message: 'El cupo debe ser un número entero' })
+  maxPlayers: number;
+}
+
+export class UpdateStagePlayerClassificationDto {
+  @IsOptional()
+  @IsInt({ message: 'El cupo debe ser un número entero' })
+  maxPlayers?: number;
 }

@@ -26,7 +26,7 @@ export class TeamManagementsService {
       qb.andWhere('(tm.companyId = :companyId OR tm.companyId IS NULL)', { companyId });
     }
     if (query.search?.trim()) {
-      qb.andWhere('(LOWER(tm.name) LIKE :term OR LOWER(tm.lastName) LIKE :term OR LOWER(tm.identification) LIKE :term OR LOWER(team.name) LIKE :term)', {
+      qb.andWhere('(LOWER(tm.name) LIKE :term OR LOWER(tm.lastName) LIKE :term OR LOWER(tm.identification) LIKE :term OR LOWER(team.name) LIKE :term OR LOWER(tm.roleTitle) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,
       });
     }
@@ -34,6 +34,14 @@ export class TeamManagementsService {
     qb.orderBy('tm.createdAt', 'DESC').skip(skip).take(limit);
     const [data, total] = await qb.getManyAndCount();
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async listByTeam(teamId: string) {
+    return this.repo.find({
+      where: { teamId },
+      relations: ['position'],
+      order: { createdAt: 'ASC' },
+    });
   }
 
   async get(id: string) {

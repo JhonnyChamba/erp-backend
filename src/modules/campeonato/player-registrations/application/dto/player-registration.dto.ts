@@ -37,6 +37,14 @@ export class CreatePlayerRegistrationDto {
   isCaptain?: boolean;
 
   @IsOptional()
+  @IsString()
+  stageId?: string;
+
+  @IsOptional()
+  @IsString()
+  playerClassificationId?: string;
+
+  @IsOptional()
   @IsDateString()
   registrationDate?: string;
 }
@@ -66,6 +74,14 @@ export class UpdatePlayerRegistrationDto {
   @IsOptional()
   @IsBoolean()
   isCaptain?: boolean;
+
+  @IsOptional()
+  @IsString()
+  stageId?: string;
+
+  @IsOptional()
+  @IsString()
+  playerClassificationId?: string;
 
   @IsOptional()
   @IsDateString()

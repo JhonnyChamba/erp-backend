@@ -14,6 +14,8 @@ import { TournamentCommitteeOrmEntity } from './infrastructure/persistence/tourn
 import { TeamManagementOrmEntity } from './infrastructure/persistence/team-management.orm-entity';
 import { CategoryOrmEntity } from './infrastructure/persistence/category.orm-entity';
 import { CategoryEditionOrmEntity } from './infrastructure/persistence/category-edition.orm-entity';
+import { EditionCategoryDetailOrmEntity } from './infrastructure/persistence/edition-category-detail.orm-entity';
+import { EditionCategoryClassificationOrmEntity } from './infrastructure/persistence/edition-category-classification.orm-entity';
 import { StageOrmEntity } from './infrastructure/persistence/stage.orm-entity';
 import { ScenaryOrmEntity } from './infrastructure/persistence/scenary.orm-entity';
 import { TeamRegistrationOrmEntity } from './infrastructure/persistence/team-registration.orm-entity';
@@ -27,6 +29,8 @@ import { SanctionOrmEntity } from './infrastructure/persistence/sanction.orm-ent
 import { PaymentOrmEntity } from './infrastructure/persistence/payment.orm-entity';
 import { TeamCategoryHistoryOrmEntity } from './infrastructure/persistence/team-category-history.orm-entity';
 import { PlayerTransferOrmEntity } from './infrastructure/persistence/player-transfer.orm-entity';
+import { PlayerClassificationOrmEntity } from './infrastructure/persistence/player-classification.orm-entity';
+import { StagePlayerClassificationOrmEntity } from './infrastructure/persistence/stage-player-classification.orm-entity';
 
 // Controladores de cada apartado
 import { PositionsController } from './positions/presentation/positions.controller';
@@ -50,6 +54,7 @@ import { TournamentCommitteesController } from './committees/presentation/tourna
 import { TeamManagementsController } from './team-managements/presentation/team-managements.controller';
 import { TeamCategoryHistoryController } from './team-category-history/presentation/team-category-history.controller';
 import { PlayerTransfersController } from './player-transfers/presentation/player-transfers.controller';
+import { PlayerClassificationsController } from './player-classifications/presentation/player-classifications.controller';
 
 // Servicios de cada apartado
 import { PositionsService } from './positions/application/positions.service';
@@ -73,6 +78,7 @@ import { TournamentCommitteesService } from './committees/application/tournament
 import { TeamManagementsService } from './team-managements/application/team-managements.service';
 import { TeamCategoryHistoryService } from './team-category-history/application/team-category-history.service';
 import { PlayerTransfersService } from './player-transfers/application/player-transfers.service';
+import { PlayerClassificationsService } from './player-classifications/application/player-classifications.service';
 
 const entities = [
   PositionOrmEntity,
@@ -83,6 +89,8 @@ const entities = [
   TeamManagementOrmEntity,
   CategoryOrmEntity,
   CategoryEditionOrmEntity,
+  EditionCategoryDetailOrmEntity,
+  EditionCategoryClassificationOrmEntity,
   StageOrmEntity,
   ScenaryOrmEntity,
   TeamRegistrationOrmEntity,
@@ -96,6 +104,8 @@ const entities = [
   PaymentOrmEntity,
   TeamCategoryHistoryOrmEntity,
   PlayerTransferOrmEntity,
+  PlayerClassificationOrmEntity,
+  StagePlayerClassificationOrmEntity,
   ModuleOrmEntity,
   subModulesOrmEntity,
 ];
@@ -122,6 +132,7 @@ const controllers = [
   TeamManagementsController,
   TeamCategoryHistoryController,
   PlayerTransfersController,
+  PlayerClassificationsController,
 ];
 
 const providers = [
@@ -146,6 +157,7 @@ const providers = [
   TeamManagementsService,
   TeamCategoryHistoryService,
   PlayerTransfersService,
+  PlayerClassificationsService,
 ];
 
 @Module({
@@ -200,6 +212,7 @@ export class CampeonatoModule implements OnModuleInit {
         { code: 'SUB-CAMP-016', icon: 'solar:clock-circle-bold-duotone', desc: 'Días y Horarios de Juego', url: '/campeonato/horarios', order: 16 },
         { code: 'SUB-CAMP-017', icon: 'solar:ranking-bold-duotone', desc: 'Tabla de Posiciones & Goleadores', url: '/campeonato/posiciones', order: 17 },
         { code: 'SUB-CAMP-018', icon: 'solar:settings-bold-duotone', desc: 'Configuraciones', url: '/campeonato/configuracion', order: 18 },
+        { code: 'SUB-CAMP-019', icon: 'solar:user-check-bold-duotone', desc: 'Clasificación de Futbolistas', url: '/campeonato/clasificaciones', order: 19 },
       ];
 
       for (const sm of submodules) {

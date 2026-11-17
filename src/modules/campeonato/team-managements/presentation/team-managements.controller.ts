@@ -31,6 +31,11 @@ export class TeamManagementsController {
     return this.service.list(this.resolveCompanyId(req), query);
   }
 
+  @Get('by-team/:teamId')
+  listByTeam(@Param('teamId') teamId: string) {
+    return this.service.listByTeam(teamId);
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.service.get(id);

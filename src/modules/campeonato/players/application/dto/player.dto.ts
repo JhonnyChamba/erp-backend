@@ -16,6 +16,10 @@ export class CreatePlayerDto {
   @IsString()
   demarcationId?: string;
 
+  @IsOptional()
+  @IsString()
+  playerClassificationId?: string;
+
   @IsNotEmpty({ message: 'El nombre es obligatorio' })
   @IsString()
   @MaxLength(100)
@@ -110,6 +114,10 @@ export class UpdatePlayerDto {
   @IsOptional()
   @IsString()
   demarcationId?: string;
+
+  @IsOptional()
+  @IsString()
+  playerClassificationId?: string;
 
   @IsOptional()
   @IsString()
