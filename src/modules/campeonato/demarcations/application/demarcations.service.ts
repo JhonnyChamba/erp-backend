@@ -17,9 +17,7 @@ export class DemarcationsService {
     const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('d');
-    if (companyId) {
-      qb.andWhere('(d.companyId = :companyId OR d.companyId IS NULL)', { companyId });
-    }
+    // Catálogo global
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(d.name) LIKE :term OR LOWER(d.code) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,
@@ -37,10 +35,10 @@ export class DemarcationsService {
     return item;
   }
 
-  async create(dto: CreateDemarcationDto, user: any, companyId: number) {
+  async create(dto: CreateDemarcationDto, user: any, companyId?: number) {
     const item = this.repo.create({
       ...dto,
-      companyId,
+      companyId: undefined, // Catálogo global
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
       createdName: user?.user_name || user?.name,
     });

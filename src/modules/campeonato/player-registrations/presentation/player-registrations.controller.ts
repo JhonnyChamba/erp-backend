@@ -13,7 +13,12 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { PlayerRegistrationsService } from '../application/player-registrations.service';
-import { CreatePlayerRegistrationDto, UpdatePlayerRegistrationDto } from '../application/dto/player-registration.dto';
+import {
+  CreatePlayerRegistrationDto,
+  UpdatePlayerRegistrationDto,
+  MassPlayerRegistrationDto,
+  UpdatePlayerRegistrationStatusDto,
+} from '../application/dto/player-registration.dto';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('campeonato/player-registrations')
@@ -31,6 +36,11 @@ export class PlayerRegistrationsController {
     return this.service.list(this.resolveCompanyId(req), query);
   }
 
+  @Get('roster/:teamRegistrationId')
+  getRoster(@Param('teamRegistrationId') teamRegistrationId: string) {
+    return this.service.getRosterByTeamRegistration(teamRegistrationId);
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.service.get(id);
@@ -39,6 +49,20 @@ export class PlayerRegistrationsController {
   @Post()
   create(@Body() dto: CreatePlayerRegistrationDto, @Req() req: any) {
     return this.service.create(dto, req.user, this.resolveCompanyId(req));
+  }
+
+  @Post('mass')
+  createMass(@Body() dto: MassPlayerRegistrationDto, @Req() req: any) {
+    return this.service.createMass(dto, req.user, this.resolveCompanyId(req));
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdatePlayerRegistrationStatusDto,
+    @Req() req: any,
+  ) {
+    return this.service.updateStatus(id, dto, req.user);
   }
 
   @Patch(':id')

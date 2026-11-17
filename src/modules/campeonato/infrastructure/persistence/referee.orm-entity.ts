@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { RefereeGuildOrmEntity } from './referee-guild.orm-entity';
 
 @Entity('tab_campeonato_referees')
 export class RefereeOrmEntity {
@@ -10,6 +11,13 @@ export class RefereeOrmEntity {
 
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
+
+  @Column({ name: 'guild_id', type: 'uuid', nullable: true })
+  guildId: string;
+
+  @ManyToOne(() => RefereeGuildOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'guild_id' })
+  guild?: RefereeGuildOrmEntity;
 
   @Column({ type: 'varchar', length: 100 })
   name: string;

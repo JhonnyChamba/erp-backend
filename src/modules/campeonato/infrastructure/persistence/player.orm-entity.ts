@@ -58,8 +58,17 @@ export class PlayerOrmEntity {
   @Column({ name: 'is_foreigner', type: 'boolean', default: false })
   isForeigner: boolean;
 
+  @Column({ name: 'code', type: 'varchar', length: 50, nullable: true })
+  code: string;
+
   @Column({ name: 'birth_date', type: 'date', nullable: true })
   birthDate: Date;
+
+  @Column({ name: 'age_years', type: 'int', nullable: true })
+  ageYears: number;
+
+  @Column({ name: 'age_months', type: 'int', nullable: true })
+  ageMonths: number;
 
   @Column({ type: 'enum', enum: Gender, default: Gender.MALE })
   gender: Gender;

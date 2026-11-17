@@ -21,6 +21,26 @@ export class CreateScenaryDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(250)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  latitude?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  longitude?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  cardinalPoints?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(50)
   code?: string;
 
@@ -51,6 +71,26 @@ export class UpdateScenaryDto {
   @IsString()
   @MaxLength(250)
   location?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  latitude?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  longitude?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  cardinalPoints?: string;
 
   @IsOptional()
   @IsString()

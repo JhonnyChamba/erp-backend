@@ -57,6 +57,9 @@ export class PlayerRegistrationOrmEntity {
   @Column({ name: 'is_captain', type: 'boolean', default: false })
   isCaptain: boolean;
 
+  @Column({ type: 'jsonb', nullable: true, default: '[]' })
+  documents: any[];
+
   @Column({ name: 'registration_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   registrationDate: Date;
 

@@ -18,6 +18,18 @@ export class ScenaryOrmEntity {
   @Column({ type: 'varchar', length: 250, nullable: true })
   location: string;
 
+  @Column({ name: 'address', type: 'varchar', length: 250, nullable: true })
+  address: string;
+
+  @Column({ name: 'latitude', type: 'varchar', length: 50, nullable: true })
+  latitude: string;
+
+  @Column({ name: 'longitude', type: 'varchar', length: 50, nullable: true })
+  longitude: string;
+
+  @Column({ name: 'cardinal_points', type: 'varchar', length: 150, nullable: true })
+  cardinalPoints: string;
+
   @Column({ type: 'varchar', length: 50, nullable: true })
   code: string;
 

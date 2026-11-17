@@ -85,11 +85,23 @@ export class CategoryEditionsService {
       status: dto.status || EditionStatus.IN_PROGRESS,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      matchDurationMinutes: dto.matchDurationMinutes ? Number(dto.matchDurationMinutes) : 60,
+      breakDurationMinutes: dto.breakDurationMinutes !== undefined ? Number(dto.breakDurationMinutes) : 10,
+      waitBetweenMatchesMinutes: dto.waitBetweenMatchesMinutes !== undefined ? Number(dto.waitBetweenMatchesMinutes) : 10,
+      availableScenaryIds: Array.isArray(dto.availableScenaryIds) ? dto.availableScenaryIds : [],
       companyId,
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
       createdName: user?.user_name || user?.name,
     });
     const saved = await this.repo.save(item);
+
+    if (Array.isArray(dto.availableScenaryIds) && dto.availableScenaryIds.length > 0) {
+      for (const scId of dto.availableScenaryIds) {
+        if (scId) {
+          await this.repo.query('INSERT INTO tab_campeonato_edition_scenaries (edition_id, scenary_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [saved.id, scId]);
+        }
+      }
+    }
 
     if (categoriesDetail && categoriesDetail.length > 0) {
       for (const det of categoriesDetail) {
@@ -139,10 +151,25 @@ export class CategoryEditionsService {
     Object.assign(item, editionData, {
       startDate: dto.startDate ? new Date(dto.startDate) : item.startDate,
       endDate: dto.endDate ? new Date(dto.endDate) : item.endDate,
+      matchDurationMinutes: dto.matchDurationMinutes !== undefined ? Number(dto.matchDurationMinutes) : item.matchDurationMinutes,
+      breakDurationMinutes: dto.breakDurationMinutes !== undefined ? Number(dto.breakDurationMinutes) : item.breakDurationMinutes,
+      waitBetweenMatchesMinutes: dto.waitBetweenMatchesMinutes !== undefined ? Number(dto.waitBetweenMatchesMinutes) : item.waitBetweenMatchesMinutes,
+      availableScenaryIds: dto.availableScenaryIds !== undefined ? (Array.isArray(dto.availableScenaryIds) ? dto.availableScenaryIds : []) : item.availableScenaryIds,
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
     });
     await this.repo.save(item);
+
+    if (dto.availableScenaryIds !== undefined) {
+      await this.repo.query('DELETE FROM tab_campeonato_edition_scenaries WHERE edition_id = $1', [id]);
+      if (Array.isArray(dto.availableScenaryIds)) {
+        for (const scId of dto.availableScenaryIds) {
+          if (scId) {
+            await this.repo.query('INSERT INTO tab_campeonato_edition_scenaries (edition_id, scenary_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, scId]);
+          }
+        }
+      }
+    }
 
     if (categoriesDetail !== undefined) {
       // Eliminar detalles previos y clasificaciones asociadas

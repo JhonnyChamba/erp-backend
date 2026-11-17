@@ -38,8 +38,33 @@ export class CategoriesService {
   }
 
   async create(dto: CreateCategoryDto, user: any, companyId: number) {
+    let code = dto.code?.trim();
+    if (!code || code === 'AUTO') {
+      const qb = this.repo
+        .createQueryBuilder('c')
+        .where('c.companyId = :companyId', { companyId })
+        .andWhere("c.code LIKE 'CAT-%'")
+        .orderBy('c.createdAt', 'DESC');
+      const latest = await qb.getOne();
+      let nextNum = 1;
+      if (latest && latest.code) {
+        const match = latest.code.match(/CAT-(\d+)/i);
+        if (match) {
+          nextNum = parseInt(match[1], 10) + 1;
+        } else {
+          const totalCount = await this.repo.count({ where: { companyId } });
+          nextNum = totalCount + 1;
+        }
+      } else {
+        const totalCount = await this.repo.count({ where: { companyId } });
+        nextNum = totalCount + 1;
+      }
+      code = `CAT-${String(nextNum).padStart(3, '0')}`;
+    }
+
     const item = this.repo.create({
       ...dto,
+      code,
       companyId,
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
       createdName: user?.user_name || user?.name,

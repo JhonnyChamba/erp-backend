@@ -31,6 +31,13 @@ import { TeamCategoryHistoryOrmEntity } from './infrastructure/persistence/team-
 import { PlayerTransferOrmEntity } from './infrastructure/persistence/player-transfer.orm-entity';
 import { PlayerClassificationOrmEntity } from './infrastructure/persistence/player-classification.orm-entity';
 import { StagePlayerClassificationOrmEntity } from './infrastructure/persistence/stage-player-classification.orm-entity';
+import { TournamentTransferConfigOrmEntity } from './infrastructure/persistence/tournament-transfer-config.orm-entity';
+import { PlayerTransferApprovalOrmEntity } from './infrastructure/persistence/player-transfer-approval.orm-entity';
+import { PlayerRegistrationHistoryOrmEntity } from './infrastructure/persistence/player-registration-history.orm-entity';
+import { CompanyPlayerOrmEntity } from './infrastructure/persistence/company-player.orm-entity';
+import { PlayerTransactionOrmEntity } from './infrastructure/persistence/player-transaction.orm-entity';
+import { RefereeGuildOrmEntity } from './infrastructure/persistence/referee-guild.orm-entity';
+import { CompanyRefereeOrmEntity } from './infrastructure/persistence/company-referee.orm-entity';
 
 // Controladores de cada apartado
 import { PositionsController } from './positions/presentation/positions.controller';
@@ -44,6 +51,7 @@ import { ScenariesController } from './scenaries/presentation/scenaries.controll
 import { TeamRegistrationsController } from './team-registrations/presentation/team-registrations.controller';
 import { PlayerRegistrationsController } from './player-registrations/presentation/player-registrations.controller';
 import { RefereesController } from './referees/presentation/referees.controller';
+import { RefereeGuildsController } from './referees/presentation/referee-guilds.controller';
 import { VocalsController } from './vocals/presentation/vocals.controller';
 import { MatchesController } from './matches/presentation/matches.controller';
 import { MatchLineupsController } from './match-lineups/presentation/match-lineups.controller';
@@ -55,6 +63,7 @@ import { TeamManagementsController } from './team-managements/presentation/team-
 import { TeamCategoryHistoryController } from './team-category-history/presentation/team-category-history.controller';
 import { PlayerTransfersController } from './player-transfers/presentation/player-transfers.controller';
 import { PlayerClassificationsController } from './player-classifications/presentation/player-classifications.controller';
+import { TournamentTransferConfigsController } from './tournament-transfer-configs/presentation/tournament-transfer-configs.controller';
 
 // Servicios de cada apartado
 import { PositionsService } from './positions/application/positions.service';
@@ -68,6 +77,7 @@ import { ScenariesService } from './scenaries/application/scenaries.service';
 import { TeamRegistrationsService } from './team-registrations/application/team-registrations.service';
 import { PlayerRegistrationsService } from './player-registrations/application/player-registrations.service';
 import { RefereesService } from './referees/application/referees.service';
+import { RefereeGuildsService } from './referees/application/referee-guilds.service';
 import { VocalsService } from './vocals/application/vocals.service';
 import { MatchesService } from './matches/application/matches.service';
 import { MatchLineupsService } from './match-lineups/application/match-lineups.service';
@@ -79,6 +89,7 @@ import { TeamManagementsService } from './team-managements/application/team-mana
 import { TeamCategoryHistoryService } from './team-category-history/application/team-category-history.service';
 import { PlayerTransfersService } from './player-transfers/application/player-transfers.service';
 import { PlayerClassificationsService } from './player-classifications/application/player-classifications.service';
+import { TournamentTransferConfigsService } from './tournament-transfer-configs/application/tournament-transfer-configs.service';
 
 const entities = [
   PositionOrmEntity,
@@ -106,6 +117,13 @@ const entities = [
   PlayerTransferOrmEntity,
   PlayerClassificationOrmEntity,
   StagePlayerClassificationOrmEntity,
+  TournamentTransferConfigOrmEntity,
+  PlayerTransferApprovalOrmEntity,
+  PlayerRegistrationHistoryOrmEntity,
+  CompanyPlayerOrmEntity,
+  PlayerTransactionOrmEntity,
+  RefereeGuildOrmEntity,
+  CompanyRefereeOrmEntity,
   ModuleOrmEntity,
   subModulesOrmEntity,
 ];
@@ -122,6 +140,7 @@ const controllers = [
   TeamRegistrationsController,
   PlayerRegistrationsController,
   RefereesController,
+  RefereeGuildsController,
   VocalsController,
   MatchesController,
   MatchLineupsController,
@@ -133,6 +152,7 @@ const controllers = [
   TeamCategoryHistoryController,
   PlayerTransfersController,
   PlayerClassificationsController,
+  TournamentTransferConfigsController,
 ];
 
 const providers = [
@@ -147,6 +167,7 @@ const providers = [
   TeamRegistrationsService,
   PlayerRegistrationsService,
   RefereesService,
+  RefereeGuildsService,
   VocalsService,
   MatchesService,
   MatchLineupsService,
@@ -158,6 +179,7 @@ const providers = [
   TeamCategoryHistoryService,
   PlayerTransfersService,
   PlayerClassificationsService,
+  TournamentTransferConfigsService,
 ];
 
 @Module({

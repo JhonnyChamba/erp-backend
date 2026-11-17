@@ -40,6 +40,7 @@ export class ScenariesService {
   async create(dto: CreateScenaryDto, user: any, companyId: number) {
     const item = this.repo.create({
       ...dto,
+      isActive: dto.isActive !== undefined ? dto.isActive : true,
       companyId,
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
       createdName: user?.user_name || user?.name,

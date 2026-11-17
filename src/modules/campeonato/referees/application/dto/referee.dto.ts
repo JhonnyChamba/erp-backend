@@ -25,6 +25,10 @@ export class CreateRefereeDto {
 
   @IsOptional()
   @IsString()
+  guildId?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(50)
   phone?: string;
 
@@ -58,6 +62,10 @@ export class UpdateRefereeDto {
   @IsString()
   @MaxLength(50)
   identification?: string;
+
+  @IsOptional()
+  @IsString()
+  guildId?: string;
 
   @IsOptional()
   @IsString()

@@ -14,6 +14,19 @@ import { Gender, DominantFoot } from '../../../common/enum/campeonato.enum';
 export class CreatePlayerDto {
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  code?: string;
+
+  @IsOptional()
+  @IsInt()
+  ageYears?: number;
+
+  @IsOptional()
+  @IsInt()
+  ageMonths?: number;
+
+  @IsOptional()
+  @IsString()
   demarcationId?: string;
 
   @IsOptional()
@@ -111,6 +124,19 @@ export class CreatePlayerDto {
 }
 
 export class UpdatePlayerDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  code?: string;
+
+  @IsOptional()
+  @IsInt()
+  ageYears?: number;
+
+  @IsOptional()
+  @IsInt()
+  ageMonths?: number;
+
   @IsOptional()
   @IsString()
   demarcationId?: string;

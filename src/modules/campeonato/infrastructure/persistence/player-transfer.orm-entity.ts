@@ -1,6 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { PlayerOrmEntity } from './player.orm-entity';
 import { TeamOrmEntity } from './team.orm-entity';
+import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
+import { PlayerRegistrationOrmEntity } from './player-registration.orm-entity';
+import { StageOrmEntity } from './stage.orm-entity';
+import { PlayerTransferApprovalOrmEntity } from './player-transfer-approval.orm-entity';
+import { TransferStatus } from '../../common/enum/campeonato.enum';
 
 @Entity('tab_campeonato_player_transfers')
 export class PlayerTransferOrmEntity {
@@ -9,6 +14,13 @@ export class PlayerTransferOrmEntity {
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
+
+  @Column({ name: 'edition_id', type: 'uuid', nullable: true })
+  editionId: string;
+
+  @ManyToOne(() => CategoryEditionOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'edition_id' })
+  edition: CategoryEditionOrmEntity;
 
   @Column({ name: 'player_id', type: 'uuid' })
   playerId: string;
@@ -24,12 +36,42 @@ export class PlayerTransferOrmEntity {
   @JoinColumn({ name: 'origin_team_id' })
   originTeam: TeamOrmEntity;
 
+  @Column({ name: 'origin_registration_id', type: 'uuid', nullable: true })
+  originRegistrationId: string;
+
+  @ManyToOne(() => PlayerRegistrationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'origin_registration_id' })
+  originRegistration: PlayerRegistrationOrmEntity;
+
   @Column({ name: 'destination_team_id', type: 'uuid' })
   destinationTeamId: string;
 
   @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'destination_team_id' })
   destinationTeam: TeamOrmEntity;
+
+  @Column({ name: 'destination_registration_id', type: 'uuid', nullable: true })
+  destinationRegistrationId: string;
+
+  @ManyToOne(() => PlayerRegistrationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'destination_registration_id' })
+  destinationRegistration: PlayerRegistrationOrmEntity;
+
+  @Column({ name: 'stage_id', type: 'uuid', nullable: true })
+  stageId: string;
+
+  @ManyToOne(() => StageOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'stage_id' })
+  stage: StageOrmEntity;
+
+  @Column({ type: 'varchar', length: 50, default: TransferStatus.EXECUTED })
+  status: TransferStatus;
+
+  @Column({ name: 'request_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  requestDate: Date;
+
+  @Column({ name: 'execution_date', type: 'timestamp', nullable: true })
+  executionDate: Date;
 
   @Column({ name: 'season_year', type: 'varchar', length: 20, default: '2026' })
   seasonYear: string;
@@ -53,8 +95,17 @@ export class PlayerTransferOrmEntity {
   @Column({ name: 'transfer_date', type: 'date', nullable: true })
   transferDate: Date;
 
+  @Column({ name: 'rejection_reason', type: 'text', nullable: true })
+  rejectionReason: string;
+
+  @Column({ type: 'jsonb', nullable: true, default: '[]' })
+  documents: any[];
+
   @Column({ type: 'text', nullable: true })
   observations: string;
+
+  @OneToMany(() => PlayerTransferApprovalOrmEntity, (a) => a.transfer)
+  approvals: PlayerTransferApprovalOrmEntity[];
 
   @Column({ name: 'created_name', type: 'varchar', nullable: true })
   createdName: string;

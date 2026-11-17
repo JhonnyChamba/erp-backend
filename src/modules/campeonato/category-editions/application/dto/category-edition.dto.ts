@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
@@ -126,6 +127,26 @@ export class CreateCategoryEditionDto {
   @IsOptional()
   @IsInt()
   pointsLoss?: number;
+
+  @IsOptional()
+  @IsInt()
+  matchDurationMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  breakDurationMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  waitBetweenMatchesMinutes?: number;
+
+  @IsOptional()
+  @IsArray()
+  availableScenaryIds?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  identifyByPlayerCode?: boolean;
 }
 
 export class UpdateCategoryEditionDto {
@@ -191,4 +212,24 @@ export class UpdateCategoryEditionDto {
   @IsOptional()
   @IsInt()
   pointsLoss?: number;
+
+  @IsOptional()
+  @IsInt()
+  matchDurationMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  breakDurationMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  waitBetweenMatchesMinutes?: number;
+
+  @IsOptional()
+  @IsArray()
+  availableScenaryIds?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  identifyByPlayerCode?: boolean;
 }

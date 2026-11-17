@@ -26,6 +26,11 @@ export class RefereesController {
     return !Number.isNaN(candidate) && candidate > 0 ? candidate : 1;
   }
 
+  @Get('find-global/:identification')
+  findGlobal(@Param('identification') identification: string, @Req() req: any) {
+    return this.service.findGlobalByIdentification(identification, this.resolveCompanyId(req));
+  }
+
   @Get()
   list(@Query() query: any, @Req() req: any) {
     return this.service.list(this.resolveCompanyId(req), query);
@@ -47,7 +52,7 @@ export class RefereesController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Query('global') global: string, @Req() req: any) {
+    return this.service.remove(id, this.resolveCompanyId(req), global === 'true');
   }
 }

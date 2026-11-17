@@ -63,6 +63,21 @@ export class CategoryEditionOrmEntity {
   @Column({ name: 'points_loss', type: 'int', default: 0 })
   pointsLoss: number;
 
+  @Column({ name: 'match_duration_minutes', type: 'int', default: 60 })
+  matchDurationMinutes: number;
+
+  @Column({ name: 'break_duration_minutes', type: 'int', default: 10 })
+  breakDurationMinutes: number;
+
+  @Column({ name: 'wait_between_matches_minutes', type: 'int', default: 10 })
+  waitBetweenMatchesMinutes: number;
+
+  @Column({ name: 'available_scenary_ids', type: 'jsonb', nullable: true, default: () => "'[]'" })
+  availableScenaryIds: string[];
+
+  @Column({ name: 'identify_by_player_code', type: 'boolean', default: false })
+  identifyByPlayerCode: boolean;
+
   @Column({ name: 'created_name', type: 'varchar', nullable: true })
   createdName: string;
 

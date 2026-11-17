@@ -95,9 +95,44 @@ export enum RegistrationStatus {
 
 export enum PlayerRegistrationStatus {
   ELIGIBLE = 'ELIGIBLE',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
   INELIGIBLE = 'INELIGIBLE',
   SUSPENDED = 'SUSPENDED',
   TRANSFERRED = 'TRANSFERRED',
+  FINALIZED_BY_TRANSFER = 'FINALIZED_BY_TRANSFER',
+}
+
+export enum TransferStatus {
+  DRAFT = 'DRAFT',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  EXECUTED = 'EXECUTED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum TransferApprovalRole {
+  ORIGIN_TEAM = 'ORIGIN_TEAM',
+  DESTINATION_TEAM = 'DESTINATION_TEAM',
+  ADMIN = 'ADMIN',
+}
+
+export enum TransferApprovalStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export enum PlayerRegistrationHistoryAction {
+  CREATED = 'CREATED',
+  MASS_CREATED = 'MASS_CREATED',
+  STATUS_CHANGE = 'STATUS_CHANGE',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  TRANSFERRED = 'TRANSFERRED',
+  FINALIZED = 'FINALIZED',
+  SUSPENDED = 'SUSPENDED',
+  REACTIVATED = 'REACTIVATED',
 }
 
 export enum MatchEventType {

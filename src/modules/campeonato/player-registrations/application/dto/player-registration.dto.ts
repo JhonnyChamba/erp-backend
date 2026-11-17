@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -7,7 +8,9 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PlayerRegistrationStatus } from '../../../common/enum/campeonato.enum';
 
 export class CreatePlayerRegistrationDto {
@@ -43,6 +46,10 @@ export class CreatePlayerRegistrationDto {
   @IsOptional()
   @IsString()
   playerClassificationId?: string;
+
+  @IsOptional()
+  @IsArray()
+  documents?: any[];
 
   @IsOptional()
   @IsDateString()
@@ -84,6 +91,62 @@ export class UpdatePlayerRegistrationDto {
   playerClassificationId?: string;
 
   @IsOptional()
+  @IsArray()
+  documents?: any[];
+
+  @IsOptional()
   @IsDateString()
   registrationDate?: string;
+}
+
+export class MassPlayerRegistrationItemDto {
+  @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
+  @IsString()
+  playerId: string;
+
+  @IsNotEmpty({ message: 'El número de camiseta es obligatorio' })
+  @IsInt()
+  jerseyNumber: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  carnetCode?: string;
+
+  @IsOptional()
+  @IsString()
+  playerClassificationId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isCaptain?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  documents?: any[];
+}
+
+export class MassPlayerRegistrationDto {
+  @IsNotEmpty({ message: 'El ID de la inscripción de equipo es obligatorio' })
+  @IsString()
+  teamRegistrationId: string;
+
+  @IsOptional()
+  @IsString()
+  stageId?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MassPlayerRegistrationItemDto)
+  registrations: MassPlayerRegistrationItemDto[];
+}
+
+export class UpdatePlayerRegistrationStatusDto {
+  @IsNotEmpty({ message: 'El nuevo estado es obligatorio' })
+  @IsEnum(PlayerRegistrationStatus)
+  status: PlayerRegistrationStatus;
+
+  @IsOptional()
+  @IsString()
+  comments?: string;
 }

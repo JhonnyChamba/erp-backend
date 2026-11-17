@@ -26,9 +26,7 @@ export class PlayerClassificationsService {
     const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('pc');
-    if (companyId) {
-      qb.andWhere('(pc.companyId = :companyId OR pc.companyId IS NULL)', { companyId });
-    }
+    // Catálogo global: no se filtra restrictivamente por empresa
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(pc.description) LIKE :term OR LOWER(pc.code) LIKE :term OR LOWER(pc.observation) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,
@@ -46,25 +44,24 @@ export class PlayerClassificationsService {
     return item;
   }
 
-  async create(dto: CreatePlayerClassificationDto, user: any, companyId: number) {
-    // Validar descripción no duplicada para la misma empresa
-    const existing = await this.repo.findOne({
-      where: {
-        description: dto.description.trim(),
-        companyId: companyId || undefined,
-      },
-    });
+  async create(dto: CreatePlayerClassificationDto, user: any, companyId?: number) {
+    const cleanDesc = dto.description.trim();
+    // Validar descripción global no duplicada
+    const existing = await this.repo.createQueryBuilder('pc')
+      .where('LOWER(pc.description) = LOWER(:desc)', { desc: cleanDesc })
+      .getOne();
+
     if (existing) {
-      throw new BadRequestException(`Ya existe una clasificación con la descripción "${dto.description}".`);
+      throw new BadRequestException(`Ya existe una clasificación con la descripción "${cleanDesc}".`);
     }
 
     const item = this.repo.create({
       ...dto,
-      description: dto.description.trim(),
+      description: cleanDesc,
       code: dto.code ? dto.code.trim().toUpperCase() : undefined,
       observation: dto.observation?.trim() || undefined,
       isActive: dto.isActive !== undefined ? dto.isActive : true,
-      companyId,
+      companyId: undefined, // Catálogo Global
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
       createdName: user?.user_name || user?.name,
     });

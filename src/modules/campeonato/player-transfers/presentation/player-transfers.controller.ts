@@ -5,13 +5,18 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { PlayerTransfersService } from '../application/player-transfers.service';
-import { CreatePlayerTransferDto } from '../application/dto/player-transfer.dto';
+import {
+  CreatePlayerTransferDto,
+  ApproveTransferDto,
+  FilterTransferQueryDto,
+} from '../application/dto/player-transfer.dto';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('campeonato/player-transfers')
@@ -24,16 +29,46 @@ export class PlayerTransfersController {
     return isNaN(candidate) || candidate <= 0 ? 1 : candidate;
   }
 
-  @Get(':playerId')
+  @Get()
+  list(@Query() query: FilterTransferQueryDto, @Req() req: any) {
+    const companyId = this.resolveCompanyId(req);
+    return this.service.list(companyId, query);
+  }
+
+  @Get('sports-history/:playerId')
+  getSportsHistory(@Param('playerId') playerId: string) {
+    return this.service.getSportsHistory(playerId);
+  }
+
+  @Get('player/:playerId')
   listByPlayer(@Param('playerId') playerId: string, @Req() req: any) {
     const companyId = this.resolveCompanyId(req);
     return this.service.listByPlayer(playerId, companyId);
   }
 
+  @Get(':id')
+  get(@Param('id') id: string) {
+    return this.service.get(id);
+  }
+
   @Post()
   create(@Body() dto: CreatePlayerTransferDto, @Req() req: any) {
     const companyId = this.resolveCompanyId(req);
-    return this.service.create(dto, req.user, companyId);
+    return this.service.createRequest(dto, req.user, companyId);
+  }
+
+  @Post(':id/approve')
+  approve(
+    @Param('id') id: string,
+    @Body() dto: ApproveTransferDto,
+    @Req() req: any,
+  ) {
+    return this.service.approve(id, dto, req.user);
+  }
+
+  @Post(':id/execute')
+  execute(@Param('id') id: string, @Req() req: any) {
+    return this.service.execute(id, req.user);
   }
 
   @Delete(':id')

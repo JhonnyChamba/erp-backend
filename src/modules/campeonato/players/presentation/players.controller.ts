@@ -31,6 +31,11 @@ export class PlayersController {
     return this.service.list(this.resolveCompanyId(req), query);
   }
 
+  @Get('find-global/:identification')
+  findGlobal(@Param('identification') identification: string, @Req() req: any) {
+    return this.service.findGlobalByIdentification(identification, this.resolveCompanyId(req));
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.service.get(id);
