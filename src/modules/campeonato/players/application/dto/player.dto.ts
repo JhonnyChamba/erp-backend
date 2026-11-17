@@ -92,6 +92,18 @@ export class CreatePlayerDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  currentTeamId?: string;
+
+  @IsOptional()
+  @IsString()
+  passOwnerType?: string; // 'PLAYER' | 'TEAM'
+
+  @IsOptional()
+  @IsString()
+  passOwnerTeamId?: string;
 }
 
 export class UpdatePlayerDto {
@@ -175,4 +187,16 @@ export class UpdatePlayerDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  currentTeamId?: string;
+
+  @IsOptional()
+  @IsString()
+  passOwnerType?: string; // 'PLAYER' | 'TEAM'
+
+  @IsOptional()
+  @IsString()
+  passOwnerTeamId?: string;
 }

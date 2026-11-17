@@ -160,6 +160,20 @@ export class StorageService {
 		return { url };
 	}
 
+	async uploadTeamLogo(companyId: number, file: any): Promise<{ url: string }> {
+		const ext = this.getExtension(file.mimetype, file.originalname);
+		const storagePath = `teams/${companyId}/${Date.now()}_logo${ext}`;
+		const url = await this.uploadRaw(file, storagePath);
+		return { url };
+	}
+
+	async uploadPlayerPhoto(companyId: number, file: any): Promise<{ url: string }> {
+		const ext = this.getExtension(file.mimetype, file.originalname);
+		const storagePath = `players/${companyId}/${Date.now()}_photo${ext}`;
+		const url = await this.uploadRaw(file, storagePath);
+		return { url };
+	}
+
 	getLocalFilePath(subPath: string): string | null {
 		const fullPath = path.resolve(this.localUploadsRoot, subPath);
 		// Prevenir directory traversal

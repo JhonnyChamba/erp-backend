@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { CategoryOrmEntity } from './category.orm-entity';
 
 @Entity('tab_campeonato_teams')
 export class TeamOrmEntity {
@@ -10,6 +11,16 @@ export class TeamOrmEntity {
 
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
+
+  @Column({ name: 'current_category_id', type: 'uuid', nullable: true })
+  currentCategoryId: string;
+
+  @ManyToOne(() => CategoryOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'current_category_id' })
+  currentCategory: CategoryOrmEntity;
+
+  @Column({ name: 'current_season_year', type: 'varchar', length: 20, default: '2026', nullable: true })
+  currentSeasonYear: string;
 
   @Column({ type: 'varchar', length: 150 })
   name: string;

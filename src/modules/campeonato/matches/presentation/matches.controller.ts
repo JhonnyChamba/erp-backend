@@ -31,6 +31,16 @@ export class MatchesController {
     return this.service.list(this.resolveCompanyId(req), query);
   }
 
+  @Get('standings')
+  getStandings(@Query() query: any, @Req() req: any) {
+    return this.service.getStandings(this.resolveCompanyId(req), query);
+  }
+
+  @Post('generate-fixture')
+  generateFixture(@Body() dto: any, @Req() req: any) {
+    return this.service.generateFixture(this.resolveCompanyId(req), dto, req.user);
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.service.get(id);

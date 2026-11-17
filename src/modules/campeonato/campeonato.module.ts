@@ -25,6 +25,8 @@ import { MatchLineupOrmEntity } from './infrastructure/persistence/match-lineup.
 import { MatchEventOrmEntity } from './infrastructure/persistence/match-event.orm-entity';
 import { SanctionOrmEntity } from './infrastructure/persistence/sanction.orm-entity';
 import { PaymentOrmEntity } from './infrastructure/persistence/payment.orm-entity';
+import { TeamCategoryHistoryOrmEntity } from './infrastructure/persistence/team-category-history.orm-entity';
+import { PlayerTransferOrmEntity } from './infrastructure/persistence/player-transfer.orm-entity';
 
 // Controladores de cada apartado
 import { PositionsController } from './positions/presentation/positions.controller';
@@ -46,6 +48,8 @@ import { SanctionsController } from './sanctions/presentation/sanctions.controll
 import { PaymentsController } from './payments/presentation/payments.controller';
 import { TournamentCommitteesController } from './committees/presentation/tournament-committees.controller';
 import { TeamManagementsController } from './team-managements/presentation/team-managements.controller';
+import { TeamCategoryHistoryController } from './team-category-history/presentation/team-category-history.controller';
+import { PlayerTransfersController } from './player-transfers/presentation/player-transfers.controller';
 
 // Servicios de cada apartado
 import { PositionsService } from './positions/application/positions.service';
@@ -67,6 +71,8 @@ import { SanctionsService } from './sanctions/application/sanctions.service';
 import { PaymentsService } from './payments/application/payments.service';
 import { TournamentCommitteesService } from './committees/application/tournament-committees.service';
 import { TeamManagementsService } from './team-managements/application/team-managements.service';
+import { TeamCategoryHistoryService } from './team-category-history/application/team-category-history.service';
+import { PlayerTransfersService } from './player-transfers/application/player-transfers.service';
 
 const entities = [
   PositionOrmEntity,
@@ -88,6 +94,8 @@ const entities = [
   MatchEventOrmEntity,
   SanctionOrmEntity,
   PaymentOrmEntity,
+  TeamCategoryHistoryOrmEntity,
+  PlayerTransferOrmEntity,
   ModuleOrmEntity,
   subModulesOrmEntity,
 ];
@@ -112,6 +120,8 @@ const controllers = [
   PaymentsController,
   TournamentCommitteesController,
   TeamManagementsController,
+  TeamCategoryHistoryController,
+  PlayerTransfersController,
 ];
 
 const providers = [
@@ -134,6 +144,8 @@ const providers = [
   PaymentsService,
   TournamentCommitteesService,
   TeamManagementsService,
+  TeamCategoryHistoryService,
+  PlayerTransfersService,
 ];
 
 @Module({
@@ -185,6 +197,9 @@ export class CampeonatoModule implements OnModuleInit {
         { code: 'SUB-CAMP-013', icon: 'solar:wallet-money-bold-duotone', desc: 'Pagos e Ingresos', url: '/campeonato/pagos', order: 13 },
         { code: 'SUB-CAMP-014', icon: 'solar:diploma-verified-bold-duotone', desc: 'Cargos y Roles', url: '/campeonato/cargos', order: 14 },
         { code: 'SUB-CAMP-015', icon: 'solar:compass-bold-duotone', desc: 'Demarcaciones', url: '/campeonato/demarcaciones', order: 15 },
+        { code: 'SUB-CAMP-016', icon: 'solar:clock-circle-bold-duotone', desc: 'Días y Horarios de Juego', url: '/campeonato/horarios', order: 16 },
+        { code: 'SUB-CAMP-017', icon: 'solar:ranking-bold-duotone', desc: 'Tabla de Posiciones & Goleadores', url: '/campeonato/posiciones', order: 17 },
+        { code: 'SUB-CAMP-018', icon: 'solar:settings-bold-duotone', desc: 'Configuraciones', url: '/campeonato/configuracion', order: 18 },
       ];
 
       for (const sm of submodules) {

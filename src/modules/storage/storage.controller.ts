@@ -70,6 +70,32 @@ export class StorageController {
 		return this.storageService.uploadUserPhoto(Number(userId), file);
 	}
 
+	/** Sube el escudo/logo de un equipo de campeonato */
+	@UseGuards(AuthGuard('jwt'))
+	@Post('team-logo')
+	@UseInterceptors(FileInterceptor('file'))
+	async uploadTeamLogo(
+		@Query('companyId') companyIdQuery: string,
+		@Req() req: any,
+		@UploadedFile() file: any,
+	) {
+		const companyId = Number(companyIdQuery || req.headers?.['x-company-id'] || req.user?.company_id || 1);
+		return this.storageService.uploadTeamLogo(companyId, file);
+	}
+
+	/** Sube la foto oficial de un jugador de campeonato */
+	@UseGuards(AuthGuard('jwt'))
+	@Post('player-photo')
+	@UseInterceptors(FileInterceptor('file'))
+	async uploadPlayerPhoto(
+		@Query('companyId') companyIdQuery: string,
+		@Req() req: any,
+		@UploadedFile() file: any,
+	) {
+		const companyId = Number(companyIdQuery || req.headers?.['x-company-id'] || req.user?.company_id || 1);
+		return this.storageService.uploadPlayerPhoto(companyId, file);
+	}
+
 	/** Sirve archivos locales de respaldo (cuando no hay CDN de Supabase activo) */
 	@Get('uploads/*path')
 	async serveLocalFile(@Req() req: any, @Res() res: any) {

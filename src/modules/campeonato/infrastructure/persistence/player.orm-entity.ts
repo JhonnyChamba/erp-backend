@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Gender, DominantFoot } from '../../common/enum/campeonato.enum';
 import { DemarcationOrmEntity } from './demarcation.orm-entity';
+import { TeamOrmEntity } from './team.orm-entity';
 
 @Entity('tab_campeonato_players')
 export class PlayerOrmEntity {
@@ -19,6 +20,23 @@ export class PlayerOrmEntity {
   @ManyToOne(() => DemarcationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'demarcation_id' })
   demarcation: DemarcationOrmEntity;
+
+  @Column({ name: 'current_team_id', type: 'uuid', nullable: true })
+  currentTeamId: string;
+
+  @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'current_team_id' })
+  currentTeam: TeamOrmEntity;
+
+  @Column({ name: 'pass_owner_type', type: 'varchar', length: 20, default: 'PLAYER' })
+  passOwnerType: string; // 'PLAYER' (dueño de su pase) o 'TEAM' (club es dueño del pase)
+
+  @Column({ name: 'pass_owner_team_id', type: 'uuid', nullable: true })
+  passOwnerTeamId: string;
+
+  @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'pass_owner_team_id' })
+  passOwnerTeam: TeamOrmEntity;
 
   @Column({ type: 'varchar', length: 100 })
   name: string;

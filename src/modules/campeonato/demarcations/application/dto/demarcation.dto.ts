@@ -26,6 +26,10 @@ export class CreateDemarcationDto {
   @IsOptional()
   @IsInt()
   order?: number;
+
+  @IsOptional()
+  @IsInt()
+  maxPlayers?: number;
 }
 
 export class UpdateDemarcationDto {
@@ -46,4 +50,8 @@ export class UpdateDemarcationDto {
   @IsOptional()
   @IsInt()
   order?: number;
+
+  @IsOptional()
+  @IsInt()
+  maxPlayers?: number;
 }

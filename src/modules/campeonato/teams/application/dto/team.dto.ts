@@ -70,6 +70,14 @@ export class CreateTeamDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  currentCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  currentSeasonYear?: string;
 }
 
 export class UpdateTeamDto {
@@ -134,4 +142,12 @@ export class UpdateTeamDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  currentCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  currentSeasonYear?: string;
 }

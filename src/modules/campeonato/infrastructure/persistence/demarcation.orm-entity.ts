@@ -21,6 +21,9 @@ export class DemarcationOrmEntity {
   @Column({ type: 'int', default: 0 })
   order: number;
 
+  @Column({ name: 'max_players', type: 'int', default: 0, nullable: true })
+  maxPlayers: number;
+
   @Column({ name: 'created_name', type: 'varchar', nullable: true })
   createdName: string;
 
