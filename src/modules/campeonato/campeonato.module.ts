@@ -38,6 +38,12 @@ import { CompanyPlayerOrmEntity } from './infrastructure/persistence/company-pla
 import { PlayerTransactionOrmEntity } from './infrastructure/persistence/player-transaction.orm-entity';
 import { RefereeGuildOrmEntity } from './infrastructure/persistence/referee-guild.orm-entity';
 import { CompanyRefereeOrmEntity } from './infrastructure/persistence/company-referee.orm-entity';
+import { StageFormatOrmEntity } from './infrastructure/persistence/stage-format.orm-entity';
+import { CompetitionTypeOrmEntity } from './infrastructure/persistence/competition-type.orm-entity';
+import { CompetitionLapOrmEntity } from './infrastructure/persistence/competition-lap.orm-entity';
+import { TieBreakerCriterionOrmEntity } from './infrastructure/persistence/tie-breaker-criterion.orm-entity';
+import { StageTemplateOrmEntity } from './infrastructure/persistence/stage-template.orm-entity';
+import { StageTemplateDetailOrmEntity } from './infrastructure/persistence/stage-template-detail.orm-entity';
 
 // Controladores de cada apartado
 import { PositionsController } from './positions/presentation/positions.controller';
@@ -64,6 +70,11 @@ import { TeamCategoryHistoryController } from './team-category-history/presentat
 import { PlayerTransfersController } from './player-transfers/presentation/player-transfers.controller';
 import { PlayerClassificationsController } from './player-classifications/presentation/player-classifications.controller';
 import { TournamentTransferConfigsController } from './tournament-transfer-configs/presentation/tournament-transfer-configs.controller';
+import { StageFormatsController } from './stages/presentation/stage-formats.controller';
+import { CompetitionTypesController } from './competition-types/presentation/competition-types.controller';
+import { CompetitionLapsController } from './competition-laps/presentation/competition-laps.controller';
+import { TieBreakerCriteriaController } from './tie-breaker-criteria/presentation/tie-breaker-criteria.controller';
+import { StageTemplatesController } from './stage-templates/presentation/stage-templates.controller';
 
 // Servicios de cada apartado
 import { PositionsService } from './positions/application/positions.service';
@@ -90,6 +101,11 @@ import { TeamCategoryHistoryService } from './team-category-history/application/
 import { PlayerTransfersService } from './player-transfers/application/player-transfers.service';
 import { PlayerClassificationsService } from './player-classifications/application/player-classifications.service';
 import { TournamentTransferConfigsService } from './tournament-transfer-configs/application/tournament-transfer-configs.service';
+import { StageFormatsService } from './stages/application/stage-formats.service';
+import { CompetitionTypesService } from './competition-types/application/competition-types.service';
+import { CompetitionLapsService } from './competition-laps/application/competition-laps.service';
+import { TieBreakerCriteriaService } from './tie-breaker-criteria/application/tie-breaker-criteria.service';
+import { StageTemplatesService } from './stage-templates/application/stage-templates.service';
 
 const entities = [
   PositionOrmEntity,
@@ -124,6 +140,12 @@ const entities = [
   PlayerTransactionOrmEntity,
   RefereeGuildOrmEntity,
   CompanyRefereeOrmEntity,
+  StageFormatOrmEntity,
+  CompetitionTypeOrmEntity,
+  CompetitionLapOrmEntity,
+  TieBreakerCriterionOrmEntity,
+  StageTemplateOrmEntity,
+  StageTemplateDetailOrmEntity,
   ModuleOrmEntity,
   subModulesOrmEntity,
 ];
@@ -153,6 +175,11 @@ const controllers = [
   PlayerTransfersController,
   PlayerClassificationsController,
   TournamentTransferConfigsController,
+  StageFormatsController,
+  CompetitionTypesController,
+  CompetitionLapsController,
+  TieBreakerCriteriaController,
+  StageTemplatesController,
 ];
 
 const providers = [
@@ -163,6 +190,7 @@ const providers = [
   CategoriesService,
   CategoryEditionsService,
   StagesService,
+  StageFormatsService,
   ScenariesService,
   TeamRegistrationsService,
   PlayerRegistrationsService,
@@ -180,6 +208,10 @@ const providers = [
   PlayerTransfersService,
   PlayerClassificationsService,
   TournamentTransferConfigsService,
+  CompetitionTypesService,
+  CompetitionLapsService,
+  TieBreakerCriteriaService,
+  StageTemplatesService,
 ];
 
 @Module({
@@ -220,7 +252,7 @@ export class CampeonatoModule implements OnModuleInit {
         { code: 'SUB-CAMP-002', icon: 'solar:user-bold-duotone', desc: 'Jugadores', url: '/campeonato/jugadores', order: 2 },
         { code: 'SUB-CAMP-003', icon: 'solar:layers-bold-duotone', desc: 'Categorías', url: '/campeonato/categorias', order: 3 },
         { code: 'SUB-CAMP-004', icon: 'solar:calendar-date-bold-duotone', desc: 'Ediciones de Categoría', url: '/campeonato/ediciones', order: 4 },
-        { code: 'SUB-CAMP-005', icon: 'solar:flag-2-bold-duotone', desc: 'Etapas y Fases', url: '/campeonato/etapas', order: 5 },
+        { code: 'SUB-CAMP-005', icon: 'solar:flag-2-bold-duotone', desc: 'Plantillas de Etapas y Fases', url: '/campeonato/etapas', order: 5 },
         { code: 'SUB-CAMP-006', icon: 'solar:map-point-bold-duotone', desc: 'Escenarios Deportivos', url: '/campeonato/escenarios', order: 6 },
         { code: 'SUB-CAMP-007', icon: 'solar:users-group-two-rounded-bold-duotone', desc: 'Inscripción de Equipos', url: '/campeonato/inscripciones-equipos', order: 7 },
         { code: 'SUB-CAMP-008', icon: 'solar:card-2-bold-duotone', desc: 'Inscripción y Carnets', url: '/campeonato/inscripciones-jugadores', order: 8 },

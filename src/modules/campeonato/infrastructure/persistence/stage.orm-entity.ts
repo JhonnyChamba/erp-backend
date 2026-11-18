@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { TeamOrigin, StageFormat, IntersectionType } from '../../common/enum/campeonato.enum';
 import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
+import { CategoryOrmEntity } from './category.orm-entity';
 
 @Entity('tab_campeonato_stages')
 export class StageOrmEntity {
@@ -19,6 +20,13 @@ export class StageOrmEntity {
   @ManyToOne(() => CategoryEditionOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_edition_id' })
   categoryEdition: CategoryEditionOrmEntity;
+
+  @Column({ name: 'category_id', type: 'uuid', nullable: true })
+  categoryId: string;
+
+  @ManyToOne(() => CategoryOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'category_id' })
+  category: CategoryOrmEntity;
 
   @Column({ type: 'varchar', length: 150 })
   name: string;
@@ -53,6 +61,12 @@ export class StageOrmEntity {
 
   @Column({ name: 'intersection_type', type: 'enum', enum: IntersectionType, default: IntersectionType.RANDOM_DRAW })
   intersectionType: IntersectionType;
+
+  @Column({ name: 'tie_breaker', type: 'varchar', length: 50, default: 'PENALTIES', nullable: true })
+  tieBreaker: string;
+
+  @Column({ name: 'bonus_points', type: 'jsonb', nullable: true })
+  bonusPoints: any;
 
   @Column({ name: 'predefined_crosses', type: 'jsonb', nullable: true })
   predefinedCrosses: any;

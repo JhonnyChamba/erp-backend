@@ -14,6 +14,10 @@ export class CreateStageDto {
   @IsString()
   categoryEditionId: string;
 
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
   @IsNotEmpty({ message: 'El nombre de la etapa es obligatorio' })
   @IsString()
   @MaxLength(150)
@@ -56,6 +60,13 @@ export class CreateStageDto {
   intersectionType?: IntersectionType;
 
   @IsOptional()
+  @IsString()
+  tieBreaker?: string;
+
+  @IsOptional()
+  bonusPoints?: any;
+
+  @IsOptional()
   predefinedCrosses?: any;
 
   @IsOptional()
@@ -79,6 +90,10 @@ export class UpdateStageDto {
   @IsOptional()
   @IsString()
   categoryEditionId?: string;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
 
   @IsOptional()
   @IsString()
@@ -120,6 +135,13 @@ export class UpdateStageDto {
   @IsOptional()
   @IsEnum(IntersectionType)
   intersectionType?: IntersectionType;
+
+  @IsOptional()
+  @IsString()
+  tieBreaker?: string;
+
+  @IsOptional()
+  bonusPoints?: any;
 
   @IsOptional()
   predefinedCrosses?: any;

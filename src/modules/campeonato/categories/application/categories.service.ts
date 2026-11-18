@@ -21,7 +21,7 @@ export class CategoriesService {
       qb.andWhere('(c.companyId = :companyId OR c.companyId IS NULL)', { companyId });
     }
     if (query.search?.trim()) {
-      qb.andWhere('(LOWER(c.name) LIKE :term OR LOWER(c.code) LIKE :term)', {
+      qb.andWhere('(LOWER(c.name) LIKE :term OR LOWER(c.code) LIKE :term OR LOWER(COALESCE(c.acronyms, \'\')) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,
       });
     }

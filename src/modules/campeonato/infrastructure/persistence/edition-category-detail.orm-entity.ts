@@ -46,6 +46,18 @@ export class EditionCategoryDetailOrmEntity {
   @Column({ name: 'max_players', type: 'int', default: 25 })
   maxPlayers: number;
 
+  @Column({ name: 'match_duration_minutes', type: 'int', default: 60 })
+  matchDurationMinutes: number;
+
+  @Column({ name: 'break_duration_minutes', type: 'int', default: 10 })
+  breakDurationMinutes: number;
+
+  @Column({ name: 'wait_between_matches_minutes', type: 'int', default: 10 })
+  waitBetweenMatchesMinutes: number;
+
+  @Column({ name: 'stages', type: 'jsonb', nullable: true, default: () => "'[]'" })
+  stages: any[];
+
   @Column({ name: 'created_name', type: 'varchar', nullable: true })
   createdName: string;
 

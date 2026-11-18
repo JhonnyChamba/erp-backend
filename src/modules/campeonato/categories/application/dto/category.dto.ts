@@ -16,6 +16,11 @@ export class CreateCategoryDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  acronyms?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()
@@ -41,6 +46,11 @@ export class UpdateCategoryDto {
   @IsString()
   @MaxLength(150)
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  acronyms?: string;
 
   @IsOptional()
   @IsString()

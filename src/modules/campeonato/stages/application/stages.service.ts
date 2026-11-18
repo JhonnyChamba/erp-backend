@@ -30,12 +30,16 @@ export class StagesService {
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const qb = this.repo.createQueryBuilder('s').leftJoinAndSelect('s.categoryEdition', 'categoryEdition');
+    const qb = this.repo
+      .createQueryBuilder('s')
+      .leftJoinAndSelect('s.categoryEdition', 'categoryEdition')
+      .leftJoinAndSelect('s.category', 'category')
+      .leftJoinAndSelect('s.previousStage', 'previousStage');
     if (companyId) {
       qb.andWhere('(s.companyId = :companyId OR s.companyId IS NULL)', { companyId });
     }
     if (query.search?.trim()) {
-      qb.andWhere('(LOWER(s.name) LIKE :term OR LOWER(categoryEdition.name) LIKE :term)', {
+      qb.andWhere('(LOWER(s.name) LIKE :term OR LOWER(categoryEdition.name) LIKE :term OR LOWER(COALESCE(category.name, \'\')) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,
       });
     }

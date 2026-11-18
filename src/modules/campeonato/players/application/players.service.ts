@@ -87,20 +87,21 @@ export class PlayersService {
   }
 
   /**
-   * Listar jugadores de la liga/empresa actual
+   * Listar jugadores de la liga/empresa actual o padrón global
    */
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string }) {
+  async list(companyId: number, query: { page?: number; limit?: number; search?: string; global?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
+    const isGlobal = query.global === 'true' || !companyId;
 
     const qb = this.repo
       .createQueryBuilder('p')
       .leftJoinAndSelect('p.demarcation', 'demarcation')
-      .leftJoinAndSelect('p.playerClassification', 'playerClassification')
-      .leftJoin('tab_campeonato_company_players', 'cp', 'cp.player_id = p.id');
+      .leftJoinAndSelect('p.playerClassification', 'playerClassification');
 
-    if (companyId) {
+    if (!isGlobal) {
+      qb.leftJoin('tab_campeonato_company_players', 'cp', 'cp.player_id = p.id');
       qb.where('(cp.company_id = :companyId OR p.companyId = :companyId)', { companyId });
     }
 

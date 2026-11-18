@@ -58,10 +58,26 @@ export class EditionCategoryDetailItemDto {
   maxPlayers?: number;
 
   @IsOptional()
+  @IsInt()
+  matchDurationMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  breakDurationMinutes?: number;
+
+  @IsOptional()
+  @IsInt()
+  waitBetweenMatchesMinutes?: number;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => EditionCategoryClassificationItemDto)
   classifications?: EditionCategoryClassificationItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  stages?: any[];
 }
 
 export class CreateCategoryEditionDto {
