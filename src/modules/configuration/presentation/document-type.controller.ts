@@ -11,6 +11,7 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { SuperAdminGuard } from 'src/auth/guards/super-admin.guard';
 import { DocumentTypeService } from '../application/document-type.service';
 import { CreateDocumentTypeDto, UpdateDocumentTypeDto } from '../application/dto/document-type.dto';
 
@@ -37,11 +38,13 @@ export class DocumentTypeController {
 		return this.docTypeService.get(id);
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Post()
 	create(@Body() dto: CreateDocumentTypeDto) {
 		return this.docTypeService.create(dto);
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Patch(':id')
 	update(
 		@Param('id', ParseIntPipe) id: number,
@@ -50,11 +53,13 @@ export class DocumentTypeController {
 		return this.docTypeService.update(id, dto);
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Patch(':id/toggle-status')
 	toggleStatus(@Param('id', ParseIntPipe) id: number) {
 		return this.docTypeService.toggleStatus(id);
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Delete(':id')
 	remove(@Param('id', ParseIntPipe) id: number) {
 		return this.docTypeService.remove(id);

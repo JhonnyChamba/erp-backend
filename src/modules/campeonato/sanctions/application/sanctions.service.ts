@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { MatchOrmEntity } from '../../infrastructure/persistence/match.orm-entity';
+import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { SanctionOrmEntity } from '../../infrastructure/persistence/sanction.orm-entity';
 import { CreateSanctionDto, UpdateSanctionDto } from './dto/sanction.dto';
 
@@ -35,13 +37,13 @@ export class SanctionsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['player', 'match'] });
-    if (!item) throw new NotFoundException('Sanción no encontrada');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Sanción no encontrada', write);
   }
 
   async create(dto: CreateSanctionDto, user: any, companyId: number) {
+    await assertBelongsToCompany(this.repo.manager.getRepository(MatchOrmEntity), dto.matchId, companyId, 'Partido no encontrado');
     const item = this.repo.create({
       ...dto,
       companyId,
@@ -51,8 +53,9 @@ export class SanctionsService {
     return this.repo.save(item);
   }
 
-  async update(id: string | number, dto: UpdateSanctionDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateSanctionDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
+    await assertBelongsToCompany(this.repo.manager.getRepository(MatchOrmEntity), dto.matchId, companyId, 'Partido no encontrado');
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
@@ -60,8 +63,8 @@ export class SanctionsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

@@ -6,6 +6,7 @@ import { ListUsersUseCase } from "./application/use-cases/list-users.use-case";
 import { UsersOrmEntity } from "./infrastructure/persistence/users.orm-entity";
 import { UserCompanyOrmEntity } from "../user-company/infrastructure/persistence/user-company.orm-entity";
 import { GetUsersUseCase } from "./application/use-cases/get-users.use-case";
+import { UsersAccessPolicy } from "./application/users-access.policy";
 import { UsersRepository } from "./domain/repositories/users.repository";
 import { UsersController } from "./presentation/users.controller";
 import { TypeOrmModule } from "@nestjs/typeorm";
@@ -24,6 +25,7 @@ import { PasswordModule } from "src/common/password/password.module";
 		GetUsersUseCase,
 		UpdateUsersUseCase,
 		FindUserByEmailUseCase,
+		UsersAccessPolicy,
 		{
 			provide: UsersRepository,
 			useClass: UsersRepositoryImpl,

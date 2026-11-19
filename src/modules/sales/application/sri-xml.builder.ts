@@ -12,17 +12,23 @@ const esc = (v: any) =>
 const money = (v: any) => Number(v || 0).toFixed(2);
 
 // Código de porcentaje IVA según ficha técnica SRI (tabla 17)
+const IVA_CODES: Record<number, string> = { 0: '0', 5: '5', 12: '2', 13: '10', 14: '3', 15: '4' };
+
+/** Indica si la tarifa de IVA tiene un código de porcentaje conocido para el SRI. */
+export const isSupportedIvaRate = (rate: number): boolean => Object.prototype.hasOwnProperty.call(IVA_CODES, Number(rate));
+
+// Una tarifa sin código conocido se rechaza: enviarla con el código de otra tarifa generaría un comprobante incorrecto.
 const ivaCode = (rate: number): string => {
-	switch (Number(rate)) {
-		case 0: return '0';
-		case 5: return '5';
-		case 12: return '2';
-		case 13: return '10';
-		case 14: return '3';
-		case 15: return '4';
-		default: return '4';
+	const code = IVA_CODES[Number(rate)];
+	if (code === undefined) {
+		throw new Error(`La tarifa de IVA ${rate}% no tiene un código de porcentaje del SRI configurado.`);
 	}
+	return code;
 };
+
+/** Fecha actual (YYYY-MM-DD) en la zona horaria de Ecuador continental, que es la que rige la fecha de emisión. */
+export const todayInEcuador = (): string =>
+	new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
 const ddmmyyyy = (d: string | Date) => {
 	const s = typeof d === 'string' ? d.slice(0, 10) : d.toISOString().slice(0, 10);

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import Decimal from 'decimal.js';
@@ -113,120 +113,225 @@ export class InventoryService {
 			if (cat) categoryName = cat.name;
 		}
 
-		const entity = this.itemRepo.create({
-			code: nextCode,
-			sku: dto.sku || '',
-			name: dto.name,
-			category_id: categoryId ? Number(categoryId) : undefined,
-			category: categoryName || 'General',
-			unit_measure: dto.unit_measure || dto.unit || 'UND',
-			cost_price: Number(dto.cost_price ?? dto.costPrice ?? 0),
-			sale_price: Number(dto.sale_price ?? dto.salePrice ?? 0),
-			tax_rate: Number(dto.tax_rate ?? dto.taxRate ?? 15),
-			stock_current: Number(dto.stock_current ?? dto.stockCurrent ?? 0),
-			stock_min: Number(dto.stock_min ?? dto.stockMin ?? 0),
-			warehouse_id: (dto.warehouse_id ?? dto.warehouseId) ? Number(dto.warehouse_id ?? dto.warehouseId) : undefined,
-			warehouse_location: dto.warehouse_location || dto.location || 'Bodega Principal',
-			description: dto.description || '',
-			enabled: dto.enabled ?? dto.status ?? true,
-			deleted: false,
-			company: { id: companyId } as any,
-			created_by: userId,
+		const initialStock = Number(dto.stock_current ?? dto.stockCurrent ?? 0);
+		if (!Number.isFinite(initialStock) || initialStock < 0) {
+			throw new BadRequestException('El stock inicial no puede ser negativo.');
+		}
+		const requestedWarehouseId = (dto.warehouse_id ?? dto.warehouseId) ? Number(dto.warehouse_id ?? dto.warehouseId) : undefined;
+
+		// Artículo, espejo en el catálogo unificado y stock inicial se confirman o se revierten juntos.
+		return this.dataSource.transaction(async (manager) => {
+			const entity = manager.create(InventoryItemOrmEntity, {
+				code: nextCode,
+				sku: dto.sku || '',
+				name: dto.name,
+				category_id: categoryId ? Number(categoryId) : undefined,
+				category: categoryName || 'General',
+				unit_measure: dto.unit_measure || dto.unit || 'UND',
+				cost_price: Number(dto.cost_price ?? dto.costPrice ?? 0),
+				sale_price: Number(dto.sale_price ?? dto.salePrice ?? 0),
+				tax_rate: Number(dto.tax_rate ?? dto.taxRate ?? 15),
+				// El stock no se escribe directo: lo fija el movimiento de apertura (saldo + kardex) más abajo.
+				stock_current: 0,
+				stock_min: Number(dto.stock_min ?? dto.stockMin ?? 0),
+				warehouse_id: requestedWarehouseId,
+				warehouse_location: dto.warehouse_location || dto.location || 'Bodega Principal',
+				description: dto.description || '',
+				enabled: dto.enabled ?? dto.status ?? true,
+				deleted: false,
+				company: { id: companyId } as any,
+				created_by: userId,
+			});
+			const saved = await manager.save(InventoryItemOrmEntity, entity);
+			await this.ensureItemInUnified(manager, saved, companyId);
+
+			if (initialStock > 0) {
+				const warehouseId = await this.resolveStockWarehouseId(manager, companyId, requestedWarehouseId);
+				await this.registerEntry(
+					{
+						companyId,
+						warehouseId,
+						productId: saved.id,
+						quantity: initialStock,
+						unitCost: Number(saved.cost_price || 0),
+						movementReason: 'OPENING',
+						collectionOriginName: 'INITIAL_STOCK',
+						collectionOriginDocument: `Apertura inicial ítem ${saved.code}`,
+						createdUserId: userId,
+					},
+					manager,
+				);
+			}
+
+			const fresh = await manager.findOne(InventoryItemOrmEntity, { where: { id: saved.id } });
+			return this.mapItem(fresh || saved, companyId);
 		});
-		const saved = await this.itemRepo.save(entity);
-		await this.ensureItemInUnified(this.dataSource.manager, saved, companyId);
-		return this.mapItem(saved, companyId);
 	}
 
 	async updateItem(id: number, companyId: number, dto: UpdateInventoryItemDto) {
-		const existing = await this.itemRepo.findOne({
-			where: { id, company: { id: companyId }, deleted: false },
-			relations: ['company'],
+		return this.dataSource.transaction(async (manager) => {
+			const existing = await manager.findOne(InventoryItemOrmEntity, {
+				where: { id, company: { id: companyId }, deleted: false },
+				relations: ['company'],
+			});
+			if (!existing) throw new NotFoundException('Artículo no encontrado');
+
+			existing.sku = dto.sku ?? existing.sku;
+			existing.name = dto.name ?? existing.name;
+
+			const categoryId = dto.category_id ?? dto.categoryId;
+			if (categoryId !== undefined) existing.category_id = Number(categoryId);
+			let categoryName = dto.category;
+			if (categoryId && !categoryName) {
+				const cat = await manager.findOne(InventoryCategoryOrmEntity, { where: { id: Number(categoryId), company: { id: companyId } } });
+				if (cat) categoryName = cat.name;
+			}
+			if (categoryName !== undefined) existing.category = categoryName;
+
+			existing.unit_measure = dto.unit_measure ?? dto.unit ?? existing.unit_measure;
+			const costPrice = dto.cost_price ?? dto.costPrice;
+			if (costPrice !== undefined) existing.cost_price = Number(costPrice);
+			const salePrice = dto.sale_price ?? dto.salePrice;
+			if (salePrice !== undefined) existing.sale_price = Number(salePrice);
+			const taxRate = dto.tax_rate ?? dto.taxRate;
+			if (taxRate !== undefined) existing.tax_rate = Number(taxRate);
+			// stock_current no se asigna aquí: un cambio de stock se registra como movimiento de ajuste más abajo.
+			const stockCurrent = dto.stock_current ?? dto.stockCurrent;
+			const stockMin = dto.stock_min ?? dto.stockMin;
+			if (stockMin !== undefined) existing.stock_min = Number(stockMin);
+			const warehouseId = dto.warehouse_id ?? dto.warehouseId;
+			if (warehouseId !== undefined) existing.warehouse_id = Number(warehouseId);
+			existing.warehouse_location = dto.warehouse_location ?? dto.location ?? existing.warehouse_location;
+			existing.description = dto.description ?? existing.description;
+			const statusVal = dto.enabled ?? dto.status;
+			if (statusVal !== undefined) existing.enabled = statusVal;
+
+			const saved = await manager.save(InventoryItemOrmEntity, existing);
+			await this.ensureItemInUnified(manager, saved, companyId);
+
+			if (stockCurrent !== undefined) {
+				const targetNumber = Number(stockCurrent);
+				if (!Number.isFinite(targetNumber) || targetNumber < 0) {
+					throw new BadRequestException('El stock no puede ser negativo.');
+				}
+				const target = new Decimal(targetNumber);
+				// El stock real es la suma de saldos por bodega; la diferencia se registra como ajuste (kardex + saldo).
+				const balanceRow = await manager
+					.createQueryBuilder(InventoryBalanceOrmEntity, 'b')
+					.select('COALESCE(SUM(b.stock), 0)', 'total')
+					.where('b.company_id = :companyId AND b.product_id = :productId', { companyId, productId: saved.id })
+					.getRawOne();
+				const difference = target.minus(new Decimal(balanceRow?.total || 0));
+
+				if (!difference.isZero()) {
+					const stockWarehouseId = await this.resolveStockWarehouseId(manager, companyId, saved.warehouse_id || undefined);
+					const common = {
+						companyId,
+						warehouseId: stockWarehouseId,
+						productId: saved.id,
+						quantity: difference.abs().toNumber(),
+						movementReason: 'ADJUSTMENT' as const,
+						collectionOriginName: 'ITEM_STOCK_EDIT',
+						collectionOriginDocument: `Ajuste de stock ítem ${saved.code}`,
+					};
+					if (difference.isPositive()) {
+						await this.registerEntry({ ...common, unitCost: Number(saved.cost_price || 0) }, manager);
+					} else {
+						await this.registerExit(common, manager);
+					}
+				}
+				// stock_current del artículo queda igual a la suma real de saldos.
+				await manager.query(`UPDATE tab_inventory_item SET stock_current = $1 WHERE id = $2 AND company_id = $3`, [
+					target.toNumber(),
+					saved.id,
+					companyId,
+				]);
+			}
+
+			const fresh = await manager.findOne(InventoryItemOrmEntity, { where: { id: saved.id }, relations: ['company'] });
+			return this.mapItem(fresh || saved, companyId);
 		});
-		if (!existing) throw new NotFoundException('Artículo no encontrado');
-
-		existing.sku = dto.sku ?? existing.sku;
-		existing.name = dto.name ?? existing.name;
-
-		const categoryId = dto.category_id ?? dto.categoryId;
-		if (categoryId !== undefined) existing.category_id = Number(categoryId);
-		let categoryName = dto.category;
-		if (categoryId && !categoryName) {
-			const cat = await this.categoryRepo.findOne({ where: { id: Number(categoryId), company: { id: companyId } } });
-			if (cat) categoryName = cat.name;
-		}
-		if (categoryName !== undefined) existing.category = categoryName;
-
-		existing.unit_measure = dto.unit_measure ?? dto.unit ?? existing.unit_measure;
-		const costPrice = dto.cost_price ?? dto.costPrice;
-		if (costPrice !== undefined) existing.cost_price = Number(costPrice);
-		const salePrice = dto.sale_price ?? dto.salePrice;
-		if (salePrice !== undefined) existing.sale_price = Number(salePrice);
-		const taxRate = dto.tax_rate ?? dto.taxRate;
-		if (taxRate !== undefined) existing.tax_rate = Number(taxRate);
-		const stockCurrent = dto.stock_current ?? dto.stockCurrent;
-		if (stockCurrent !== undefined) existing.stock_current = Number(stockCurrent);
-		const stockMin = dto.stock_min ?? dto.stockMin;
-		if (stockMin !== undefined) existing.stock_min = Number(stockMin);
-		const warehouseId = dto.warehouse_id ?? dto.warehouseId;
-		if (warehouseId !== undefined) existing.warehouse_id = Number(warehouseId);
-		existing.warehouse_location = dto.warehouse_location ?? dto.location ?? existing.warehouse_location;
-		existing.description = dto.description ?? existing.description;
-		const statusVal = dto.enabled ?? dto.status;
-		if (statusVal !== undefined) existing.enabled = statusVal;
-
-		const saved = await this.itemRepo.save(existing);
-		await this.ensureItemInUnified(this.dataSource.manager, saved, companyId);
-		return this.mapItem(saved, companyId);
 	}
 
 	async deleteItem(id: number, companyId: number) {
+		const existing = await this.itemRepo.findOne({ where: { id, company: { id: companyId } }, select: ['id', 'code'] });
 		await this.itemRepo.update({ id, company: { id: companyId } }, { deleted: true, enabled: false });
-		await this.dataSource.query(`UPDATE tab_items SET deleted = true, ind_active = false WHERE id = $1 AND company_id = $2`, [id, companyId]).catch(() => {});
+		// Solo se marca el espejo de este artículo (misma empresa, tipo PRODUCT y mismo código), nunca otra fila con el mismo id.
+		if (existing) {
+			await this.dataSource.query(
+				`UPDATE tab_items SET deleted = true, ind_active = false WHERE id = $1 AND company_id = $2 AND item_type = 'PRODUCT' AND code = $3`,
+				[id, companyId, existing.code],
+			);
+		}
 		return { deleted: true, id };
 	}
 
+	/** Bodega donde se registra el stock de un artículo: la indicada o, si no hay, la predeterminada activa de la empresa. */
+	private async resolveStockWarehouseId(manager: EntityManager, companyId: number, preferredId?: number): Promise<number> {
+		if (preferredId) return preferredId;
+		const warehouses = await manager.find(InventoryWarehouseOrmEntity, {
+			where: { company: { id: companyId }, deleted: false, enabled: true },
+			order: { is_default: 'DESC', id: 'ASC' },
+			take: 1,
+		});
+		if (warehouses.length === 0) {
+			throw new BadRequestException('Para registrar stock se necesita una bodega activa. Crea una bodega o indica la bodega del artículo.');
+		}
+		return warehouses[0].id;
+	}
+
+	/**
+	 * Refleja un artículo legacy (tab_inventory_item) en el catálogo unificado (tab_items) con su mismo id.
+	 * Las dos tablas tienen secuencias independientes, así que ese id puede estar ocupado por otro concepto:
+	 * la fila existente solo se actualiza si es de la MISMA empresa, de tipo PRODUCT y con el MISMO código;
+	 * nunca se cambia company_id ni se sobrescribe una fila ajena. Si el id está ocupado se rechaza la operación.
+	 */
 	private async ensureItemInUnified(manager: EntityManager, legacyItem: any, companyId: number): Promise<void> {
-		try {
-			await manager.query(`
-				INSERT INTO tab_items (
-					id, company_id, product_category_id, category_name, code, sku, name, description,
-					item_type, unit_measure, sale_price, purchase_price, tax_rate, ind_active, deleted, created_at, updated_at
-				) VALUES (
-					$1, $2, $3, $4, $5, $6, $7, $8, 'PRODUCT', $9, $10, $11, $12, $13, $14, NOW(), NOW()
-				) ON CONFLICT (id) DO UPDATE SET
-					company_id = EXCLUDED.company_id,
-					product_category_id = EXCLUDED.product_category_id,
-					category_name = EXCLUDED.category_name,
-					code = EXCLUDED.code,
-					sku = EXCLUDED.sku,
-					name = EXCLUDED.name,
-					description = EXCLUDED.description,
-					unit_measure = EXCLUDED.unit_measure,
-					sale_price = EXCLUDED.sale_price,
-					purchase_price = EXCLUDED.purchase_price,
-					tax_rate = EXCLUDED.tax_rate,
-					ind_active = EXCLUDED.ind_active,
-					deleted = EXCLUDED.deleted,
-					updated_at = NOW();
-			`, [
-				legacyItem.id,
-				companyId,
-				legacyItem.category_id || null,
-				legacyItem.category || null,
-				legacyItem.code,
-				legacyItem.sku || null,
-				legacyItem.name,
-				legacyItem.description || null,
-				legacyItem.unit_measure || 'UND',
-				Number(legacyItem.sale_price || 0),
-				Number(legacyItem.cost_price || 0),
-				Number(legacyItem.tax_rate ?? 15),
-				legacyItem.enabled !== false,
-				legacyItem.deleted || false,
-			]);
-		} catch (e) {
-			console.error('Error ensuring item in tab_items:', e);
+		// Sin try/catch: dentro de una transacción un error de consulta la deja abortada y debe propagarse.
+		const rows = await manager.query(`
+			INSERT INTO tab_items (
+				id, company_id, product_category_id, category_name, code, sku, name, description,
+				item_type, unit_measure, sale_price, purchase_price, tax_rate, ind_active, deleted, created_at, updated_at
+			) VALUES (
+				$1, $2, $3, $4, $5, $6, $7, $8, 'PRODUCT', $9, $10, $11, $12, $13, $14, NOW(), NOW()
+			) ON CONFLICT (id) DO UPDATE SET
+				product_category_id = EXCLUDED.product_category_id,
+				category_name = EXCLUDED.category_name,
+				sku = EXCLUDED.sku,
+				name = EXCLUDED.name,
+				description = EXCLUDED.description,
+				unit_measure = EXCLUDED.unit_measure,
+				sale_price = EXCLUDED.sale_price,
+				purchase_price = EXCLUDED.purchase_price,
+				tax_rate = EXCLUDED.tax_rate,
+				ind_active = EXCLUDED.ind_active,
+				deleted = EXCLUDED.deleted,
+				updated_at = NOW()
+			WHERE tab_items.company_id = EXCLUDED.company_id
+			  AND tab_items.item_type = 'PRODUCT'
+			  AND tab_items.code = EXCLUDED.code
+			RETURNING id;
+		`, [
+			legacyItem.id,
+			companyId,
+			legacyItem.category_id || null,
+			legacyItem.category || null,
+			legacyItem.code,
+			legacyItem.sku || null,
+			legacyItem.name,
+			legacyItem.description || null,
+			legacyItem.unit_measure || 'UND',
+			Number(legacyItem.sale_price || 0),
+			Number(legacyItem.cost_price || 0),
+			Number(legacyItem.tax_rate ?? 15),
+			legacyItem.enabled !== false,
+			legacyItem.deleted || false,
+		]);
+
+		if (!Array.isArray(rows) || rows.length === 0) {
+			throw new ConflictException(
+				`El artículo "${legacyItem.name}" (${legacyItem.code}) no se puede vincular al catálogo unificado: el id ${legacyItem.id} ya pertenece a otro concepto. No se modificó ese concepto.`,
+			);
 		}
 	}
 
@@ -746,7 +851,7 @@ export class InventoryService {
 				if (legacyItem) {
 					await this.ensureItemInUnified(manager, legacyItem, params.companyId);
 					product = await manager.findOne(ItemOrmEntity, {
-						where: { id: legacyItem.id },
+						where: { id: legacyItem.id, company: { id: params.companyId }, deleted: false },
 					});
 				}
 			}
@@ -830,23 +935,21 @@ export class InventoryService {
 
 			const savedMovement = await manager.save(InventoryMovementOrmEntity, movement);
 
-			// Sincronizar stock_current y cost_price en tab_inventory_item y tab_items
-			try {
-				await manager.query(`
-					UPDATE tab_inventory_item
-					SET stock_current = stock_current + $1,
-					    cost_price = $2
-					WHERE id = $3 AND company_id = $4
-				`, [entryQty.toNumber(), balance.average_cost, params.productId, params.companyId]);
+			// Sincronizar stock_current y cost_price en tab_inventory_item y tab_items.
+			// Sin try/catch: si fallan, la transacción queda abortada y el error real debe propagarse.
+			// El código evita tocar un artículo legacy distinto que comparta el id con este concepto.
+			await manager.query(`
+				UPDATE tab_inventory_item
+				SET stock_current = stock_current + $1,
+				    cost_price = $2
+				WHERE id = $3 AND company_id = $4 AND code = $5
+			`, [entryQty.toNumber(), balance.average_cost, params.productId, params.companyId, product.code]);
 
-				await manager.query(`
-					UPDATE tab_items
-					SET purchase_price = $1
-					WHERE id = $2 AND company_id = $3
-				`, [balance.average_cost, params.productId, params.companyId]);
-			} catch (e) {
-				console.error('Error updating stock on entry:', e);
-			}
+			await manager.query(`
+				UPDATE tab_items
+				SET purchase_price = $1
+				WHERE id = $2 AND company_id = $3
+			`, [balance.average_cost, params.productId, params.companyId]);
 
 			return savedMovement;
 		};
@@ -898,7 +1001,7 @@ export class InventoryService {
 				if (legacyItem) {
 					await this.ensureItemInUnified(manager, legacyItem, params.companyId);
 					product = await manager.findOne(ItemOrmEntity, {
-						where: { id: legacyItem.id },
+						where: { id: legacyItem.id, company: { id: params.companyId }, deleted: false },
 					});
 				}
 			}
@@ -920,10 +1023,11 @@ export class InventoryService {
 				throw new BadRequestException(`La bodega "${warehouse.name}" está inactiva y no admite operaciones.`);
 			}
 
-			const exitQty = new Decimal(Math.abs(params.quantity));
-			if (exitQty.lessThanOrEqualTo(0)) {
+			// Una cantidad negativa o cero se rechaza (no se convierte a positiva): una salida siempre es mayor a cero.
+			if (!Number.isFinite(Number(params.quantity)) || Number(params.quantity) <= 0) {
 				throw new BadRequestException('La cantidad de salida debe ser mayor a cero.');
 			}
+			const exitQty = new Decimal(params.quantity);
 
 			// 4. Bloqueo pesimista del saldo con SELECT ... FOR UPDATE
 			const balance = await manager
@@ -985,16 +1089,13 @@ export class InventoryService {
 
 			const savedMovement = await manager.save(InventoryMovementOrmEntity, movement);
 
-			// Sincronizar descuento de stock_current en tab_inventory_item
-			try {
-				await manager.query(`
-					UPDATE tab_inventory_item
-					SET stock_current = GREATEST(0, stock_current - $1)
-					WHERE id = $2 AND company_id = $3
-				`, [exitQty.toNumber(), params.productId, params.companyId]);
-			} catch (e) {
-				console.error('Error updating stock on exit:', e);
-			}
+			// Sincronizar descuento de stock_current en tab_inventory_item.
+			// Sin try/catch: si falla, la transacción queda abortada y el error real debe propagarse.
+			await manager.query(`
+				UPDATE tab_inventory_item
+				SET stock_current = GREATEST(0, stock_current - $1)
+				WHERE id = $2 AND company_id = $3 AND code = $4
+			`, [exitQty.toNumber(), params.productId, params.companyId, product.code]);
 
 			return savedMovement;
 		};

@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { SuperAdminGuard } from 'src/auth/guards/super-admin.guard';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { TieBreakerCriteriaService } from '../application/tie-breaker-criteria.service';
 import { CreateTieBreakerCriterionDto, UpdateTieBreakerCriterionDto } from '../application/dto/tie-breaker-criterion.dto';
@@ -26,16 +27,25 @@ export class TieBreakerCriteriaController {
   }
 
   @Post()
+  @UseGuards(SuperAdminGuard)
   create(@Body() dto: CreateTieBreakerCriterionDto, @Req() req: any) {
     return this.service.create(dto, req.user, this.resolveCompanyId(req));
   }
 
   @Put(':id')
+  @UseGuards(SuperAdminGuard)
   update(@Param('id') id: string, @Body() dto: UpdateTieBreakerCriterionDto, @Req() req: any) {
     return this.service.update(id, dto, req.user);
   }
 
+  @Patch(':id')
+  @UseGuards(SuperAdminGuard)
+  updatePatch(@Param('id') id: string, @Body() dto: UpdateTieBreakerCriterionDto, @Req() req: any) {
+    return this.service.update(id, dto, req.user);
+  }
+
   @Delete(':id')
+  @UseGuards(SuperAdminGuard)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

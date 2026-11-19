@@ -8,6 +8,7 @@ import { CreateRolesTemplatesDto } from "../application/dto/create-roles-templat
 import { UpdateRolesTemplatesDto } from "../application/dto/update-roles-templates.dto";
 import { ListRolesTemplatesDto } from "../application/dto/list-roles-templates.dto";
 import { AuthGuard } from "@nestjs/passport";
+import { SuperAdminGuard } from "src/auth/guards/super-admin.guard";
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('rolesTemplates')
@@ -19,6 +20,7 @@ export class RolesTemplatesController {
 		private readonly updateUseCase: UpdateRolesTemplatesUseCase,
 	) { }
 
+	@UseGuards(SuperAdminGuard)
 	@Post()
 	create(@Body() dto: CreateRolesTemplatesDto, @Req() req: any) {
 		return this.createUseCase.execute(dto, req.user);
@@ -34,6 +36,7 @@ export class RolesTemplatesController {
 		return this.getUseCase.execute(Number(id));
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateRolesTemplatesDto, @Req() req: any) {
 		return this.updateUseCase.execute(Number(id), dto);

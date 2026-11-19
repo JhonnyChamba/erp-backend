@@ -56,16 +56,15 @@ export class EmissionPointController {
 	}
 
 	@Post()
-	create(@Body() dto: CreateEmissionPointDto, @Req() req: any) {
-		const explicit = (dto as any)?.companyId || (dto as any)?.company_id;
-		const companyId = this.resolveCompanyId(req, explicit);
+	create(@Body() dto: CreateEmissionPointDto, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		// La empresa sale de la validada por CompanyAccessGuard (query o activa); la del body no decide nada.
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
 		return this.emissionPointService.createEmissionPoint(companyId, dto, req.user?.user_id);
 	}
 
 	@Patch(':id')
-	update(@Param('id') id: number, @Body() dto: UpdateEmissionPointDto, @Req() req: any) {
-		const explicit = (dto as any)?.companyId || (dto as any)?.company_id;
-		const companyId = this.resolveCompanyId(req, explicit);
+	update(@Param('id') id: number, @Body() dto: UpdateEmissionPointDto, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
 		return this.emissionPointService.updateEmissionPoint(Number(id), companyId, dto);
 	}
 
@@ -76,9 +75,8 @@ export class EmissionPointController {
 	}
 
 	@Patch('sequences/:sequenceId')
-	updateSequence(@Param('sequenceId') sequenceId: number, @Body() dto: UpdateSequenceDto, @Req() req: any) {
-		const explicit = (dto as any)?.companyId || (dto as any)?.company_id;
-		const companyId = this.resolveCompanyId(req, explicit);
+	updateSequence(@Param('sequenceId') sequenceId: number, @Body() dto: UpdateSequenceDto, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
 		return this.emissionPointService.updateSequenceCorrelative(Number(sequenceId), companyId, dto);
 	}
 }

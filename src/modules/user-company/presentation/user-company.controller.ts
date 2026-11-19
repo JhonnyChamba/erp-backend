@@ -8,6 +8,7 @@ import { CreateUserCompanyDto } from "../application/dto/create-user-company.dto
 import { UpdateUserCompanyDto } from "../application/dto/update-user-company.dto";
 import { ListUserCompanyDto } from "../application/dto/list-user-company.dto";
 import { AuthGuard } from "@nestjs/passport";
+import { SuperAdminGuard } from "src/auth/guards/super-admin.guard";
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('userCompany')
@@ -19,6 +20,7 @@ export class UserCompanyController {
 		private readonly updateUseCase: UpdateUserCompanyUseCase,
 	) { }
 
+	@UseGuards(SuperAdminGuard)
 	@Post()
 	create(@Body() dto: CreateUserCompanyDto, @Req() req: any) {
 		return this.createUseCase.execute(dto, req.user);

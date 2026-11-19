@@ -7,6 +7,8 @@ import { UsersOrmEntity } from 'src/modules/users/infrastructure/persistence/use
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AccessControlService } from './access-control.service';
+import { CreateUsersDto } from 'src/modules/users/application/dto/create-users.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -18,13 +20,18 @@ export class AuthController {
 		private readonly usersRepo: Repository<UsersOrmEntity>,
 	) { }
 
+	/**
+	 * Alta de usuario. No es un registro público: exige sesión y aplica las mismas reglas que `POST /users`
+	 * (el usuario solo puede crear cuentas en sus propias empresas y no puede otorgar privilegios que no tiene).
+	 */
+	@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 	@Post('register')
-	async register(@Body() body: any) {
-		return this.createUsersUseCase.execute(body);
+	async register(@Body() body: CreateUsersDto, @Req() req: any) {
+		return this.createUsersUseCase.execute(body, req.user);
 	}
 
 	@Post('login')
-	async login(@Body() body: any) {
+	async login(@Body() body: LoginDto) {
 		return this.authService.login(body.email, body.password);
 	}
 

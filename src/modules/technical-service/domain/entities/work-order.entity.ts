@@ -1,7 +1,10 @@
+// REPUESTO suma a partsCost; el resto (mano de obra, servicio, otro) suma a laborCost.
+export type WorkOrderItemType = 'REPUESTO' | 'MANO_OBRA' | 'SERVICIO' | 'OTRO';
+
 export interface WorkOrderItem {
   id?: number | null;
   workOrderId?: number;
-  itemType: 'SERVICIO' | 'REPUESTO';
+  itemType: WorkOrderItemType;
   description: string;
   quantity: number;
   unitPrice: number;

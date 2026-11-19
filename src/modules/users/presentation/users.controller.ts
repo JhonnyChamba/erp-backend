@@ -26,18 +26,17 @@ export class UsersController {
 
 	@Get()
 	list(@Query() query: ListUsersDto, @Req() req: any) {
-		return this.listUseCase.execute(query, req.user);
+		return this.listUseCase.execute(query, req.user, req.companyId);
 	}
 
 	@Get(':id')
 	get(@Param('id') id: number, @Req() req: any) {
-		const companyId = req.companyId || req.user?.companyId || 1;
-		return this.getUseCase.execute(Number(id), companyId);
+		// req.companyId: empresa ya validada por CompanyAccessGuard
+		return this.getUseCase.execute(Number(id), req.companyId, req.user);
 	}
 
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateUsersDto, @Req() req: any) {
-		const companyId = req.companyId || req.user?.companyId || (dto as any)?.companyId || 1;
-		return this.updateUseCase.execute(Number(id), companyId, dto, req.user);
+		return this.updateUseCase.execute(Number(id), req.companyId, dto, req.user);
 	}
 }

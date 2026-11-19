@@ -11,10 +11,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
+import { SuperAdminGuard } from 'src/auth/guards/super-admin.guard';
 import { StageFormatsService } from '../application/stage-formats.service';
 import { CreateStageFormatDto, UpdateStageFormatDto } from '../application/dto/stage-format.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('campeonato/stage-formats')
 export class StageFormatsController {
   constructor(private readonly service: StageFormatsService) {}
@@ -36,16 +38,19 @@ export class StageFormatsController {
   }
 
   @Post()
+  @UseGuards(SuperAdminGuard)
   create(@Body() dto: CreateStageFormatDto, @Req() req: any) {
     return this.service.create(dto, req.user, this.resolveCompanyId(req));
   }
 
   @Patch(':id')
+  @UseGuards(SuperAdminGuard)
   update(@Param('id') id: string, @Body() dto: UpdateStageFormatDto, @Req() req: any) {
     return this.service.update(id, dto, req.user);
   }
 
   @Delete(':id')
+  @UseGuards(SuperAdminGuard)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

@@ -20,7 +20,7 @@ export class WorkOrderItemOrmEntity {
   work_order: WorkOrderOrmEntity;
 
   @Column({ name: 'item_type', type: 'varchar', length: 20, default: 'SERVICIO' })
-  item_type: 'SERVICIO' | 'REPUESTO';
+  item_type: 'REPUESTO' | 'MANO_OBRA' | 'SERVICIO' | 'OTRO';
 
   @Column({ type: 'varchar', length: 255 })
   description: string;

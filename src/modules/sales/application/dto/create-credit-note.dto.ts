@@ -6,6 +6,8 @@ import {
 	IsArray,
 	ValidateNested,
 	IsBoolean,
+	IsPositive,
+	Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -32,14 +34,17 @@ export class CreateCreditNoteDetailDto {
 
 	@IsNotEmpty({ message: 'La cantidad es obligatoria.' })
 	@IsNumber({}, { message: 'La cantidad debe ser numérica.' })
+	@IsPositive({ message: 'La cantidad debe ser mayor a 0.' })
 	quantity: number;
 
 	@IsNotEmpty({ message: 'El precio unitario es obligatorio.' })
 	@IsNumber({}, { message: 'El precio debe ser numérico.' })
+	@Min(0, { message: 'El precio unitario no puede ser negativo.' })
 	unit_price: number;
 
 	@IsOptional()
-	@IsNumber()
+	@IsNumber({}, { message: 'El descuento debe ser numérico.' })
+	@Min(0, { message: 'El descuento no puede ser negativo.' })
 	discount?: number;
 
 	@IsOptional()

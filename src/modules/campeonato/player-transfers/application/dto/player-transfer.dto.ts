@@ -7,7 +7,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Min,
 } from 'class-validator';
 import { TransferApprovalRole, TransferApprovalStatus, TransferStatus } from '../../../common/enum/campeonato.enum';
@@ -28,9 +27,11 @@ export class CreatePlayerTransferDto {
   @IsNumber()
   destinationTeamId: number;
 
-  @IsNotEmpty({ message: 'La inscripción del equipo de destino es obligatoria' })
-  @IsUUID()
-  destinationTeamRegistrationId: string;
+  // Id entero de la inscripción del equipo destino. Si no se envía, se resuelve por equipo + edición.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  destinationTeamRegistrationId?: number;
 
   @IsOptional()
   @Type(() => Number)

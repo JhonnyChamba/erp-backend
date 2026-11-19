@@ -1,5 +1,5 @@
 import { UserCompanyRepository } from "../../domain/repositories/user-company.repository";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class UpdateUserCompanyUseCase {
@@ -7,7 +7,7 @@ export class UpdateUserCompanyUseCase {
 
   async execute(id: number, usersId: number, dto: any) {
     const branch = await this.repository.findById(id, usersId);
-    if (!branch) throw new Error('UserCompany not found');
+    if (!branch) throw new NotFoundException('UserCompany not found');
 
     branch.enabled = dto.enabled ?? branch.enabled;
 

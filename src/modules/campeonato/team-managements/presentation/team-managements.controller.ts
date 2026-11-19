@@ -32,13 +32,13 @@ export class TeamManagementsController {
   }
 
   @Get('by-team/:teamId')
-  listByTeam(@Param('teamId') teamId: string) {
-    return this.service.listByTeam(teamId);
+  listByTeam(@Param('teamId') teamId: string, @Req() req: any) {
+    return this.service.listByTeam(teamId, this.resolveCompanyId(req));
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.service.get(id);
+  get(@Param('id') id: string, @Req() req: any) {
+    return this.service.get(id, this.resolveCompanyId(req));
   }
 
   @Post()
@@ -48,11 +48,11 @@ export class TeamManagementsController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateTeamManagementDto, @Req() req: any) {
-    return this.service.update(id, dto, req.user);
+    return this.service.update(id, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.service.remove(id, this.resolveCompanyId(req));
   }
 }

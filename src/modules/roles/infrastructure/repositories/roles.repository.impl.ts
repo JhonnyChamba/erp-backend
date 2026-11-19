@@ -4,7 +4,7 @@ import { SubscriptionsOrmEntity } from 'src/modules/subscriptions/infrastructure
 import { AccessControlService } from 'src/auth/access-control.service';
 import { Roles, RoleAccessDetail } from '../../domain/entities/roles.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -80,39 +80,21 @@ export class RolesRepositoryImpl implements RolesRepository {
 	}
 
 	async findByCompany(companyId: number, page: number, limit: number): Promise<{ data: Roles[]; total: number }> {
-		let targetCompanyId = Number(companyId);
+		const targetCompanyId = Number(companyId);
 
-		// Validar que la empresa exista realmente en tab_company para evitar violaciones de clave foránea
-		let validCompany = false;
-		if (targetCompanyId && targetCompanyId > 0) {
-			const check = await this.repo.manager.query(
-				'SELECT id FROM tab_company WHERE id = $1 AND (deleted = false OR deleted IS NULL)',
-				[targetCompanyId],
-			);
-			if (check && check.length > 0) {
-				validCompany = true;
-			}
+		// Validar que la empresa exista realmente en tab_company para evitar violaciones de clave foránea.
+		// Si no existe NO se cae a otra empresa (devolvería los roles de un tercero) ni se reasignan roles
+		// huérfanos (company_id NULL) a quien liste primero: simplemente no hay nada que listar.
+		if (!Number.isInteger(targetCompanyId) || targetCompanyId <= 0) {
+			return { data: [], total: 0 };
 		}
-
-		if (!validCompany) {
-			const firstComp = await this.repo.manager.query(
-				'SELECT id FROM tab_company WHERE (deleted = false OR deleted IS NULL) ORDER BY id ASC LIMIT 1',
-			);
-			if (firstComp && firstComp.length > 0) {
-				targetCompanyId = Number(firstComp[0].id);
-				validCompany = true;
-			} else {
-				return { data: [], total: 0 };
-			}
+		const check = await this.repo.manager.query(
+			'SELECT id FROM tab_company WHERE id = $1 AND (deleted = false OR deleted IS NULL)',
+			[targetCompanyId],
+		);
+		if (!check || check.length === 0) {
+			return { data: [], total: 0 };
 		}
-
-		// Normalizar roles previos cuyo company_id quedó en NULL hacia la empresa activa válida
-		await this.repo
-			.createQueryBuilder()
-			.update(RolesOrmEntity)
-			.set({ company: { id: targetCompanyId } as any })
-			.where('company_id IS NULL')
-			.execute();
 
 		try {
 			await this.ensureCompanyAdminRoleSynced(targetCompanyId);
@@ -302,34 +284,35 @@ export class RolesRepositoryImpl implements RolesRepository {
 		}
 	}
 
-	async findById(id: number, companyId?: number): Promise<Roles | null> {
-		let roles = await this.repo.findOne({
-			where: { id, deleted: false },
+	async findById(id: number, companyId: number): Promise<Roles | null> {
+		// Aislamiento multiempresa: el rol solo es visible desde la empresa a la que pertenece.
+		const targetCompanyId = Number(companyId);
+		if (!Number.isInteger(targetCompanyId) || targetCompanyId <= 0) return null;
+
+		const roles = await this.repo.findOne({
+			where: { id, deleted: false, company: { id: targetCompanyId } },
 			relations: ['company', 'roleModules', 'roleModules.module', 'roleModules.subModule'],
 		});
-
-		if (roles && !roles.company && companyId) {
-			await this.repo.update({ id }, { company: { id: companyId } as any });
-			roles.company = { id: companyId } as any;
-		}
 
 		return roles ? this.toDomain(roles) : null;
 	}
 
 	async update(roles: Roles): Promise<Roles> {
-		const existing = await this.repo.findOne({ where: { id: roles.id! } });
-		const isCompanyAdmin = Boolean(existing?.is_company_admin || roles.is_company_admin);
+		// `roles.companyId` proviene de findById(id, empresaActiva): el rol ya está acotado a esa empresa.
+		// Se vuelve a comprobar aquí para que ninguna otra llamada pueda editar un rol de otra empresa.
+		const existing = await this.repo.findOne({
+			where: { id: roles.id!, deleted: false, company: { id: roles.companyId } },
+		});
+		if (!existing) throw new NotFoundException('Rol no encontrado');
+		const isCompanyAdmin = Boolean(existing.is_company_admin || roles.is_company_admin);
 
 		const updatePayload: any = {
 			code: roles.code,
 			description: roles.description,
 			enabled: isCompanyAdmin ? true : roles.enabled,
 		};
-		if (roles.companyId) {
-			updatePayload.company = { id: roles.companyId };
-		}
 
-		await this.repo.update({ id: roles.id! }, updatePayload);
+		await this.repo.update({ id: existing.id }, updatePayload);
 
 		if (
 			roles.moduleIds !== undefined ||

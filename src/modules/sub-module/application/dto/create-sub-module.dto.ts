@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreatesubModulesDto {
 	@IsNumber()
@@ -20,4 +21,9 @@ export class CreatesubModulesDto {
 	@IsString()
 	@IsNotEmpty()
 	url_desc: string;
+
+	@Type(() => Number)
+	@IsInt()
+	@IsOptional()
+	order_index?: number;
 }

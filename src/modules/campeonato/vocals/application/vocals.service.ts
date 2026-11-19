@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
+import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { VocalOrmEntity } from '../../infrastructure/persistence/vocal.orm-entity';
 import { CreateVocalDto, UpdateVocalDto } from './dto/vocal.dto';
 
@@ -31,13 +33,13 @@ export class VocalsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['team'] });
-    if (!item) throw new NotFoundException('Vocal no encontrado');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Vocal no encontrado', write);
   }
 
   async create(dto: CreateVocalDto, user: any, companyId: number) {
+    await assertBelongsToCompany(this.repo.manager.getRepository(TeamOrmEntity), dto.teamId, companyId, 'Equipo no encontrado');
     const item = this.repo.create({
       ...dto,
       companyId,
@@ -47,8 +49,9 @@ export class VocalsService {
     return this.repo.save(item);
   }
 
-  async update(id: string | number, dto: UpdateVocalDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateVocalDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
+    await assertBelongsToCompany(this.repo.manager.getRepository(TeamOrmEntity), dto.teamId, companyId, 'Equipo no encontrado');
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
@@ -56,8 +59,8 @@ export class VocalsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

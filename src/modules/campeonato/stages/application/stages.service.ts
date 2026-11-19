@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CategoryEditionOrmEntity } from '../../infrastructure/persistence/category-edition.orm-entity';
+import { CategoryOrmEntity } from '../../infrastructure/persistence/category.orm-entity';
+import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { StageOrmEntity } from '../../infrastructure/persistence/stage.orm-entity';
 import { StagePlayerClassificationOrmEntity } from '../../infrastructure/persistence/stage-player-classification.orm-entity';
 import { PlayerRegistrationOrmEntity } from '../../infrastructure/persistence/player-registration.orm-entity';
@@ -49,13 +52,20 @@ export class StagesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['categoryEdition'] });
-    if (!item) throw new NotFoundException('Etapa no encontrada');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Etapa no encontrada', write);
+  }
+
+  /** Los ids recibidos en el body deben pertenecer a la empresa activa. */
+  private async assertReferences(dto: CreateStageDto | UpdateStageDto, companyId: number) {
+    await assertBelongsToCompany(this.repo.manager.getRepository(CategoryEditionOrmEntity), dto.categoryEditionId, companyId, 'Edición de torneo no encontrada');
+    await assertBelongsToCompany(this.repo.manager.getRepository(CategoryOrmEntity), dto.categoryId, companyId, 'Categoría no encontrada');
+    await assertBelongsToCompany(this.repo, dto.previousStageId, companyId, 'Etapa previa no encontrada');
   }
 
   async create(dto: CreateStageDto, user: any, companyId: number) {
+    await this.assertReferences(dto, companyId);
     if (dto.maxPlayersPerTeam !== undefined && dto.maxPlayersPerTeam !== null && dto.maxPlayersPerTeam <= 0) {
       throw new BadRequestException('El límite máximo de futbolistas por equipo debe ser un valor positivo mayor a 0.');
     }
@@ -69,9 +79,10 @@ export class StagesService {
     return this.repo.save(item);
   }
 
-  async update(id: string | number, dto: UpdateStageDto, user: any) {
+  async update(id: string | number, dto: UpdateStageDto, user: any, companyId: number) {
     const numId = Number(id);
-    const item = await this.get(numId);
+    const item = await this.get(numId, companyId, true);
+    await this.assertReferences(dto, companyId);
 
     if (dto.maxPlayersPerTeam !== undefined && dto.maxPlayersPerTeam !== null) {
       if (dto.maxPlayersPerTeam <= 0) {
@@ -95,8 +106,8 @@ export class StagesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 
@@ -104,9 +115,9 @@ export class StagesService {
   // GESTIÓN DE CLASIFICACIONES DE FUTBOLISTAS POR ETAPA / FASE
   // ==============================================================
 
-  async listClassifications(stageId: string | number) {
+  async listClassifications(stageId: string | number, companyId: number) {
     const numStageId = Number(stageId);
-    const stage = await this.get(numStageId);
+    const stage = await this.get(numStageId, companyId);
     const classifications = await this.stageClassificationRepo.find({
       where: { stageId: numStageId },
       relations: ['playerClassification'],
@@ -128,7 +139,7 @@ export class StagesService {
 
   async addClassification(stageId: string | number, dto: CreateStagePlayerClassificationDto, user: any, companyId: number) {
     const numStageId = Number(stageId);
-    const stage = await this.get(numStageId);
+    const stage = await this.get(numStageId, companyId, true);
 
     // Regla 2: Cantidades estrictamente positivas
     if (!dto.maxPlayers || dto.maxPlayers <= 0) {
@@ -173,10 +184,10 @@ export class StagesService {
     });
     await this.stageClassificationRepo.save(item);
 
-    return this.listClassifications(numStageId);
+    return this.listClassifications(numStageId, companyId);
   }
 
-  async updateClassification(id: string | number, dto: UpdateStagePlayerClassificationDto, user: any) {
+  async updateClassification(id: string | number, dto: UpdateStagePlayerClassificationDto, user: any, companyId: number) {
     const numId = Number(id);
     const item = await this.stageClassificationRepo.findOne({
       where: { id: numId },
@@ -185,6 +196,7 @@ export class StagesService {
     if (!item) {
       throw new NotFoundException('Registro de clasificación en etapa no encontrado.');
     }
+    ensureCompanyScope(item.stage, companyId, 'Registro de clasificación en etapa no encontrado.', true);
 
     if (dto.maxPlayers !== undefined) {
       if (dto.maxPlayers <= 0) {
@@ -233,10 +245,10 @@ export class StagesService {
     item.updateName = user?.user_name || user?.name;
     await this.stageClassificationRepo.save(item);
 
-    return this.listClassifications(item.stageId);
+    return this.listClassifications(item.stageId, companyId);
   }
 
-  async removeClassification(id: string | number) {
+  async removeClassification(id: string | number, companyId: number) {
     const numId = Number(id);
     const item = await this.stageClassificationRepo.findOne({
       where: { id: numId },
@@ -245,6 +257,7 @@ export class StagesService {
     if (!item) {
       throw new NotFoundException('Registro de clasificación en etapa no encontrado.');
     }
+    ensureCompanyScope(item.stage, companyId, 'Registro de clasificación en etapa no encontrado.', true);
 
     // Validar si existen jugadores inscritos con esta clasificación en esta etapa
     const count = await this.playerRegistrationRepo.count({
@@ -262,6 +275,6 @@ export class StagesService {
 
     const stageId = item.stageId;
     await this.stageClassificationRepo.remove(item);
-    return this.listClassifications(stageId);
+    return this.listClassifications(stageId, companyId);
   }
 }

@@ -1,5 +1,5 @@
 import { PermissionsTemplatesRepository } from "../../domain/repositories/permissions-templates.repository";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class UpdatePermissionsTemplatesUseCase {
@@ -7,7 +7,7 @@ export class UpdatePermissionsTemplatesUseCase {
 
   async execute(id: number, dto: any) {
     const branch = await this.repository.findById(id);
-    if (!branch) throw new Error('PermissionsTemplates not found');
+    if (!branch) throw new NotFoundException('PermissionsTemplates not found');
 
     branch.code = dto.code ?? branch.code;
     branch.description = dto.description ?? branch.description;

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { StageTemplatesService } from '../application/stage-templates.service';
@@ -35,8 +35,14 @@ export class StageTemplatesController {
     return this.service.update(id, dto, req.user, this.resolveCompanyId(req));
   }
 
+  // El frontend edita con PATCH; se mantiene PUT por compatibilidad.
+  @Patch(':id')
+  updatePatch(@Param('id') id: string, @Body() dto: UpdateStageTemplateDto, @Req() req: any) {
+    return this.service.update(id, dto, req.user, this.resolveCompanyId(req));
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.service.remove(id, this.resolveCompanyId(req));
+    return this.service.remove(id, this.resolveCompanyId(req), req.user);
   }
 }

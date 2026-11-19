@@ -36,7 +36,8 @@ async function createApp() {
       if (origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
-      return callback(null, true);
+      // Origen no permitido: la respuesta sale sin cabeceras CORS y el navegador la bloquea.
+      return callback(null, false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Authorization,x-company-id,Accept,Origin,X-Requested-With',

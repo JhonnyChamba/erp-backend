@@ -8,6 +8,7 @@ import { UpdatePermissionsTemplatesDto } from "../application/dto/update-permiss
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ListPermissionsTemplatesDto } from "../application/dto/list-permissions-templates.dto";
 import { AuthGuard } from "@nestjs/passport";
+import { SuperAdminGuard } from "src/auth/guards/super-admin.guard";
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('permissionsTemplates')
@@ -19,6 +20,7 @@ export class PermissionsTemplatesController {
 		private readonly updateUseCase: UpdatePermissionsTemplatesUseCase,
 	) { }
 
+	@UseGuards(SuperAdminGuard)
 	@Post()
 	create(@Body() dto: CreatePermissionsTemplatesDto, @Req() req: any) {
 		return this.createUseCase.execute(dto, req.user);
@@ -34,6 +36,7 @@ export class PermissionsTemplatesController {
 		return this.getUseCase.execute(Number(id));
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdatePermissionsTemplatesDto, @Req() req: any) {
 		return this.updateUseCase.execute(Number(id), dto);

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, ILike, In } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import {
   WorkOrderRepository,
   ListWorkOrdersFilters,
@@ -9,6 +9,9 @@ import {
 import { WorkOrder, WorkOrderItem } from '../../domain/entities/work-order.entity';
 import { WorkOrderOrmEntity } from '../persistence/work-order.orm-entity';
 import { WorkOrderItemOrmEntity } from '../persistence/work-order-item.orm-entity';
+
+// Clave del advisory lock de PostgreSQL que serializa la numeración de órdenes por empresa.
+const WORK_ORDER_NUMBER_LOCK = 73011;
 
 @Injectable()
 export class WorkOrderRepositoryImpl implements WorkOrderRepository {
@@ -85,7 +88,32 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
   }
 
   async create(entity: WorkOrder, items: WorkOrderItem[] = []): Promise<WorkOrder> {
-    const orm = this.repo.create({
+    // Numeración + alta en una sola transacción, serializada por empresa con un
+    // advisory lock: dos altas concurrentes no pueden leer el mismo "último número".
+    const savedId = await this.repo.manager.transaction(async (manager) => {
+      await manager.query('SELECT pg_advisory_xact_lock($1::int, $2::int)', [
+        WORK_ORDER_NUMBER_LOCK,
+        entity.companyId,
+      ]);
+      const orderNumber = entity.orderNumber?.trim()
+        ? entity.orderNumber.trim()
+        : await this.generateNextOrderNumber(entity.companyId, manager);
+      return this.insertWorkOrder(manager, entity, orderNumber, items);
+    });
+
+    return this.findById(savedId, entity.companyId) as Promise<WorkOrder>;
+  }
+
+  private async insertWorkOrder(
+    manager: EntityManager,
+    entity: WorkOrder,
+    orderNumber: string,
+    items: WorkOrderItem[],
+  ): Promise<number> {
+    const repo = manager.getRepository(WorkOrderOrmEntity);
+    const itemRepo = manager.getRepository(WorkOrderItemOrmEntity);
+
+    const orm = repo.create({
       company_id: entity.companyId,
       branch_id: entity.branchId,
       customer_id: entity.customerId,
@@ -94,7 +122,7 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
       customer_email: entity.customerEmail,
       technician_id: entity.technicianId,
       technician_name: entity.technicianName,
-      order_number: entity.orderNumber,
+      order_number: orderNumber,
       service_type: entity.serviceType,
       priority: entity.priority,
       status: entity.status,
@@ -124,11 +152,11 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
       deleted: false,
     });
 
-    const saved = await this.repo.save(orm);
+    const saved = await repo.save(orm);
 
     if (items && items.length > 0) {
       const itemEntities = items.map((i) =>
-        this.itemRepo.create({
+        itemRepo.create({
           work_order_id: saved.id,
           item_type: i.itemType,
           description: i.description,
@@ -137,10 +165,10 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
           subtotal: i.subtotal,
         }),
       );
-      saved.items = await this.itemRepo.save(itemEntities);
+      await itemRepo.save(itemEntities);
     }
 
-    return this.findById(saved.id, entity.companyId) as Promise<WorkOrder>;
+    return saved.id;
   }
 
   async findById(id: number, companyId: number): Promise<WorkOrder | null> {
@@ -292,24 +320,29 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
     existing.notes = entity.notes;
     existing.updated_at = new Date();
 
-    await this.repo.save(existing);
+    // Cabecera + reemplazo de ítems en una sola transacción: si falla la
+    // inserción de los ítems nuevos no se pierden los anteriores.
+    await this.repo.manager.transaction(async (manager) => {
+      await manager.getRepository(WorkOrderOrmEntity).save(existing);
 
-    if (items !== undefined) {
-      await this.itemRepo.delete({ work_order_id: entity.id! });
-      if (items.length > 0) {
-        const itemEntities = items.map((i) =>
-          this.itemRepo.create({
-            work_order_id: entity.id!,
-            item_type: i.itemType,
-            description: i.description,
-            quantity: i.quantity,
-            unit_price: i.unitPrice,
-            subtotal: i.subtotal,
-          }),
-        );
-        await this.itemRepo.save(itemEntities);
+      if (items !== undefined) {
+        const itemRepo = manager.getRepository(WorkOrderItemOrmEntity);
+        await itemRepo.delete({ work_order_id: entity.id! });
+        if (items.length > 0) {
+          const itemEntities = items.map((i) =>
+            itemRepo.create({
+              work_order_id: entity.id!,
+              item_type: i.itemType,
+              description: i.description,
+              quantity: i.quantity,
+              unit_price: i.unitPrice,
+              subtotal: i.subtotal,
+            }),
+          );
+          await itemRepo.save(itemEntities);
+        }
       }
-    }
+    });
 
     return this.findById(entity.id!, entity.companyId) as Promise<WorkOrder>;
   }
@@ -321,6 +354,7 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
     technicalDiagnosis?: string,
     solutionApplied?: string,
     realDeliveryDate?: Date,
+    notes?: string | null,
   ): Promise<WorkOrder> {
     const existing = await this.repo.findOne({
       where: { id, company_id: companyId, deleted: false },
@@ -331,6 +365,7 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
     if (technicalDiagnosis !== undefined) existing.technical_diagnosis = technicalDiagnosis;
     if (solutionApplied !== undefined) existing.solution_applied = solutionApplied;
     if (realDeliveryDate !== undefined) existing.real_delivery_date = realDeliveryDate;
+    if (notes !== undefined) existing.notes = notes;
     existing.updated_at = new Date();
 
     await this.repo.save(existing);
@@ -341,8 +376,9 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
     await this.repo.update({ id, company_id: companyId }, { deleted: true });
   }
 
-  async generateNextOrderNumber(companyId: number): Promise<string> {
-    const latest = await this.repo.findOne({
+  async generateNextOrderNumber(companyId: number, manager?: EntityManager): Promise<string> {
+    const repo = manager ? manager.getRepository(WorkOrderOrmEntity) : this.repo;
+    const latest = await repo.findOne({
       where: { company_id: companyId },
       order: { id: 'DESC' },
     });

@@ -16,4 +16,9 @@ export class UpdateWorkOrderStatusDto {
   @IsOptional()
   @IsDateString()
   realDeliveryDate?: string;
+
+  // Nota del cambio de estado: se agrega a las observaciones (notes) de la orden.
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

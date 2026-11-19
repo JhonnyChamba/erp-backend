@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ensureCompanyScope } from '../../common/company-scope.util';
 import { TournamentCommitteeOrmEntity } from '../../infrastructure/persistence/tournament-committee.orm-entity';
 import { CreateTournamentCommitteeDto, UpdateTournamentCommitteeDto } from './dto/tournament-committee.dto';
 
@@ -31,10 +32,9 @@ export class TournamentCommitteesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['position'] });
-    if (!item) throw new NotFoundException('Miembro de comité no encontrado');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Miembro de comité no encontrado', write);
   }
 
   async create(dto: CreateTournamentCommitteeDto, user: any, companyId: number) {
@@ -47,8 +47,8 @@ export class TournamentCommitteesService {
     return this.repo.save(item);
   }
 
-  async update(id: string | number, dto: UpdateTournamentCommitteeDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateTournamentCommitteeDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
@@ -56,8 +56,8 @@ export class TournamentCommitteesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

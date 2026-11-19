@@ -2,19 +2,34 @@ import { UsersRepository } from "../../domain/repositories/users.repository";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PasswordService } from "src/common/password/password.service";
 import { UpdateUsersDto } from "../dto/update-users.dto";
+import { UsersAccessPolicy } from "../users-access.policy";
 
 @Injectable()
 export class UpdateUsersUseCase {
   constructor(
     private readonly repository: UsersRepository,
     private readonly passwordService: PasswordService,
+    private readonly accessPolicy: UsersAccessPolicy,
   ) {}
 
   async execute(id: number, companyId: number, dto: UpdateUsersDto, currentUser?: any) {
-    const user = await this.repository.findById(id, companyId);
+    // null = quien llama es super admin / developer (consultado en BD, no en el token)
+    const actorCompanyIds = await this.accessPolicy.getActorCompanyIds(currentUser);
+    const canGrantSuperAdmin = actorCompanyIds === null;
+
+    // Solo un super admin puede alcanzar usuarios fuera de la empresa activa
+    const user = await this.repository.findById(id, companyId, canGrantSuperAdmin);
     if (!user) throw new NotFoundException('User not found');
 
-    const canGrantSuperAdmin = Boolean(currentUser?.super_admin || currentUser?.developer);
+    if (actorCompanyIds !== null) {
+      this.accessPolicy.assertCanManageTarget(actorCompanyIds, user);
+      await this.accessPolicy.assertCanAssign(actorCompanyIds, {
+        companyId: user.companyId,
+        roleId: dto.roleId,
+        companyIds: dto.companyIds,
+        companyRoles: dto.companyRoles,
+      });
+    }
 
     user.num_document = dto.num_document ?? user.num_document;
     user.name_user = dto.name_user ?? user.name_user;

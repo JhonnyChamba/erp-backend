@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { assertBelongsToCompany, assertPlayerInCompany, ensureCompanyScope, resolveUserId } from '../../common/company-scope.util';
 import { PlayerRegistrationOrmEntity } from '../../infrastructure/persistence/player-registration.orm-entity';
 import { PlayerOrmEntity } from '../../infrastructure/persistence/player.orm-entity';
 import { TeamRegistrationOrmEntity } from '../../infrastructure/persistence/team-registration.orm-entity';
@@ -35,6 +36,20 @@ export class PlayerRegistrationsService {
     private readonly historyRepo: Repository<PlayerRegistrationHistoryOrmEntity>,
     private readonly dataSource: DataSource,
   ) {}
+
+  /**
+   * Los ids recibidos en el body deben pertenecer a la empresa activa (el jugador, estar vinculado a ella).
+   */
+  private async assertReferences(
+    companyId: number,
+    refs: { teamRegistrationId?: number; stageId?: number; playerIds?: number[] },
+  ) {
+    await assertBelongsToCompany(this.teamRegistrationRepo, refs.teamRegistrationId, companyId, 'Inscripción de equipo no encontrada');
+    await assertBelongsToCompany(this.stageRepo, refs.stageId, companyId, 'Etapa no encontrada');
+    for (const playerId of refs.playerIds || []) {
+      await assertPlayerInCompany(this.repo.manager, playerId, companyId);
+    }
+  }
 
   private async validateDemarcationLimit(
     playerId: string | number,
@@ -261,7 +276,7 @@ export class PlayerRegistrationsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({
       where: { id: Number(id) },
       relations: [
@@ -273,11 +288,16 @@ export class PlayerRegistrationsService {
         'stage',
       ],
     });
-    if (!item) throw new NotFoundException('Inscripción de jugador no encontrada');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Inscripción de jugador no encontrada', write);
   }
 
   async create(dto: CreatePlayerRegistrationDto, user: any, companyId: number) {
+    await this.assertReferences(companyId, {
+      teamRegistrationId: dto.teamRegistrationId,
+      stageId: dto.stageId,
+      playerIds: [dto.playerId],
+    });
+
     if (dto.playerId && dto.teamRegistrationId) {
       await this.validateDemarcationLimit(dto.playerId, dto.teamRegistrationId);
       await this.validateDuplicateAndJersey(dto.playerId, dto.teamRegistrationId, dto.jerseyNumber);
@@ -318,7 +338,7 @@ export class PlayerRegistrationsService {
       playerId: saved.playerId,
       action: PlayerRegistrationHistoryAction.CREATED,
       newStatus: saved.status,
-      performedById: user?.user_id?.toString() || user?.id?.toString(),
+      performedById: resolveUserId(user),
       performedByName: user?.user_name || user?.name,
       comments: 'Inscripción individual registrada',
       metadata: { jerseyNumber: saved.jerseyNumber, teamRegistrationId: saved.teamRegistrationId },
@@ -334,6 +354,12 @@ export class PlayerRegistrationsService {
     if (!dto.registrations || dto.registrations.length === 0) {
       throw new BadRequestException('Debe incluir al menos un jugador para la inscripción masiva');
     }
+
+    await this.assertReferences(companyId, {
+      teamRegistrationId: dto.teamRegistrationId,
+      stageId: dto.stageId,
+      playerIds: dto.registrations.map((r) => r.playerId),
+    });
 
     const teamRegistration = await this.teamRegistrationRepo.findOne({
       where: { id: Number(dto.teamRegistrationId) },
@@ -413,7 +439,7 @@ export class PlayerRegistrationsService {
           playerId: saved.playerId,
           action: PlayerRegistrationHistoryAction.MASS_CREATED,
           newStatus: saved.status,
-          performedById: user?.user_id?.toString() || user?.id?.toString(),
+          performedById: resolveUserId(user),
           performedByName: user?.user_name || user?.name,
           comments: 'Inscripción procesada mediante carga masiva',
           metadata: { jerseyNumber: saved.jerseyNumber, teamRegistrationId: dto.teamRegistrationId },
@@ -434,8 +460,13 @@ export class PlayerRegistrationsService {
     }
   }
 
-  async update(id: string | number, dto: UpdatePlayerRegistrationDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdatePlayerRegistrationDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
+    await this.assertReferences(companyId, {
+      teamRegistrationId: dto.teamRegistrationId,
+      stageId: dto.stageId,
+      playerIds: dto.playerId ? [dto.playerId] : [],
+    });
 
     const targetPlayerId = dto.playerId || item.playerId;
     const targetTeamRegId = dto.teamRegistrationId || item.teamRegistrationId;
@@ -470,7 +501,7 @@ export class PlayerRegistrationsService {
         action: PlayerRegistrationHistoryAction.STATUS_CHANGE,
         previousStatus,
         newStatus: saved.status,
-        performedById: user?.user_id?.toString() || user?.id?.toString(),
+        performedById: resolveUserId(user),
         performedByName: user?.user_name || user?.name,
         comments: 'Estado modificado en edición de registro',
       });
@@ -482,8 +513,8 @@ export class PlayerRegistrationsService {
   /**
    * Transición de estados de inscripción con trazabilidad y auditoría
    */
-  async updateStatus(id: string, dto: UpdatePlayerRegistrationStatusDto, user: any) {
-    const item = await this.get(id);
+  async updateStatus(id: string, dto: UpdatePlayerRegistrationStatusDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
     const previousStatus = item.status;
 
     item.status = dto.status;
@@ -508,7 +539,7 @@ export class PlayerRegistrationsService {
       action,
       previousStatus,
       newStatus: saved.status,
-      performedById: user?.user_id?.toString() || user?.id?.toString(),
+      performedById: resolveUserId(user),
       performedByName: user?.user_name || user?.name,
       comments: dto.comments || `Cambio de estado a ${dto.status}`,
     });
@@ -519,15 +550,13 @@ export class PlayerRegistrationsService {
   /**
    * Obtiene la plantilla completa y el balance de cupos ocupados vs disponibles
    */
-  async getRosterByTeamRegistration(teamRegistrationId: string | number) {
+  async getRosterByTeamRegistration(teamRegistrationId: string | number, companyId: number) {
     const numTeamRegId = Number(teamRegistrationId);
     const teamReg = await this.teamRegistrationRepo.findOne({
       where: { id: numTeamRegId },
       relations: ['team', 'categoryEdition', 'categoryEdition.category'],
     });
-    if (!teamReg) {
-      throw new NotFoundException('Inscripción de equipo no encontrada');
-    }
+    ensureCompanyScope(teamReg, companyId, 'Inscripción de equipo no encontrada');
 
     const registrations = await this.repo.find({
       where: { teamRegistrationId: numTeamRegId },
@@ -570,8 +599,8 @@ export class PlayerRegistrationsService {
     };
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

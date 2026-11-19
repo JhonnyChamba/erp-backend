@@ -1,5 +1,5 @@
 import { RolesTemplatesRepository } from "../../domain/repositories/roles-templates.repository";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class UpdateRolesTemplatesUseCase {
@@ -7,7 +7,7 @@ export class UpdateRolesTemplatesUseCase {
 
   async execute(id: number, dto: any) {
     const branch = await this.repository.findById(id);
-    if (!branch) throw new Error('RolesTemplates not found');
+    if (!branch) throw new NotFoundException('RolesTemplates not found');
 
     branch.code = dto.code ?? branch.code;
     branch.description = dto.description ?? branch.description;

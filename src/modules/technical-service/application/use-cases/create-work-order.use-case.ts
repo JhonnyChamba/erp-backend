@@ -10,10 +10,9 @@ export class CreateWorkOrderUseCase {
   async execute(dto: CreateWorkOrderDto, currentUser?: any): Promise<WorkOrder> {
     const companyId = Number(dto.companyId || currentUser?.company_id || currentUser?.companyId || 1);
 
-    // Generar secuencial de orden si no viene provisto
-    const orderNumber = dto.orderNumber?.trim()
-      ? dto.orderNumber.trim()
-      : await this.repository.generateNextOrderNumber(companyId);
+    // Si no viene provisto, el repositorio genera el secuencial dentro de la
+    // transacción de alta (con bloqueo por empresa) para no repetir números.
+    const orderNumber = dto.orderNumber?.trim() || '';
 
     // Calcular costos a partir de los ítems si existen
     const items: WorkOrderItem[] = (dto.items || []).map((i) => ({
@@ -24,19 +23,19 @@ export class CreateWorkOrderUseCase {
       subtotal: (Number(i.quantity) || 1) * (Number(i.unitPrice) || 0),
     }));
 
+    // dto.laborCost es la mano de obra base del formulario; los ítems que no son
+    // repuestos (mano de obra, servicio, otro) se suman a ella. Los repuestos
+    // forman partsCost. Así subtotal = laborCost + partsCost cubre todos los ítems.
     let partsCost = Number(dto.partsCost) || 0;
     let laborCost = Number(dto.laborCost) || 0;
 
     if (items.length > 0) {
-      const partsSum = items
+      partsCost = items
         .filter((i) => i.itemType === 'REPUESTO')
         .reduce((sum, i) => sum + i.subtotal, 0);
-      const laborSum = items
-        .filter((i) => i.itemType === 'SERVICIO')
+      laborCost += items
+        .filter((i) => i.itemType !== 'REPUESTO')
         .reduce((sum, i) => sum + i.subtotal, 0);
-
-      if (partsSum > 0) partsCost = partsSum;
-      if (laborSum > 0) laborCost = laborSum;
     }
 
     const subtotal = partsCost + laborCost;

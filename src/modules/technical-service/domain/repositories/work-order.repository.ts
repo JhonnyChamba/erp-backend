@@ -23,6 +23,7 @@ export interface ListWorkOrdersFilters {
 }
 
 export abstract class WorkOrderRepository {
+  /** Si `entity.orderNumber` llega vacío, el número se genera dentro de la transacción de alta. */
   abstract create(entity: WorkOrder, items?: WorkOrderItem[]): Promise<WorkOrder>;
   abstract findById(id: number, companyId: number): Promise<WorkOrder | null>;
   abstract findByCompany(
@@ -37,6 +38,7 @@ export abstract class WorkOrderRepository {
     technicalDiagnosis?: string,
     solutionApplied?: string,
     realDeliveryDate?: Date,
+    notes?: string | null,
   ): Promise<WorkOrder>;
   abstract delete(id: number, companyId: number): Promise<void>;
   abstract generateNextOrderNumber(companyId: number): Promise<string>;

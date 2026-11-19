@@ -8,6 +8,7 @@ import { UpdateModuleDto } from "../application/dto/update-module.dto";
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ListModuleDto } from "../application/dto/list-module.dto";
 import { AuthGuard } from "@nestjs/passport";
+import { SuperAdminGuard } from "src/auth/guards/super-admin.guard";
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('module')
@@ -19,6 +20,7 @@ export class ModuleController {
 		private readonly updateUseCase: UpdateModuleUseCase,
 	) { }
 
+	@UseGuards(SuperAdminGuard)
 	@Post()
 	create(@Body() dto: CreateModuleDto, @Req() req: any) {
 		return this.createUseCase.execute(dto, req.user);
@@ -34,6 +36,7 @@ export class ModuleController {
 		return this.getUseCase.execute(Number(id));
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdateModuleDto, @Req() req: any) {
 		return this.updateUseCase.execute(Number(id), dto);

@@ -44,6 +44,7 @@ import { CompetitionLapOrmEntity } from './infrastructure/persistence/competitio
 import { TieBreakerCriterionOrmEntity } from './infrastructure/persistence/tie-breaker-criterion.orm-entity';
 import { StageTemplateOrmEntity } from './infrastructure/persistence/stage-template.orm-entity';
 import { StageTemplateDetailOrmEntity } from './infrastructure/persistence/stage-template-detail.orm-entity';
+import { EditionScenaryOrmEntity } from './infrastructure/persistence/edition-scenary.orm-entity';
 
 // Controladores de cada apartado
 import { PositionsController } from './positions/presentation/positions.controller';
@@ -146,6 +147,7 @@ const entities = [
   TieBreakerCriterionOrmEntity,
   StageTemplateOrmEntity,
   StageTemplateDetailOrmEntity,
+  EditionScenaryOrmEntity,
   ModuleOrmEntity,
   subModulesOrmEntity,
 ];

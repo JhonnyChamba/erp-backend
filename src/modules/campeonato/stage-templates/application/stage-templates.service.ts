@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StageTemplateOrmEntity } from '../../infrastructure/persistence/stage-template.orm-entity';
@@ -64,6 +64,14 @@ export class StageTemplatesService {
     return item;
   }
 
+  /** Las plantillas globales (sin empresa) son visibles para todas las empresas, pero solo las modifica un super admin. */
+  private assertWritable(template: StageTemplateOrmEntity, user: any) {
+    const isGlobal = template.companyId === null || template.companyId === undefined;
+    if (isGlobal && !user?.super_admin && !user?.developer) {
+      throw new ForbiddenException('Las plantillas globales solo puede modificarlas un super administrador.');
+    }
+  }
+
   async create(dto: CreateStageTemplateDto, user: any, companyId?: number) {
     const cleanName = dto.name.trim();
     if (!cleanName) {
@@ -101,6 +109,7 @@ export class StageTemplatesService {
   async update(id: string | number, dto: UpdateStageTemplateDto, user: any, companyId?: number) {
     const numId = Number(id);
     const template = await this.get(numId, companyId);
+    this.assertWritable(template, user);
 
     if (dto.name !== undefined) {
       const cleanName = dto.name.trim();
@@ -140,9 +149,10 @@ export class StageTemplatesService {
     return this.get(numId, companyId);
   }
 
-  async remove(id: string | number, companyId?: number) {
+  async remove(id: string | number, companyId?: number, user?: any) {
     const numId = Number(id);
     const template = await this.get(numId, companyId);
+    this.assertWritable(template, user);
     await this.detailRepo.delete({ stageTemplateId: numId });
     await this.repo.remove(template);
     return { success: true, message: 'Plantilla de etapas y fases eliminada con éxito' };

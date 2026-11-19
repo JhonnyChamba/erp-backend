@@ -17,8 +17,8 @@ export class PlayerTransferApprovalOrmEntity {
   @Column({ type: 'varchar', length: 50 })
   role: TransferApprovalRole;
 
-  @Column({ name: 'approver_user_id', type: 'varchar', length: 100, nullable: true })
-  approverUserId: string;
+  @Column({ name: 'approver_user_id', type: 'int', nullable: true })
+  approverUserId: number;
 
   @Column({ name: 'approver_name', type: 'varchar', length: 200, nullable: true })
   approverName: string;

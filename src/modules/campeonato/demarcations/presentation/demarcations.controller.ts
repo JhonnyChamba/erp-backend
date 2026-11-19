@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { SuperAdminGuard } from 'src/auth/guards/super-admin.guard';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { DemarcationsService } from '../application/demarcations.service';
 import { CreateDemarcationDto, UpdateDemarcationDto } from '../application/dto/demarcation.dto';
@@ -37,16 +38,19 @@ export class DemarcationsController {
   }
 
   @Post()
+  @UseGuards(SuperAdminGuard)
   create(@Body() dto: CreateDemarcationDto, @Req() req: any) {
     return this.service.create(dto, req.user, this.resolveCompanyId(req));
   }
 
   @Patch(':id')
+  @UseGuards(SuperAdminGuard)
   update(@Param('id') id: string, @Body() dto: UpdateDemarcationDto, @Req() req: any) {
     return this.service.update(id, dto, req.user);
   }
 
   @Delete(':id')
+  @UseGuards(SuperAdminGuard)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

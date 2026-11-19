@@ -36,8 +36,8 @@ export class PlayerTransfersController {
   }
 
   @Get('sports-history/:playerId')
-  getSportsHistory(@Param('playerId') playerId: string) {
-    return this.service.getSportsHistory(playerId);
+  getSportsHistory(@Param('playerId') playerId: string, @Req() req: any) {
+    return this.service.getSportsHistory(playerId, this.resolveCompanyId(req));
   }
 
   @Get('player/:playerId')
@@ -47,8 +47,8 @@ export class PlayerTransfersController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.service.get(id);
+  get(@Param('id') id: string, @Req() req: any) {
+    return this.service.get(id, this.resolveCompanyId(req));
   }
 
   @Post()
@@ -63,16 +63,16 @@ export class PlayerTransfersController {
     @Body() dto: ApproveTransferDto,
     @Req() req: any,
   ) {
-    return this.service.approve(id, dto, req.user);
+    return this.service.approve(id, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Post(':id/execute')
   execute(@Param('id') id: string, @Req() req: any) {
-    return this.service.execute(id, req.user);
+    return this.service.execute(id, req.user, this.resolveCompanyId(req));
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.service.remove(id, this.resolveCompanyId(req));
   }
 }

@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { AccessControlService } from './access-control.service';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { CompanyAccessGuard } from './guards/company-access.guard';
+import { SuperAdminGuard } from './guards/super-admin.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
@@ -42,8 +43,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, AccessControlService, PermissionsGuard, CompanyAccessGuard],
-  exports: [AuthService, AccessControlService, PermissionsGuard, CompanyAccessGuard],
+  providers: [AuthService, JwtStrategy, AccessControlService, PermissionsGuard, CompanyAccessGuard, SuperAdminGuard],
+  exports: [AuthService, AccessControlService, PermissionsGuard, CompanyAccessGuard, SuperAdminGuard],
 })
 
 export class AuthModule { }

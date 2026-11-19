@@ -14,7 +14,7 @@ export class AuthService {
 
 		const user = await this.findUserByEmailUseCase.execute(email);
 
-		if (!user)
+		if (!user || !user.password)
 			throw new UnauthorizedException('Credenciales inválidas');
 
 		const isMatch = await argon2.verify(user.password, password);

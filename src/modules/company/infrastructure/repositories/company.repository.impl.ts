@@ -308,7 +308,8 @@ export class CompanyRepositoryImpl implements CompanyRepository {
 
 				const docTypes = [
 					{ type: 'FACTURAS', code: '01' },
-					{ type: 'NOTAS_CREDITO', code: '04' },
+					// Mismo nombre que usan CreditNoteService y EmissionPointService para leer/actualizar el correlativo
+					{ type: 'NOTAS DE CRÉDITO', code: '04' },
 					{ type: 'RETENCIONES', code: '07' },
 					{ type: 'GUIAS_REMISION', code: '06' },
 					{ type: 'NOTAS_DEBITO', code: '05' },

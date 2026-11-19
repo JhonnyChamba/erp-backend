@@ -11,10 +11,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
+import { SuperAdminGuard } from 'src/auth/guards/super-admin.guard';
 import { RefereeGuildsService } from '../application/referee-guilds.service';
 import { CreateRefereeGuildDto, UpdateRefereeGuildDto } from '../application/dto/referee-guild.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('campeonato/referee-guilds')
 export class RefereeGuildsController {
   constructor(private readonly service: RefereeGuildsService) {}
@@ -30,16 +32,19 @@ export class RefereeGuildsController {
   }
 
   @Post()
+  @UseGuards(SuperAdminGuard)
   create(@Body() dto: CreateRefereeGuildDto, @Req() req: any) {
     return this.service.create(dto, req.user);
   }
 
   @Patch(':id')
+  @UseGuards(SuperAdminGuard)
   update(@Param('id') id: string, @Body() dto: UpdateRefereeGuildDto, @Req() req: any) {
     return this.service.update(id, dto, req.user);
   }
 
   @Delete(':id')
+  @UseGuards(SuperAdminGuard)
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

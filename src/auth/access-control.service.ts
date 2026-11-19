@@ -93,6 +93,32 @@ export class AccessControlService {
 	}
 
 	/**
+	 * Super admin / developer según la BD (no solo el token, que puede haberse emitido antes de un cambio
+	 * de privilegios). Un usuario eliminado o inactivo nunca lo es.
+	 */
+	async isSuperAdmin(userPayload: any): Promise<boolean> {
+		const userId = Number(userPayload?.user_id || 0);
+		if (!userId) return false;
+		return this.usersRepo.exists({
+			where: [
+				{ id: userId, deleted: false, enabled: true, super_admin: true },
+				{ id: userId, deleted: false, enabled: true, developer: true },
+			],
+		});
+	}
+
+	/** Indica si el rol existe (no eliminado) y pertenece a la empresa indicada. */
+	async roleBelongsToCompany(roleId: number, companyId: number): Promise<boolean> {
+		const targetRoleId = Number(roleId);
+		const targetCompanyId = Number(companyId);
+		if (!Number.isInteger(targetRoleId) || targetRoleId <= 0) return false;
+		if (!Number.isInteger(targetCompanyId) || targetCompanyId <= 0) return false;
+		return this.rolesRepo.exists({
+			where: { id: targetRoleId, company: { id: targetCompanyId }, deleted: false },
+		});
+	}
+
+	/**
 	 * Indica si el usuario puede operar sobre la empresa indicada: super admin / developer, empresa propia
 	 * (la asignada en su ficha) o una empresa en la que tenga una relación usuario-empresa activa.
 	 * Se consulta la BD (no solo el token) para respetar cambios posteriores a la emisión del token.

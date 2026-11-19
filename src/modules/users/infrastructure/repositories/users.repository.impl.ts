@@ -5,7 +5,7 @@ import { UsersOrmEntity } from '../persistence/users.orm-entity';
 import { UserCompanyOrmEntity } from 'src/modules/user-company/infrastructure/persistence/user-company.orm-entity';
 import { Users, UserCompanyRoleItem } from '../../domain/entities/users.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -20,6 +20,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 	) { }
 
 	async create(user: Users): Promise<Users> {
+		if (!user.password) throw new BadRequestException('La contraseña es obligatoria');
 		const hashedPassword = await this.passwordService.hash(user.password);
 		const isSuperAdmin = Boolean(user.super_admin);
 		const isMultiCompany = isSuperAdmin ? false : Boolean(user.multi_company);
@@ -98,22 +99,24 @@ export class UsersRepositoryImpl implements UsersRepository {
 		};
 	}
 
-	async findById(id: number, companyId?: number): Promise<Users | null> {
-		const whereClause: any = { id, deleted: false };
-		if (companyId) {
-			whereClause.company = { id: companyId };
+	async findById(id: number, companyId?: number, anyCompany: boolean = false): Promise<Users | null> {
+		// Aislamiento multiempresa: el usuario debe pertenecer a la empresa indicada (empresa principal o
+		// relación usuario-empresa activa). `anyCompany` omite la comprobación y queda reservado a super admin.
+		if (companyId && !anyCompany) {
+			const belongs = await this.repo.exists({
+				where: [
+					{ id, deleted: false, company: { id: companyId } },
+					{ id, deleted: false, userCompanies: { company: { id: companyId }, deleted: false, enabled: true } },
+				],
+			});
+			if (!belongs) return null;
 		}
-		let user = await this.repo.findOne({
-			where: whereClause,
+
+		// Se carga aparte y sin filtro de empresa para no truncar la lista de empresas del usuario
+		const user = await this.repo.findOne({
+			where: { id, deleted: false },
 			relations: ['company', 'role', 'userCompanies', 'userCompanies.company', 'userCompanies.role'],
 		});
-
-		if (!user && companyId) {
-			user = await this.repo.findOne({
-				where: { id, deleted: false },
-				relations: ['company', 'role', 'userCompanies', 'userCompanies.company', 'userCompanies.role'],
-			});
-		}
 
 		return user ? this.toDomain(user, companyId) : null;
 	}
@@ -137,7 +140,6 @@ export class UsersRepositoryImpl implements UsersRepository {
 			name_user: user.name_user,
 			last_name_user: user.last_name_user,
 			email: user.email,
-			password: user.password,
 			developer: isSuperAdmin,
 			super_admin: isSuperAdmin,
 			multi_company: isMultiCompany,
@@ -148,6 +150,10 @@ export class UsersRepositoryImpl implements UsersRepository {
 			photo_url: user.photo_url || null,
 			role: primaryRoleId ? ({ id: primaryRoleId } as any) : null,
 		};
+		// El hash no se carga en findById: solo se escribe cuando el caso de uso asigna una contraseña nueva
+		if (user.password) {
+			updateData.password = user.password;
+		}
 		if (user.companyId) {
 			updateData.company = { id: user.companyId };
 		}
@@ -187,7 +193,17 @@ export class UsersRepositoryImpl implements UsersRepository {
 		});
 		if (!user) return null;
 
-		return this.toDomain(user);
+		// Único punto que expone el hash: lo necesita el login para verificar la contraseña.
+		// La columna es select:false, así que hay que pedirla de forma explícita.
+		const credentials = await this.repo
+			.createQueryBuilder('u')
+			.select('u.id')
+			.addSelect('u.password')
+			.where('u.id = :id', { id: user.id })
+			.getOne();
+		user.password = credentials?.password ?? '';
+
+		return this.toDomain(user, undefined, true);
 	}
 
 	private async syncUserCompanies(
@@ -254,7 +270,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 		}
 	}
 
-	private toDomain(entity: UsersOrmEntity, contextCompanyId?: number): Users {
+	private toDomain(entity: UsersOrmEntity, contextCompanyId?: number, includePassword: boolean = false): Users {
 		const activeUserCompanies = (entity.userCompanies || []).filter(
 			(uc) => !uc.deleted && uc.enabled && uc.company?.id,
 		);
@@ -286,7 +302,7 @@ export class UsersRepositoryImpl implements UsersRepository {
 			entity.name_user,
 			entity.last_name_user,
 			entity.email,
-			entity.password,
+			includePassword ? entity.password : undefined,
 			entity.company?.id ?? (entity as any).company_id ?? 1,
 			entity.developer ?? false,
 			entity.multi_company ?? false,

@@ -27,8 +27,8 @@ export class PurchasesController {
 
 	@Post()
 	create(@Body() dto: CreatePurchaseDto, @Req() req: any) {
-		const explicitCompany = (dto as any)?.companyId || (dto as any)?.company_id;
-		const companyId = this.resolveCompanyId(req, explicitCompany);
+		// La empresa sale siempre de la validada por CompanyAccessGuard; la del body no decide nada.
+		const companyId = Number(req.companyId);
 		return this.purchasesService.createPurchase(companyId, dto, req.user?.user_id);
 	}
 

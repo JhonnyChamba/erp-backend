@@ -31,8 +31,8 @@ export class PlayerRegistrationHistoryOrmEntity {
   @Column({ name: 'new_status', type: 'varchar', length: 50, nullable: true })
   newStatus: string;
 
-  @Column({ name: 'performed_by_id', type: 'varchar', length: 100, nullable: true })
-  performedById: string;
+  @Column({ name: 'performed_by_id', type: 'int', nullable: true })
+  performedById: number;
 
   @Column({ name: 'performed_by_name', type: 'varchar', length: 200, nullable: true })
   performedByName: string;

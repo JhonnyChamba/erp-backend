@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PlayerOrmEntity } from '../../infrastructure/persistence/player.orm-entity';
 import { CompanyPlayerOrmEntity } from '../../infrastructure/persistence/company-player.orm-entity';
 import { PlayerTransactionOrmEntity } from '../../infrastructure/persistence/player-transaction.orm-entity';
+import { PlayerRegistrationOrmEntity } from '../../infrastructure/persistence/player-registration.orm-entity';
+import { PlayerTransferOrmEntity } from '../../infrastructure/persistence/player-transfer.orm-entity';
+import { isPlayerInCompany } from '../../common/company-scope.util';
 import { CreatePlayerDto, UpdatePlayerDto } from './dto/player.dto';
 
 export function calculateAge(birthDateStr?: string | Date): { ageYears: number; ageMonths: number } | null {
@@ -116,12 +119,20 @@ export class PlayersService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  /**
+   * El jugador pertenece a un padrón global: por :id solo lo ve/edita una empresa que lo tenga vinculado.
+   * Un super admin administra el padrón global completo (Configuración global).
+   */
+  async get(id: string | number, companyId: number, user?: any) {
     const item = await this.repo.findOne({
       where: { id: Number(id) },
       relations: ['demarcation', 'playerClassification'],
     });
     if (!item) throw new NotFoundException('Jugador no encontrado');
+    const isSuperAdmin = Boolean(user?.super_admin || user?.developer);
+    if (!isSuperAdmin && !(await isPlayerInCompany(this.repo.manager, item.id, companyId))) {
+      throw new NotFoundException('Jugador no encontrado');
+    }
     return item;
   }
 
@@ -250,8 +261,8 @@ export class PlayersService {
     return savedPlayer;
   }
 
-  async update(id: string | number, dto: UpdatePlayerDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdatePlayerDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, user);
 
     const targetIdent = dto.identification !== undefined ? dto.identification?.trim() : item.identification;
     if (targetIdent && /^\d{10}$/.test(targetIdent)) {
@@ -280,8 +291,69 @@ export class PlayersService {
     return this.repo.save(item);
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
-    return this.repo.remove(item);
+  /**
+   * "Eliminar" un jugador desde una empresa lo DESVINCULA de esa empresa. El borrado físico del padrón
+   * global (que arrastra por CASCADE inscripciones, transferencias e historial de todas las ligas) solo
+   * ocurre si el jugador no tiene ninguna inscripción ni transferencia y ninguna otra empresa lo usa.
+   * Con `?global=true` (solo super admin, Configuración global) se elimina del padrón global, también
+   * únicamente si no tiene inscripciones ni transferencias en ninguna liga.
+   */
+  async remove(id: string | number, companyId: number, user?: any, isGlobal = false) {
+    const registrationRepo = this.repo.manager.getRepository(PlayerRegistrationOrmEntity);
+    const transferRepo = this.repo.manager.getRepository(PlayerTransferOrmEntity);
+
+    if (isGlobal) {
+      if (!user?.super_admin && !user?.developer) {
+        throw new ForbiddenException('Solo un super administrador puede eliminar jugadores del padrón global.');
+      }
+      const player = await this.get(id, companyId, user);
+      const registrations = await registrationRepo.count({ where: { playerId: player.id } });
+      const transfers = await transferRepo.count({ where: { playerId: player.id } });
+      if (registrations > 0 || transfers > 0) {
+        throw new BadRequestException(
+          `No se puede eliminar al jugador del padrón global porque tiene ${registrations} inscripción(es) y ${transfers} transferencia(s) registradas.`,
+        );
+      }
+      await this.repo.remove(player);
+      return { success: true, deleted: true, unlinked: true, message: 'Jugador eliminado del padrón global' };
+    }
+
+    const item = await this.get(id, companyId);
+
+    const ownRegistrations = await registrationRepo.count({ where: { playerId: item.id, companyId } });
+    const ownTransfers = await transferRepo.count({ where: { playerId: item.id, companyId } });
+    if (ownRegistrations > 0 || ownTransfers > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar al jugador porque tiene ${ownRegistrations} inscripción(es) y ${ownTransfers} transferencia(s) registradas en esta liga.`,
+      );
+    }
+
+    await this.companyPlayerRepo.delete({ companyId, playerId: item.id });
+
+    const otherLinks = await this.companyPlayerRepo.count({ where: { playerId: item.id } });
+    const anyRegistrations = await registrationRepo.count({ where: { playerId: item.id } });
+    const anyTransfers = await transferRepo.count({ where: { playerId: item.id } });
+    const ownedByThisCompany = Number(item.companyId) === Number(companyId);
+
+    if (otherLinks > 0 || anyRegistrations > 0 || anyTransfers > 0 || !ownedByThisCompany) {
+      // Otra liga lo usa (o tiene historial): se conserva en el padrón global, ya sin esta empresa como dueña.
+      if (ownedByThisCompany) {
+        await this.repo.update(item.id, { companyId: null });
+      }
+      await this.transactionRepo.save(
+        this.transactionRepo.create({
+          playerId: item.id,
+          companyId,
+          transactionType: 'COMPANY_UNLINK',
+          description: `Futbolista desvinculado de la empresa/liga #${companyId}`,
+          createdBy: user?.user_id?.toString() || user?.id?.toString(),
+          createdName: user?.user_name || user?.name || 'Sistema',
+        }),
+      );
+      return { success: true, deleted: false, unlinked: true, message: 'Jugador desvinculado de la liga. Se conserva en el padrón global.' };
+    }
+
+    await this.repo.remove(item);
+    return { success: true, deleted: true, unlinked: true, message: 'Jugador eliminado' };
   }
 }

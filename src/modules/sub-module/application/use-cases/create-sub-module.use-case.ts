@@ -20,6 +20,9 @@ export class CreatesubModulesUseCase {
 			user.user_id, // 🔥 siempre del token
 		);
 
+		// El repositorio persiste order_index leyéndolo de la entidad de dominio.
+		(subModule as any).order_index = dto.order_index ?? 0;
+
 		return this.repository.create(subModule);
 	}
 

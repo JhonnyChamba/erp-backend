@@ -11,8 +11,8 @@ export class CategoryEditionOrmEntity {
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
 
-  @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
-  tournamentId: string;
+  @Column({ name: 'tournaments_id', type: 'int', nullable: true })
+  tournamentId: number;
 
   @Column({ name: 'category_id', type: 'int', nullable: true })
   categoryId: number;
@@ -73,7 +73,7 @@ export class CategoryEditionOrmEntity {
   waitBetweenMatchesMinutes: number;
 
   @Column({ name: 'available_scenary_ids', type: 'jsonb', nullable: true, default: () => "'[]'" })
-  availableScenaryIds: string[];
+  availableScenaryIds: number[];
 
   @Column({ name: 'identify_by_player_code', type: 'boolean', default: false })
   identifyByPlayerCode: boolean;

@@ -13,7 +13,7 @@ import {
 export class CreateEmployeeDto {
 	@IsOptional()
 	@IsNumber()
-	branch_id?: number;
+	branch_id?: number | null;
 
 	@IsNotEmpty({ message: 'El cargo o categoría es obligatorio' })
 	@IsNumber({}, { message: 'El ID de la categoría debe ser numérico' })
@@ -21,7 +21,7 @@ export class CreateEmployeeDto {
 
 	@IsOptional()
 	@IsNumber()
-	user_id?: number;
+	user_id?: number | null;
 
 	@IsNotEmpty({ message: 'El nombre es obligatorio' })
 	@IsString()
@@ -41,7 +41,7 @@ export class CreateEmployeeDto {
 
 	@IsOptional()
 	@IsString()
-	birth_date?: string;
+	birth_date?: string | null;
 
 	@IsOptional()
 	@IsString()
@@ -53,7 +53,7 @@ export class CreateEmployeeDto {
 
 	@IsOptional()
 	@IsEmail({}, { message: 'El correo electrónico no es válido' })
-	email?: string;
+	email?: string | null;
 
 	@IsOptional()
 	@IsString()
@@ -135,7 +135,7 @@ export class CreateEmployeeDto {
 export class UpdateEmployeeDto {
 	@IsOptional()
 	@IsNumber()
-	branch_id?: number;
+	branch_id?: number | null;
 
 	@IsOptional()
 	@IsNumber()
@@ -143,7 +143,7 @@ export class UpdateEmployeeDto {
 
 	@IsOptional()
 	@IsNumber()
-	user_id?: number;
+	user_id?: number | null;
 
 	@IsOptional()
 	@IsString()
@@ -163,7 +163,7 @@ export class UpdateEmployeeDto {
 
 	@IsOptional()
 	@IsString()
-	birth_date?: string;
+	birth_date?: string | null;
 
 	@IsOptional()
 	@IsString()
@@ -175,7 +175,7 @@ export class UpdateEmployeeDto {
 
 	@IsOptional()
 	@IsEmail()
-	email?: string;
+	email?: string | null;
 
 	@IsOptional()
 	@IsString()

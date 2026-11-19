@@ -37,8 +37,8 @@ export class PlayersController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.service.get(id);
+  get(@Param('id') id: string, @Req() req: any) {
+    return this.service.get(id, this.resolveCompanyId(req), req.user);
   }
 
   @Post()
@@ -48,11 +48,11 @@ export class PlayersController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdatePlayerDto, @Req() req: any) {
-    return this.service.update(id, dto, req.user);
+    return this.service.update(id, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Query('global') global: string, @Req() req: any) {
+    return this.service.remove(id, this.resolveCompanyId(req), req.user, global === 'true');
   }
 }

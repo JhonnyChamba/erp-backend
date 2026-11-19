@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import { EditionScenaryOrmEntity } from '../../infrastructure/persistence/edition-scenary.orm-entity';
+import { ScenaryOrmEntity } from '../../infrastructure/persistence/scenary.orm-entity';
+import { CategoryOrmEntity } from '../../infrastructure/persistence/category.orm-entity';
+import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { CategoryEditionOrmEntity } from '../../infrastructure/persistence/category-edition.orm-entity';
 import { EditionCategoryDetailOrmEntity } from '../../infrastructure/persistence/edition-category-detail.orm-entity';
 import { EditionCategoryClassificationOrmEntity } from '../../infrastructure/persistence/edition-category-classification.orm-entity';
@@ -16,7 +20,39 @@ export class CategoryEditionsService {
     private readonly detailRepo: Repository<EditionCategoryDetailOrmEntity>,
     @InjectRepository(EditionCategoryClassificationOrmEntity)
     private readonly classificationRepo: Repository<EditionCategoryClassificationOrmEntity>,
+    @InjectRepository(EditionScenaryOrmEntity)
+    private readonly editionScenaryRepo: Repository<EditionScenaryOrmEntity>,
+    @InjectRepository(ScenaryOrmEntity)
+    private readonly scenaryRepo: Repository<ScenaryOrmEntity>,
   ) {}
+
+  /** Normaliza los ids de escenarios a enteros únicos y valida que pertenezcan a la empresa activa. */
+  private async resolveScenaryIds(raw: unknown, companyId: number): Promise<number[]> {
+    const ids = [...new Set((Array.isArray(raw) ? raw : []).map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0))];
+    if (ids.length === 0) return [];
+    const found = await this.scenaryRepo.find({ where: { id: In(ids) } });
+    for (const id of ids) {
+      ensureCompanyScope(found.find((s) => Number(s.id) === id), companyId, 'Escenario no encontrado');
+    }
+    return ids;
+  }
+
+  /** Reemplaza los escenarios habilitados de la edición (tab_campeonato_edition_scenaries). */
+  private async replaceEditionScenaries(editionId: number, scenaryIds: number[], companyId: number) {
+    await this.editionScenaryRepo.delete({ editionId });
+    if (scenaryIds.length > 0) {
+      await this.editionScenaryRepo.save(scenaryIds.map((scenaryId) => this.editionScenaryRepo.create({ editionId, scenaryId, companyId })));
+    }
+  }
+
+  /** Las categorías referenciadas (cabecera y detalle) deben pertenecer a la empresa activa. */
+  private async assertCategories(dto: CreateCategoryEditionDto | UpdateCategoryEditionDto, companyId: number) {
+    const categoryRepo = this.repo.manager.getRepository(CategoryOrmEntity);
+    const ids = new Set<number>([dto.categoryId, ...(dto.categoriesDetail || []).map((d) => d.categoryId)].filter(Boolean).map((v) => Number(v)));
+    for (const id of ids) {
+      await assertBelongsToCompany(categoryRepo, id, companyId, 'Categoría no encontrada');
+    }
+  }
 
   async list(companyId: number, query: { page?: number; limit?: number; search?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
@@ -45,7 +81,7 @@ export class CategoryEditionsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({
       where: { id: Number(id) },
       relations: [
@@ -56,8 +92,7 @@ export class CategoryEditionsService {
         'categoriesDetail.classifications.playerClassification',
       ],
     });
-    if (!item) throw new NotFoundException('Edición de torneo no encontrada');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Edición de torneo no encontrada', write);
   }
 
   private validateCategoryDetails(categoriesDetail: any[]) {
@@ -79,6 +114,8 @@ export class CategoryEditionsService {
     if (categoriesDetail && categoriesDetail.length > 0) {
       this.validateCategoryDetails(categoriesDetail);
     }
+    await this.assertCategories(dto, companyId);
+    const scenaryIds = await this.resolveScenaryIds(dto.availableScenaryIds, companyId);
 
     const item = this.repo.create({
       ...editionData,
@@ -88,20 +125,14 @@ export class CategoryEditionsService {
       matchDurationMinutes: dto.matchDurationMinutes ? Number(dto.matchDurationMinutes) : 60,
       breakDurationMinutes: dto.breakDurationMinutes !== undefined ? Number(dto.breakDurationMinutes) : 10,
       waitBetweenMatchesMinutes: dto.waitBetweenMatchesMinutes !== undefined ? Number(dto.waitBetweenMatchesMinutes) : 10,
-      availableScenaryIds: Array.isArray(dto.availableScenaryIds) ? dto.availableScenaryIds : [],
+      availableScenaryIds: scenaryIds,
       companyId,
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
       createdName: user?.user_name || user?.name,
     });
     const saved = await this.repo.save(item);
 
-    if (Array.isArray(dto.availableScenaryIds) && dto.availableScenaryIds.length > 0) {
-      for (const scId of dto.availableScenaryIds) {
-        if (scId) {
-          await this.repo.query('INSERT INTO tab_campeonato_edition_scenaries (edition_id, scenary_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [saved.id, scId]);
-        }
-      }
-    }
+    await this.replaceEditionScenaries(saved.id, scenaryIds, companyId);
 
     if (categoriesDetail && categoriesDetail.length > 0) {
       for (const det of categoriesDetail) {
@@ -141,17 +172,19 @@ export class CategoryEditionsService {
       }
     }
 
-    return this.get(saved.id);
+    return this.get(saved.id, companyId);
   }
 
-  async update(id: string | number, dto: UpdateCategoryEditionDto, user: any) {
+  async update(id: string | number, dto: UpdateCategoryEditionDto, user: any, companyId: number) {
     const numId = Number(id);
-    const item = await this.get(numId);
+    const item = await this.get(numId, companyId, true);
     const { categoriesDetail, ...editionData } = dto;
 
     if (categoriesDetail !== undefined && categoriesDetail.length > 0) {
       this.validateCategoryDetails(categoriesDetail);
     }
+    await this.assertCategories(dto, companyId);
+    const scenaryIds = dto.availableScenaryIds !== undefined ? await this.resolveScenaryIds(dto.availableScenaryIds, companyId) : undefined;
 
     Object.assign(item, editionData, {
       startDate: dto.startDate ? new Date(dto.startDate) : item.startDate,
@@ -159,21 +192,14 @@ export class CategoryEditionsService {
       matchDurationMinutes: dto.matchDurationMinutes !== undefined ? Number(dto.matchDurationMinutes) : item.matchDurationMinutes,
       breakDurationMinutes: dto.breakDurationMinutes !== undefined ? Number(dto.breakDurationMinutes) : item.breakDurationMinutes,
       waitBetweenMatchesMinutes: dto.waitBetweenMatchesMinutes !== undefined ? Number(dto.waitBetweenMatchesMinutes) : item.waitBetweenMatchesMinutes,
-      availableScenaryIds: dto.availableScenaryIds !== undefined ? (Array.isArray(dto.availableScenaryIds) ? dto.availableScenaryIds : []) : item.availableScenaryIds,
+      availableScenaryIds: scenaryIds !== undefined ? scenaryIds : item.availableScenaryIds,
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
     });
     await this.repo.save(item);
 
-    if (dto.availableScenaryIds !== undefined) {
-      await this.repo.query('DELETE FROM tab_campeonato_edition_scenaries WHERE edition_id = $1', [numId]);
-      if (Array.isArray(dto.availableScenaryIds)) {
-        for (const scId of dto.availableScenaryIds) {
-          if (scId) {
-            await this.repo.query('INSERT INTO tab_campeonato_edition_scenaries (edition_id, scenary_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [numId, scId]);
-          }
-        }
-      }
+    if (scenaryIds !== undefined) {
+      await this.replaceEditionScenaries(numId, scenaryIds, item.companyId);
     }
 
     if (categoriesDetail !== undefined) {
@@ -223,17 +249,18 @@ export class CategoryEditionsService {
       }
     }
 
-    return this.get(numId);
+    return this.get(numId, companyId, true);
   }
 
-  async remove(id: string | number) {
+  async remove(id: string | number, companyId: number) {
     const numId = Number(id);
-    const item = await this.get(numId);
+    const item = await this.get(numId, companyId, true);
     const oldDetails = await this.detailRepo.find({ where: { editionId: numId } });
     for (const od of oldDetails) {
       await this.classificationRepo.delete({ categoryDetailId: od.id });
     }
     await this.detailRepo.delete({ editionId: numId });
+    await this.editionScenaryRepo.delete({ editionId: numId });
     return this.repo.remove(item);
   }
 }

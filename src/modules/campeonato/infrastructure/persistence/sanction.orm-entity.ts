@@ -11,8 +11,8 @@ export class SanctionOrmEntity {
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
 
-  @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
-  tournamentId: string;
+  @Column({ name: 'tournaments_id', type: 'int', nullable: true })
+  tournamentId: number;
 
   @Column({ name: 'match_id', type: 'int', nullable: true })
   matchId: number;

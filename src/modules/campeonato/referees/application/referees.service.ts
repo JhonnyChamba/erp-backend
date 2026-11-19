@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefereeOrmEntity } from '../../infrastructure/persistence/referee.orm-entity';
@@ -98,9 +98,18 @@ export class RefereesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  /**
+   * El árbitro pertenece a un padrón global: por :id solo lo ve/edita una empresa que lo tenga vinculado
+   * (tab_campeonato_company_referees) o que lo haya registrado. Un super admin administra el padrón completo.
+   */
+  async get(id: string | number, companyId: number, user?: any) {
     const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['guild'] });
     if (!item) throw new NotFoundException('Árbitro no encontrado');
+    const isSuperAdmin = Boolean(user?.super_admin || user?.developer);
+    if (!isSuperAdmin && Number(item.companyId) !== Number(companyId)) {
+      const link = await this.companyRefereeRepo.findOne({ where: { refereeId: item.id, companyId } });
+      if (!link) throw new NotFoundException('Árbitro no encontrado');
+    }
     return item;
   }
 
@@ -157,11 +166,11 @@ export class RefereesService {
       }
     }
 
-    return this.get(referee.id);
+    return this.get(referee.id, companyId);
   }
 
-  async update(id: string | number, dto: UpdateRefereeDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateRefereeDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, user);
     if (dto.name !== undefined) item.name = dto.name.trim();
     if (dto.lastName !== undefined) item.lastName = dto.lastName.trim();
     if (dto.identification !== undefined) item.identification = dto.identification.trim();
@@ -181,18 +190,22 @@ export class RefereesService {
    * Si se provee companyId y existe en tab_campeonato_company_referees, desvincula de la liga.
    * Si query.global === 'true', elimina el árbitro del padrón global.
    */
-  async remove(id: string | number, companyId?: number, isGlobal = false) {
-    if (!isGlobal && companyId) {
+  async remove(id: string | number, companyId: number, isGlobal = false, user?: any) {
+    if (!isGlobal) {
+      // Una empresa solo puede desvincular al árbitro de su liga; nunca borrarlo del padrón global.
       const link = await this.companyRefereeRepo.findOne({
         where: { refereeId: Number(id), companyId },
       });
-      if (link) {
-        await this.companyRefereeRepo.remove(link);
-        return { success: true, message: 'Árbitro desvinculado de la liga correctamente' };
-      }
+      if (!link) throw new NotFoundException('Árbitro no encontrado en esta liga');
+      await this.companyRefereeRepo.remove(link);
+      return { success: true, message: 'Árbitro desvinculado de la liga correctamente' };
     }
 
-    const item = await this.get(id);
+    if (!user?.super_admin && !user?.developer) {
+      throw new ForbiddenException('Solo un super administrador puede eliminar árbitros del padrón global.');
+    }
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
+    if (!item) throw new NotFoundException('Árbitro no encontrado');
     await this.repo.remove(item);
     return { success: true, message: 'Árbitro eliminado del padrón global' };
   }

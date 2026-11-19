@@ -14,8 +14,8 @@ export class PlayerRegistrationOrmEntity {
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
 
-  @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
-  tournamentId: string;
+  @Column({ name: 'tournaments_id', type: 'int', nullable: true })
+  tournamentId: number;
 
   @Column({ name: 'team_registration_id', type: 'int' })
   teamRegistrationId: number;

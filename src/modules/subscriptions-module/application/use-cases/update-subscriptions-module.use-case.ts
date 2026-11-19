@@ -1,5 +1,5 @@
 import { SubscriptionsModuleRepository } from "../../domain/repositories/subscriptions-module.repository";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class UpdateSubscriptionsModuleUseCase {
@@ -7,7 +7,7 @@ export class UpdateSubscriptionsModuleUseCase {
 
   async execute(id: number, subscriptionId: number, dto: any) {
     const subModule = await this.repository.findById(id, subscriptionId);
-    if (!subModule) throw new Error('SubscriptionsModule not found');
+    if (!subModule) throw new NotFoundException('SubscriptionsModule not found');
 
     return this.repository.update(subModule);
   }

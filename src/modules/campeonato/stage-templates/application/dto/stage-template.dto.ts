@@ -13,8 +13,9 @@ import { Type } from 'class-transformer';
 
 export class StageTemplateDetailItemDto {
   @IsOptional()
-  @IsString()
-  id?: string;
+  @Type(() => Number)
+  @IsInt()
+  id?: number;
 
   @IsOptional()
   @IsInt()

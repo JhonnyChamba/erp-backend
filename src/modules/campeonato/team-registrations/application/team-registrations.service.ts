@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { TeamRegistrationOrmEntity } from '../../infrastructure/persistence/team-registration.orm-entity';
 import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
 import { CategoryEditionOrmEntity } from '../../infrastructure/persistence/category-edition.orm-entity';
@@ -91,13 +92,14 @@ export class TeamRegistrationsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['categoryEdition', 'team'] });
-    if (!item) throw new NotFoundException('Inscripción de equipo no encontrada');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Inscripción de equipo no encontrada', write);
   }
 
   async create(dto: CreateTeamRegistrationDto, user: any, companyId: number) {
+    await assertBelongsToCompany(this.teamRepo, dto.teamId, companyId, 'Equipo no encontrado');
+    await assertBelongsToCompany(this.editionRepo, dto.categoryEditionId, companyId, 'Edición de torneo no encontrada');
     const item = this.repo.create({
       ...dto,
       companyId,
@@ -113,8 +115,10 @@ export class TeamRegistrationsService {
     return saved;
   }
 
-  async update(id: string | number, dto: UpdateTeamRegistrationDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateTeamRegistrationDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
+    await assertBelongsToCompany(this.teamRepo, dto.teamId, companyId, 'Equipo no encontrado');
+    await assertBelongsToCompany(this.editionRepo, dto.categoryEditionId, companyId, 'Edición de torneo no encontrada');
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
@@ -130,8 +134,8 @@ export class TeamRegistrationsService {
     return saved;
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

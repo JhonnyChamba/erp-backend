@@ -6,8 +6,10 @@ import {
   IsArray,
   ValidateNested,
   IsDateString,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import type { WorkOrderItemType } from '../../domain/entities/work-order.entity';
 
 export class WorkOrderItemDto {
   @IsOptional()
@@ -16,7 +18,8 @@ export class WorkOrderItemDto {
 
   @IsString()
   @IsNotEmpty()
-  itemType: 'SERVICIO' | 'REPUESTO';
+  @IsIn(['REPUESTO', 'MANO_OBRA', 'SERVICIO', 'OTRO'])
+  itemType: WorkOrderItemType;
 
   @IsString()
   @IsNotEmpty()

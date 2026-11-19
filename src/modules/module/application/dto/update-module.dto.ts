@@ -1,4 +1,5 @@
-import { IsOptional } from "class-validator";
+import { IsInt, IsOptional } from "class-validator";
+import { Type } from "class-transformer";
 
 export class UpdateModuleDto {
 	@IsOptional()
@@ -9,6 +10,11 @@ export class UpdateModuleDto {
 
 	@IsOptional()
 	description?: string;
+
+	@Type(() => Number)
+	@IsInt()
+	@IsOptional()
+	order_index?: number;
 
 	@IsOptional()
 	enabled?: boolean;

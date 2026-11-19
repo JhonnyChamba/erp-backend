@@ -37,13 +37,13 @@ export class PlayerRegistrationsController {
   }
 
   @Get('roster/:teamRegistrationId')
-  getRoster(@Param('teamRegistrationId') teamRegistrationId: string) {
-    return this.service.getRosterByTeamRegistration(teamRegistrationId);
+  getRoster(@Param('teamRegistrationId') teamRegistrationId: string, @Req() req: any) {
+    return this.service.getRosterByTeamRegistration(teamRegistrationId, this.resolveCompanyId(req));
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.service.get(id);
+  get(@Param('id') id: string, @Req() req: any) {
+    return this.service.get(id, this.resolveCompanyId(req));
   }
 
   @Post()
@@ -62,16 +62,16 @@ export class PlayerRegistrationsController {
     @Body() dto: UpdatePlayerRegistrationStatusDto,
     @Req() req: any,
   ) {
-    return this.service.updateStatus(id, dto, req.user);
+    return this.service.updateStatus(id, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdatePlayerRegistrationDto, @Req() req: any) {
-    return this.service.update(id, dto, req.user);
+    return this.service.update(id, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.service.remove(id, this.resolveCompanyId(req));
   }
 }

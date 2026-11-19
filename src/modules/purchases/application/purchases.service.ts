@@ -208,6 +208,13 @@ export class PurchasesService {
 	 */
 	async cancelPurchase(id: number, companyId: number, userId?: number) {
 		return await this.dataSource.transaction(async (manager) => {
+			// Bloqueo de la fila antes de leer el estado: dos anulaciones simultáneas no revierten el inventario dos veces.
+			await manager
+				.createQueryBuilder(PurchaseOrmEntity, 'p')
+				.setLock('pessimistic_write')
+				.where('p.id = :id AND p.company_id = :companyId', { id, companyId })
+				.getOne();
+
 			const purchase = await manager.findOne(PurchaseOrmEntity, {
 				where: { id, company: { id: companyId } },
 				relations: ['details'],

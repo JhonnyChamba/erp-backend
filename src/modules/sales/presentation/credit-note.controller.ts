@@ -66,6 +66,12 @@ export class CreditNoteController {
 		return this.creditNoteService.sendToSri(Number(id), companyId);
 	}
 
+	@Post(':id/check-sri')
+	checkSri(@Param('id') id: number, @Query('companyId') companyIdQuery: string, @Req() req: any) {
+		const companyId = this.resolveCompanyId(req, companyIdQuery ? Number(companyIdQuery) : undefined);
+		return this.creditNoteService.checkSriAuthorization(Number(id), companyId);
+	}
+
 	@Get(':id/xml')
 	async downloadXml(
 		@Param('id') id: number,

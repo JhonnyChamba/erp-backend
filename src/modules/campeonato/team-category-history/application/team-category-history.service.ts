@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TeamCategoryHistoryOrmEntity } from '../../infrastructure/persistence/team-category-history.orm-entity';
 import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
+import { CategoryOrmEntity } from '../../infrastructure/persistence/category.orm-entity';
+import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { CreateTeamCategoryHistoryDto } from './dto/team-category-history.dto';
 
 @Injectable()
@@ -30,6 +32,9 @@ export class TeamCategoryHistoryService {
   }
 
   async create(dto: CreateTeamCategoryHistoryDto, user: any, companyId: number) {
+    await assertBelongsToCompany(this.teamRepo, dto.teamId, companyId, 'Equipo no encontrado');
+    await assertBelongsToCompany(this.repo.manager.getRepository(CategoryOrmEntity), dto.categoryId, companyId, 'Categoría no encontrada');
+
     const record = this.repo.create({
       ...dto,
       companyId,
@@ -50,9 +55,13 @@ export class TeamCategoryHistoryService {
     return saved;
   }
 
-  async remove(id: string | number) {
-    const item = await this.repo.findOne({ where: { id: Number(id) } });
-    if (!item) throw new NotFoundException('Registro de historial no encontrado');
+  async remove(id: string | number, companyId: number) {
+    const item = ensureCompanyScope(
+      await this.repo.findOne({ where: { id: Number(id) } }),
+      companyId,
+      'Registro de historial no encontrado',
+      true,
+    );
     return this.repo.remove(item);
   }
 }

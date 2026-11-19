@@ -34,7 +34,9 @@ export class UsersOrmEntity {
 	@Column({ unique: true })
 	email: string;
 
-	@Column()
+	// select: false → el hash no se carga en ninguna consulta (ni como relación de otra entidad) salvo que se
+	// pida de forma explícita con addSelect; así no puede acabar por descuido en una respuesta HTTP.
+	@Column({ select: false })
 	password: string;
 
 	@Column({ default: false })

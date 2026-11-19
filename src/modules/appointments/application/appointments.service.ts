@@ -4,17 +4,21 @@ import {
 	BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { AppointmentOrmEntity } from '../infrastructure/persistence/appointment.orm-entity';
 import { AppointmentItemOrmEntity } from '../infrastructure/persistence/appointment-item.orm-entity';
 import { EmployeeScheduleOrmEntity } from '../infrastructure/persistence/employee-schedule.orm-entity';
 import { EmployeeOrmEntity } from 'src/modules/human-resources/infrastructure/persistence/employee.orm-entity';
 import { CustomerOrmEntity } from 'src/modules/contacts/infrastructure/persistence/contacts.orm-entity';
 import {
+	AppointmentItemDto,
 	CreateAppointmentDto,
 	UpdateAppointmentDto,
 	SaveEmployeeScheduleDto,
 } from './dto/appointment.dto';
+
+// PostgreSQL advisory-lock key that serializes appointment numbering per company.
+const APPOINTMENT_NUMBER_LOCK = 73012;
 
 @Injectable()
 export class AppointmentsService {
@@ -94,11 +98,16 @@ export class AppointmentsService {
 		return apt;
 	}
 
-	// Generate sequential order number e.g. ORD-2026-0001
-	private async generateOrderNumber(companyId: number): Promise<string> {
+	// Generate sequential order number e.g. ORD-2026-0001 (unique per company)
+	private async generateOrderNumber(manager: EntityManager, companyId: number): Promise<string> {
+		// Serializes numbering per company for the duration of the transaction, so two
+		// concurrent creations cannot compute the same number.
+		await manager.query('SELECT pg_advisory_xact_lock($1::int, $2::int)', [APPOINTMENT_NUMBER_LOCK, companyId]);
+
 		const year = new Date().getFullYear();
 		const prefix = `ORD-${year}-`;
-		const count = await this.appointmentRepo
+		const count = await manager
+			.getRepository(AppointmentOrmEntity)
 			.createQueryBuilder('apt')
 			.where('apt.company_id = :companyId', { companyId })
 			.andWhere('apt.order_number LIKE :prefix', { prefix: `${prefix}%` })
@@ -117,29 +126,38 @@ export class AppointmentsService {
 		return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 	}
 
-	async create(companyId: number, dto: CreateAppointmentDto): Promise<AppointmentOrmEntity> {
-		// Verify customer
-		const customer = await this.customerRepo.findOne({
-			where: { id: dto.customer_id, company_id: companyId, deleted: false },
-		});
-		if (!customer) {
-			throw new NotFoundException(`El cliente seleccionado no existe.`);
+	// Customer and employee must belong to the active company
+	private async assertCustomerAndEmployee(
+		manager: EntityManager,
+		companyId: number,
+		customerId?: number,
+		employeeId?: number,
+	): Promise<void> {
+		if (customerId) {
+			const customer = await manager.getRepository(CustomerOrmEntity).findOne({
+				where: { id: customerId, company_id: companyId, deleted: false },
+			});
+			if (!customer) {
+				throw new NotFoundException(`El cliente seleccionado no existe.`);
+			}
 		}
-
-		// Verify employee
-		const employee = await this.employeeRepo.findOne({
-			where: { id: dto.employee_id, company_id: companyId, deleted: false },
-		});
-		if (!employee) {
-			throw new NotFoundException(`El especialista seleccionado no existe.`);
+		if (employeeId) {
+			const employee = await manager.getRepository(EmployeeOrmEntity).findOne({
+				where: { id: employeeId, company_id: companyId, deleted: false },
+			});
+			if (!employee) {
+				throw new NotFoundException(`El especialista seleccionado no existe.`);
+			}
 		}
+	}
 
-		// Calculate total duration and prices
+	// Calculate item rows, total duration and prices
+	private processItems(items: AppointmentItemDto[]) {
 		let totalDuration = 0;
 		let subtotal = 0;
 		let totalTax = 0;
 
-		const processedItems = (dto.items || []).map((item) => {
+		const rows = (items || []).map((item) => {
 			const dur = item.duration_minutes || 30;
 			totalDuration += dur;
 			const price = Number(item.price) || 0;
@@ -162,7 +180,12 @@ export class AppointmentsService {
 			};
 		});
 
-		const orderNumber = await this.generateOrderNumber(companyId);
+		return { rows, totalDuration, subtotal, totalTax };
+	}
+
+	async create(companyId: number, dto: CreateAppointmentDto): Promise<AppointmentOrmEntity> {
+		const { rows, totalDuration, subtotal, totalTax } = this.processItems(dto.items);
+
 		const startTime = dto.start_time.length === 5 ? `${dto.start_time}:00` : dto.start_time;
 		const endTime =
 			dto.end_time && dto.end_time.trim() !== ''
@@ -171,98 +194,98 @@ export class AppointmentsService {
 					: dto.end_time
 				: this.addMinutesToTime(startTime, totalDuration > 0 ? totalDuration : 30);
 
-		const appointment = this.appointmentRepo.create({
-			company_id: companyId,
-			branch_id: dto.branch_id || null,
-			customer_id: dto.customer_id,
-			employee_id: dto.employee_id,
-			order_number: orderNumber,
-			appointment_date: dto.appointment_date,
-			start_time: startTime,
-			end_time: endTime,
-			status: dto.status || 'PROGRAMADA',
-			subtotal: Math.round(subtotal * 100) / 100,
-			tax_amount: Math.round(totalTax * 100) / 100,
-			total_estimated: Math.round((subtotal + totalTax) * 100) / 100,
-			notes: dto.notes || null,
-		});
+		// Numbering + header + items in a single transaction
+		const savedId = await this.appointmentRepo.manager.transaction(async (manager) => {
+			await this.assertCustomerAndEmployee(manager, companyId, dto.customer_id, dto.employee_id);
 
-		const savedApt = await this.appointmentRepo.save(appointment);
+			const aptRepo = manager.getRepository(AppointmentOrmEntity);
+			const orderNumber = await this.generateOrderNumber(manager, companyId);
 
-		// Save items
-		if (processedItems.length > 0) {
-			const itemsEntities = processedItems.map((item) =>
-				this.appointmentItemRepo.create({
-					...item,
-					appointment_id: savedApt.id,
+			const savedApt = await aptRepo.save(
+				aptRepo.create({
+					company_id: companyId,
+					branch_id: dto.branch_id || null,
+					customer_id: dto.customer_id,
+					employee_id: dto.employee_id,
+					order_number: orderNumber,
+					appointment_date: dto.appointment_date,
+					start_time: startTime,
+					end_time: endTime,
+					status: dto.status || 'PROGRAMADA',
+					subtotal: Math.round(subtotal * 100) / 100,
+					tax_amount: Math.round(totalTax * 100) / 100,
+					total_estimated: Math.round((subtotal + totalTax) * 100) / 100,
+					notes: dto.notes || null,
 				}),
 			);
-			await this.appointmentItemRepo.save(itemsEntities);
-		}
 
-		return this.getById(savedApt.id, companyId);
+			if (rows.length > 0) {
+				const itemRepo = manager.getRepository(AppointmentItemOrmEntity);
+				await itemRepo.save(rows.map((item) => itemRepo.create({ ...item, appointment_id: savedApt.id })));
+			}
+
+			return savedApt.id;
+		});
+
+		return this.getById(savedId, companyId);
 	}
 
 	async update(id: number, companyId: number, dto: UpdateAppointmentDto): Promise<AppointmentOrmEntity> {
-		const apt = await this.getById(id, companyId);
-
-		if (dto.branch_id !== undefined) apt.branch_id = dto.branch_id;
-		if (dto.customer_id) apt.customer_id = dto.customer_id;
-		if (dto.employee_id) apt.employee_id = dto.employee_id;
-		if (dto.appointment_date) apt.appointment_date = dto.appointment_date;
-		if (dto.start_time) {
-			apt.start_time = dto.start_time.length === 5 ? `${dto.start_time}:00` : dto.start_time;
-		}
-		if (dto.end_time) {
-			apt.end_time = dto.end_time.length === 5 ? `${dto.end_time}:00` : dto.end_time;
-		}
-		if (dto.status) apt.status = dto.status;
-		if (dto.notes !== undefined) apt.notes = dto.notes;
-
-		if (dto.items && Array.isArray(dto.items)) {
-			// Remove old items
-			await this.appointmentItemRepo.delete({ appointment_id: apt.id });
-
-			let subtotal = 0;
-			let totalTax = 0;
-			let totalDuration = 0;
-
-			const newItems = dto.items.map((item) => {
-				const dur = item.duration_minutes || 30;
-				totalDuration += dur;
-				const price = Number(item.price) || 0;
-				const taxRate = item.tax_rate !== undefined ? Number(item.tax_rate) : 15.0;
-				const tax = Math.round(price * (taxRate / 100) * 100) / 100;
-				const total = price + tax;
-
-				subtotal += price;
-				totalTax += tax;
-
-				return this.appointmentItemRepo.create({
-					appointment_id: apt.id,
-					service_id: item.service_id || null,
-					service_name: item.service_name,
-					duration_minutes: dur,
-					price,
-					tax_rate: taxRate,
-					tax_amount: tax,
-					total,
-					notes: item.notes || null,
-				});
-			});
-
-			await this.appointmentItemRepo.save(newItems);
-
-			apt.subtotal = Math.round(subtotal * 100) / 100;
-			apt.tax_amount = Math.round(totalTax * 100) / 100;
-			apt.total_estimated = Math.round((subtotal + totalTax) * 100) / 100;
-
-			if (!dto.end_time && totalDuration > 0) {
-				apt.end_time = this.addMinutesToTime(apt.start_time, totalDuration);
+		// Header + item replacement in a single transaction: a failure while inserting
+		// the new items no longer leaves the appointment without items.
+		await this.appointmentRepo.manager.transaction(async (manager) => {
+			const aptRepo = manager.getRepository(AppointmentOrmEntity);
+			// Loaded WITHOUT relations: with customer/employee/branch loaded TypeORM takes the
+			// FK from the related object and ignores the new customer_id / employee_id, and the
+			// cascade on items would re-save the old item rows.
+			const apt = await aptRepo.findOne({ where: { id, company_id: companyId, deleted: false } });
+			if (!apt) {
+				throw new NotFoundException(`La cita con ID ${id} no existe o no pertenece a esta empresa.`);
 			}
-		}
 
-		await this.appointmentRepo.save(apt);
+			// Same check as on create: the new customer / employee must belong to this company
+			await this.assertCustomerAndEmployee(
+				manager,
+				companyId,
+				dto.customer_id && dto.customer_id !== apt.customer_id ? dto.customer_id : undefined,
+				dto.employee_id && dto.employee_id !== apt.employee_id ? dto.employee_id : undefined,
+			);
+
+			if (dto.branch_id !== undefined) apt.branch_id = dto.branch_id;
+			if (dto.customer_id) apt.customer_id = dto.customer_id;
+			if (dto.employee_id) apt.employee_id = dto.employee_id;
+			if (dto.appointment_date) apt.appointment_date = dto.appointment_date;
+			if (dto.start_time) {
+				apt.start_time = dto.start_time.length === 5 ? `${dto.start_time}:00` : dto.start_time;
+			}
+			if (dto.end_time) {
+				apt.end_time = dto.end_time.length === 5 ? `${dto.end_time}:00` : dto.end_time;
+			}
+			if (dto.status) apt.status = dto.status;
+			if (dto.notes !== undefined) apt.notes = dto.notes;
+
+			if (dto.items && Array.isArray(dto.items)) {
+				const itemRepo = manager.getRepository(AppointmentItemOrmEntity);
+				const { rows, totalDuration, subtotal, totalTax } = this.processItems(dto.items);
+
+				// Replace items
+				await itemRepo.delete({ appointment_id: apt.id });
+				if (rows.length > 0) {
+					await itemRepo.save(rows.map((item) => itemRepo.create({ ...item, appointment_id: apt.id })));
+				}
+
+				apt.subtotal = Math.round(subtotal * 100) / 100;
+				apt.tax_amount = Math.round(totalTax * 100) / 100;
+				apt.total_estimated = Math.round((subtotal + totalTax) * 100) / 100;
+
+				if (!dto.end_time && totalDuration > 0) {
+					apt.end_time = this.addMinutesToTime(apt.start_time, totalDuration);
+				}
+			}
+
+			await aptRepo.save(apt);
+		});
+
 		return this.getById(id, companyId);
 	}
 
@@ -358,24 +381,31 @@ export class AppointmentsService {
 			throw new NotFoundException('Especialista no encontrado.');
 		}
 
-		// Delete current schedules for employee
-		await this.scheduleRepo.delete({ company_id: companyId, employee_id: dto.employee_id });
+		// Replace the employee schedules atomically: if the insert fails the
+		// previous schedules are kept.
+		await this.scheduleRepo.manager.transaction(async (manager) => {
+			const repo = manager.getRepository(EmployeeScheduleOrmEntity);
 
-		// Save new schedules
-		const entities = dto.schedules.map((s) =>
-			this.scheduleRepo.create({
-				company_id: companyId,
-				employee_id: dto.employee_id,
-				day_of_week: s.day_of_week,
-				start_time: s.start_time.length === 5 ? `${s.start_time}:00` : s.start_time,
-				end_time: s.end_time.length === 5 ? `${s.end_time}:00` : s.end_time,
-				break_start: s.break_start ? (s.break_start.length === 5 ? `${s.break_start}:00` : s.break_start) : null,
-				break_end: s.break_end ? (s.break_end.length === 5 ? `${s.break_end}:00` : s.break_end) : null,
-				active: s.active,
-			}),
-		);
+			// Delete current schedules for employee
+			await repo.delete({ company_id: companyId, employee_id: dto.employee_id });
 
-		await this.scheduleRepo.save(entities);
+			// Save new schedules
+			const entities = dto.schedules.map((s) =>
+				repo.create({
+					company_id: companyId,
+					employee_id: dto.employee_id,
+					day_of_week: s.day_of_week,
+					start_time: s.start_time.length === 5 ? `${s.start_time}:00` : s.start_time,
+					end_time: s.end_time.length === 5 ? `${s.end_time}:00` : s.end_time,
+					break_start: s.break_start ? (s.break_start.length === 5 ? `${s.break_start}:00` : s.break_start) : null,
+					break_end: s.break_end ? (s.break_end.length === 5 ? `${s.break_end}:00` : s.break_end) : null,
+					active: s.active,
+				}),
+			);
+
+			await repo.save(entities);
+		});
+
 		return this.getEmployeeSchedules(companyId, dto.employee_id);
 	}
 }

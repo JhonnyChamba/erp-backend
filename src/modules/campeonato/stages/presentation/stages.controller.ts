@@ -38,8 +38,8 @@ export class StagesController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.service.get(id);
+  get(@Param('id') id: string, @Req() req: any) {
+    return this.service.get(id, this.resolveCompanyId(req));
   }
 
   @Post()
@@ -49,23 +49,23 @@ export class StagesController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateStageDto, @Req() req: any) {
-    return this.service.update(id, dto, req.user);
+    return this.service.update(id, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Put(':id')
   updatePut(@Param('id') id: string, @Body() dto: UpdateStageDto, @Req() req: any) {
-    return this.service.update(id, dto, req.user);
+    return this.service.update(id, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.service.remove(id, this.resolveCompanyId(req));
   }
 
   // Endpoints para clasificaciones por etapa
   @Get(':id/classifications')
-  listClassifications(@Param('id') id: string) {
-    return this.service.listClassifications(id);
+  listClassifications(@Param('id') id: string, @Req() req: any) {
+    return this.service.listClassifications(id, this.resolveCompanyId(req));
   }
 
   @Post(':id/classifications')
@@ -83,11 +83,11 @@ export class StagesController {
     @Body() dto: UpdateStagePlayerClassificationDto,
     @Req() req: any,
   ) {
-    return this.service.updateClassification(classificationId, dto, req.user);
+    return this.service.updateClassification(classificationId, dto, req.user, this.resolveCompanyId(req));
   }
 
   @Delete('classifications/:classificationId')
-  removeClassification(@Param('classificationId') classificationId: string) {
-    return this.service.removeClassification(classificationId);
+  removeClassification(@Param('classificationId') classificationId: string, @Req() req: any) {
+    return this.service.removeClassification(classificationId, this.resolveCompanyId(req));
   }
 }

@@ -1,12 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { StageOrmEntity } from '../../infrastructure/persistence/stage.orm-entity';
+import { ScenaryOrmEntity } from '../../infrastructure/persistence/scenary.orm-entity';
+import { VocalOrmEntity } from '../../infrastructure/persistence/vocal.orm-entity';
+import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { MatchOrmEntity } from '../../infrastructure/persistence/match.orm-entity';
 import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
 import { MatchEventOrmEntity } from '../../infrastructure/persistence/match-event.orm-entity';
 import { TeamRegistrationOrmEntity } from '../../infrastructure/persistence/team-registration.orm-entity';
 import { MatchStatus, MatchEventType } from '../../common/enum/campeonato.enum';
-import { CreateMatchDto, UpdateMatchDto } from './dto/match.dto';
+import { CreateMatchDto, GenerateFixtureDto, UpdateMatchDto } from './dto/match.dto';
 
 @Injectable()
 export class MatchesService {
@@ -179,21 +183,24 @@ export class MatchesService {
     return { standings, topScorers, totalMatchesPlayed: matches.length };
   }
 
-  async generateFixture(companyId: number, dto: {
-    stageId: string | number;
-    teamIds: (string | number)[];
-    scenaryId?: string | number;
-    startDate: string;
-    matchDurationMinutes?: number;
-    intervalDays?: number;
-    numberOfLaps?: number;
-  }, user: any) {
+  async generateFixture(companyId: number, dto: GenerateFixtureDto, user: any) {
     if (!dto.stageId) throw new BadRequestException('Debe indicar la etapa del campeonato');
-    if (!dto.teamIds || dto.teamIds.length < 2) {
-      throw new BadRequestException('Se requieren al menos 2 equipos para generar el fixture');
+    const teamIds = [...new Set((dto.teamIds || []).map((id) => Number(id)))];
+    if (teamIds.length < 2) {
+      throw new BadRequestException('Se requieren al menos 2 equipos distintos para generar el fixture');
+    }
+    if (dto.startDate && Number.isNaN(new Date(dto.startDate).getTime())) {
+      throw new BadRequestException('La fecha de inicio del fixture no es válida');
     }
 
-    const teams = [...dto.teamIds];
+    // La etapa, el escenario y todos los equipos deben pertenecer a la empresa activa
+    await this.assertReferences({ stageId: dto.stageId, scenaryId: dto.scenaryId }, companyId);
+    const ownedTeams = await this.teamRepo.find({ where: { id: In(teamIds) } });
+    for (const teamId of teamIds) {
+      ensureCompanyScope(ownedTeams.find((t) => Number(t.id) === teamId), companyId, 'Equipo no encontrado');
+    }
+
+    const teams: number[] = [...teamIds];
     // Si la cantidad es impar, añadir null como descanso (BYE)
     if (teams.length % 2 !== 0) {
       teams.push(null as any);
@@ -285,16 +292,29 @@ export class MatchesService {
     };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({
       where: { id: Number(id) },
       relations: ['stage', 'scenary', 'localTeam', 'awayTeam', 'referee', 'vocal', 'vocalTeam'],
     });
-    if (!item) throw new NotFoundException('Partido no encontrado');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Partido no encontrado', write);
+  }
+
+  /** Los ids recibidos en el body deben pertenecer a la empresa activa. */
+  private async assertReferences(
+    dto: Pick<UpdateMatchDto, 'stageId' | 'scenaryId' | 'localTeamId' | 'awayTeamId' | 'winnerTeamId' | 'vocalTeamId' | 'vocalId'>,
+    companyId: number,
+  ) {
+    await assertBelongsToCompany(this.repo.manager.getRepository(StageOrmEntity), dto.stageId, companyId, 'Etapa no encontrada');
+    await assertBelongsToCompany(this.repo.manager.getRepository(ScenaryOrmEntity), dto.scenaryId, companyId, 'Escenario no encontrado');
+    await assertBelongsToCompany(this.repo.manager.getRepository(VocalOrmEntity), dto.vocalId, companyId, 'Vocal no encontrado');
+    for (const teamId of [dto.localTeamId, dto.awayTeamId, dto.winnerTeamId, dto.vocalTeamId]) {
+      await assertBelongsToCompany(this.teamRepo, teamId, companyId, 'Equipo no encontrado');
+    }
   }
 
   async create(dto: CreateMatchDto, user: any, companyId: number) {
+    await this.assertReferences(dto, companyId);
     const item = this.repo.create({
       ...dto,
       date: new Date(dto.date),
@@ -305,8 +325,9 @@ export class MatchesService {
     return this.repo.save(item);
   }
 
-  async update(id: string | number, dto: UpdateMatchDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateMatchDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
+    await this.assertReferences(dto, companyId);
     Object.assign(item, dto, {
       date: dto.date ? new Date(dto.date) : item.date,
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -315,8 +336,8 @@ export class MatchesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

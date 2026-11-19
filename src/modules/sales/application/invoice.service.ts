@@ -3,16 +3,18 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { randomInt } from 'crypto';
 import { InvoiceOrmEntity, InvoiceDetailOrmEntity } from '../infrastructure/persistence/invoice.orm-entity';
+import { CreditNoteOrmEntity } from '../infrastructure/persistence/credit-note.orm-entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import {
 	InventoryItemOrmEntity,
+	InventoryMovementOrmEntity,
 	InventoryWarehouseOrmEntity,
 } from 'src/modules/inventory/infrastructure/persistence/inventory.orm-entity';
 import { InventoryService } from 'src/modules/inventory/application/inventory.service';
 import { BranchCompanyOrmEntity } from 'src/modules/branch-company/infrastructure/persistence/branch-company.orm-entity';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
 import { decryptSecret } from 'src/common/crypto/secret-crypto';
-import { buildInvoiceXml } from './sri-xml.builder';
+import { buildInvoiceXml, isSupportedIvaRate, todayInEcuador } from './sri-xml.builder';
 import { loadP12, signXadesBes } from './sri-signer';
 import { sleep, sriAuthorization, sriReception, SriEnvironment, SriMessage } from './sri-client';
 
@@ -82,23 +84,20 @@ export class InvoiceService {
 		emissionPoint: string,
 	): Promise<string> {
 		let currentCorrelative = 0;
-		try {
-			const seqRow = await manager.query(`
-				SELECT s.id, s.correlative
-				FROM tab_emission_point_sequence s
-				JOIN tab_emission_point p ON p.id = s.emission_point_id
-				WHERE p.company_id = $1 
-				  AND p.branch_id = $2
-				  AND p.serie = $3
-				  AND s.document_type = 'FACTURAS'
-				LIMIT 1;
-			`, [companyId, branchId, emissionPoint]);
+		// Sin try/catch: dentro de una transacción un error de consulta la deja abortada y debe propagarse.
+		const seqRow = await manager.query(`
+			SELECT s.id, s.correlative
+			FROM tab_emission_point_sequence s
+			JOIN tab_emission_point p ON p.id = s.emission_point_id
+			WHERE p.company_id = $1
+			  AND p.branch_id = $2
+			  AND p.serie = $3
+			  AND s.document_type = 'FACTURAS'
+			LIMIT 1;
+		`, [companyId, branchId, emissionPoint]);
 
-			if (seqRow && seqRow.length > 0) {
-				currentCorrelative = Number(seqRow[0].correlative || 0);
-			}
-		} catch (e) {
-			console.error('Error fetching emission sequence:', e);
+		if (seqRow && seqRow.length > 0) {
+			currentCorrelative = Number(seqRow[0].correlative || 0);
 		}
 
 		const last = await manager.getRepository(InvoiceOrmEntity).findOne({
@@ -142,6 +141,18 @@ export class InvoiceService {
 				} catch (err: any) {
 					const errorMsg = err?.message || 'Error inesperado al enviar comprobante al SRI.';
 					const fallbackMessages = [{ identificador: 'ERR-ENVIO', mensaje: errorMsg, tipo: 'ERROR' }];
+					// Si la recepción ya respondió RECIBIDA (o el SRI ya resolvió), ese estado no se pisa con RETURNED.
+					const current = await this.invoiceRepo.findOne({ where: { id: saved.id }, select: ['id', 'sri_status', 'sri_messages'] });
+					const currentStatus = current?.sri_status || 'NOT_SENT';
+					if (currentStatus === 'IN_PROCESS' || currentStatus === 'AUTHORIZED' || currentStatus === 'NOT_AUTHORIZED') {
+						return {
+							...saved,
+							sri_result: {
+								...this.buildSriResult(saved.id, currentStatus, current?.sri_messages || []),
+								error: errorMsg,
+							},
+						};
+					}
 					await this.invoiceRepo.update(
 						{ id: saved.id },
 						{ sri_status: 'RETURNED', sri_messages: fallbackMessages },
@@ -195,7 +206,7 @@ export class InvoiceService {
 		const sequential = await this.getNextSequential(manager, companyId, branch.id, establishment, emissionPoint);
 		const invoiceNumber = `${establishment}-${emissionPoint}-${sequential}`;
 
-		const issueDate = dto.issue_date || new Date().toISOString().slice(0, 10);
+		const issueDate = dto.issue_date || todayInEcuador();
 		const companyRuc = company.ruc.trim();
 
 		const accessKey = this.generateSRIAccessKey(
@@ -224,10 +235,28 @@ export class InvoiceService {
 		const detailEntities: InvoiceDetailOrmEntity[] = [];
 
 		for (const d of dto.details) {
-			const qty = Number(d.quantity || 1);
+			const qty = Number(d.quantity);
 			const unitPrice = Number(d.unit_price || 0);
 			const discount = Number(d.discount || 0);
 			const taxRate = Number(d.tax_rate ?? 15);
+			// El tipo que se guarda en la línea es el mismo con el que se decide el movimiento de inventario.
+			const itemType = d.item_type || 'PRODUCT';
+
+			if (!Number.isFinite(qty) || qty <= 0) {
+				throw new BadRequestException(`La cantidad de "${d.description}" debe ser mayor a 0.`);
+			}
+			if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+				throw new BadRequestException(`El precio unitario de "${d.description}" no puede ser negativo.`);
+			}
+			if (!Number.isFinite(discount) || discount < 0) {
+				throw new BadRequestException(`El descuento de "${d.description}" no puede ser negativo.`);
+			}
+			if (discount > qty * unitPrice + 1e-9) {
+				throw new BadRequestException(`El descuento de "${d.description}" no puede superar el importe de la línea.`);
+			}
+			if (!isSupportedIvaRate(taxRate)) {
+				throw new BadRequestException(`La tarifa de IVA ${taxRate}% de "${d.description}" no está soportada para el SRI.`);
+			}
 
 			const rowSubtotal = Math.max(0, qty * unitPrice - discount);
 			const rowTax = Number(((rowSubtotal * taxRate) / 100).toFixed(2));
@@ -246,7 +275,7 @@ export class InvoiceService {
 			const detailWarehouseId = d.warehouse_id ?? d.warehouseId ?? headerWarehouseId;
 
 			const detail = detailRepo.create({
-				item_type: d.item_type || 'PRODUCT',
+				item_type: itemType,
 				item_id: d.item_id,
 				warehouse_id: detailWarehouseId || null,
 				code: d.code || '',
@@ -262,7 +291,7 @@ export class InvoiceService {
 			detailEntities.push(detail);
 
 			// Si es un artículo físico (PRODUCT o ITEM), registrar la salida con InventoryService
-			const isPhysical = d.item_type === 'PRODUCT' || d.item_type === 'ITEM';
+			const isPhysical = itemType === 'PRODUCT' || itemType === 'ITEM';
 			if (isPhysical && d.item_id) {
 				if (!detailWarehouseId) {
 					throw new BadRequestException(
@@ -322,24 +351,21 @@ export class InvoiceService {
 
 		const saved = await invoiceRepo.save(invoice);
 
-		// Actualizar el nuevo correlativo en el detalle de la secuencia del punto de emisión para FACTURAS
-		try {
-			const numericSeq = parseInt(sequential, 10);
-			if (!isNaN(numericSeq)) {
-				await manager.query(`
-					UPDATE tab_emission_point_sequence s
-					SET correlative = $1, updated_at = NOW()
-					FROM tab_emission_point p
-					WHERE s.emission_point_id = p.id
-					  AND p.company_id = $2
-					  AND p.branch_id = $3
-					  AND p.serie = $4
-					  AND s.document_type = 'FACTURAS'
-					  AND s.correlative < $1;
-				`, [numericSeq, companyId, branch.id, emissionPoint]);
-			}
-		} catch (err) {
-			console.error('Error al actualizar correlativo en tab_emission_point_sequence:', err);
+		// Actualizar el nuevo correlativo en el detalle de la secuencia del punto de emisión para FACTURAS.
+		// Sin try/catch: si esta consulta falla la transacción queda abortada y el error real debe propagarse.
+		const numericSeq = parseInt(sequential, 10);
+		if (!isNaN(numericSeq)) {
+			await manager.query(`
+				UPDATE tab_emission_point_sequence s
+				SET correlative = $1, updated_at = NOW()
+				FROM tab_emission_point p
+				WHERE s.emission_point_id = p.id
+				  AND p.company_id = $2
+				  AND p.branch_id = $3
+				  AND p.serie = $4
+				  AND s.document_type = 'FACTURAS'
+				  AND s.correlative < $1;
+			`, [numericSeq, companyId, branch.id, emissionPoint]);
 		}
 
 		return saved;
@@ -364,35 +390,78 @@ export class InvoiceService {
 	}
 
 	async cancel(id: number, companyId: number) {
-		const invoice = await this.findOne(id, companyId);
-		if (invoice.status === 'CANCELED') return invoice;
-
-		// Al anular se devuelve al inventario el stock que descontó la factura (en una sola transacción).
+		// Lectura con bloqueo dentro de la transacción: dos anulaciones simultáneas no devuelven el stock dos veces.
 		return this.dataSource.transaction(async (manager) => {
+			const locked = await manager
+				.createQueryBuilder(InvoiceOrmEntity, 'i')
+				.setLock('pessimistic_write')
+				.where('i.id = :id AND i.company_id = :companyId AND i.deleted = false', { id, companyId })
+				.getOne();
+			if (!locked) throw new NotFoundException('Factura no encontrada.');
+
+			const invoice = await manager.getRepository(InvoiceOrmEntity).findOne({
+				where: { id, company: { id: companyId }, deleted: false },
+				relations: ['details'],
+			});
+			if (!invoice) throw new NotFoundException('Factura no encontrada.');
+			if (invoice.status === 'CANCELED') return invoice;
+
+			if (invoice.sri_status === 'AUTHORIZED' || invoice.status === 'AUTHORIZED') {
+				throw new BadRequestException(
+					'La factura está autorizada por el SRI y no se puede anular localmente. Emite una nota de crédito o anúlala primero en el SRI.',
+				);
+			}
+			if (invoice.sri_status === 'IN_PROCESS') {
+				throw new BadRequestException(
+					'La factura fue recibida por el SRI y su autorización está en proceso. Consulta el estado en el SRI antes de anularla.',
+				);
+			}
+
+			const activeCreditNotes = await manager
+				.createQueryBuilder(CreditNoteOrmEntity, 'cn')
+				.where('cn.company_id = :companyId AND cn.invoice_id = :id AND cn.deleted = false', { companyId, id })
+				.andWhere("cn.status <> 'CANCELED'")
+				.getCount();
+			if (activeCreditNotes > 0) {
+				throw new BadRequestException('La factura tiene notas de crédito vigentes y no se puede anular.');
+			}
+
+			// Al anular se devuelve al inventario el stock que descontó la factura (en la misma transacción).
 			for (const d of invoice.details || []) {
 				const isPhysical = d.item_type === 'PRODUCT' || d.item_type === 'ITEM';
 				const warehouseId = d.warehouse_id || invoice.warehouse_id;
-				if (isPhysical && d.item_id && warehouseId) {
-					try {
-						await this.inventoryService.registerEntry(
-							{
-								companyId,
-								warehouseId,
-								productId: d.item_id,
-								quantity: Number(d.quantity || 1),
-								movementReason: 'CUSTOMER_RETURN',
-								collectionOriginName: 'INVOICE_CANCEL',
-								collectionOriginDocument: `Anulación de factura ${invoice.invoice_number}`,
-							},
-							manager,
-						);
-					} catch (e) {
-						// Si el artículo no existe en inventario o fue eliminado, continuar
-					}
-				}
+				if (!isPhysical || !d.item_id || !warehouseId) continue;
+
+				// Solo se devuelve stock de las líneas que realmente registraron una salida al facturar.
+				const exitMovements = await manager
+					.createQueryBuilder(InventoryMovementOrmEntity, 'm')
+					.where('m.company_id = :companyId AND m.product_id = :productId AND m.warehouse_id = :warehouseId', {
+						companyId,
+						productId: d.item_id,
+						warehouseId,
+					})
+					.andWhere("m.movement_type = 'OUT' AND m.collection_origin_name = 'INVOICE'")
+					.andWhere('m.collection_origin_document = :doc', { doc: invoice.invoice_number })
+					.getCount();
+				if (exitMovements === 0) continue;
+
+				// Sin try/catch: si la devolución de stock falla, la anulación completa se revierte y se informa el error.
+				await this.inventoryService.registerEntry(
+					{
+						companyId,
+						warehouseId,
+						productId: d.item_id,
+						quantity: Number(d.quantity),
+						movementReason: 'CUSTOMER_RETURN',
+						collectionOriginName: 'INVOICE_CANCEL',
+						collectionOriginDocument: `Anulación de factura ${invoice.invoice_number}`,
+					},
+					manager,
+				);
 			}
+			await manager.getRepository(InvoiceOrmEntity).update({ id: invoice.id }, { status: 'CANCELED' });
 			invoice.status = 'CANCELED';
-			return manager.getRepository(InvoiceOrmEntity).save(invoice);
+			return invoice;
 		});
 	}
 
@@ -401,6 +470,10 @@ export class InvoiceService {
 		const invoice = await this.findOne(id, companyId);
 		if (invoice.status === 'CANCELED') {
 			throw new BadRequestException('No se puede firmar una factura anulada.');
+		}
+		// El XML que el SRI ya recibió o autorizó no se reemplaza por otro firmado después.
+		if (invoice.sri_status === 'AUTHORIZED' || invoice.sri_status === 'IN_PROCESS') {
+			throw new BadRequestException('La factura ya fue recibida por el SRI; no se puede volver a firmar.');
 		}
 
 		const company = await this.companyRepo
@@ -454,8 +527,14 @@ export class InvoiceService {
 				invoice.sri_authorization_date ? invoice.sri_authorization_date.toISOString() : undefined,
 			);
 		}
+		// Ya fue recibida por el SRI: no se reenvía el mismo comprobante a recepción, solo se consulta la autorización.
+		if (invoice.sri_status === 'IN_PROCESS') {
+			return this.checkSriAuthorization(id, companyId);
+		}
 
-		if (invoice.sign_status !== 'SIGNED' || !invoice.signed_xml) {
+		// Tras una devolución o un rechazo el XML se regenera y se vuelve a firmar con los datos corregidos.
+		const wasRejected = invoice.sri_status === 'RETURNED' || invoice.sri_status === 'NOT_AUTHORIZED';
+		if (wasRejected || invoice.sign_status !== 'SIGNED' || !invoice.signed_xml) {
 			await this.sign(id, companyId);
 			invoice = await this.invoiceRepo
 				.createQueryBuilder('i')
@@ -487,15 +566,39 @@ export class InvoiceService {
 		// Recibida: el SRI procesa de forma asíncrona; se espera un momento antes de consultar la autorización.
 		await this.invoiceRepo.update({ id }, { sri_status: 'IN_PROCESS', sri_sent_at: sentAt, sri_messages: reception.mensajes, sri_response_xml: reception.rawXml });
 		await sleep(3000);
-		return this.checkSriAuthorization(id, companyId);
+		try {
+			return await this.checkSriAuthorization(id, companyId);
+		} catch (e: any) {
+			// La recepción fue correcta; si falla la consulta, la factura queda EN PROCESO y se puede consultar más tarde.
+			return this.buildSriResult(id, 'IN_PROCESS', [
+				{
+					identificador: 'CONSULTA-PENDIENTE',
+					mensaje: 'El SRI recibió la factura, pero no se pudo consultar su autorización. Vuelve a consultarla en unos minutos.',
+					informacionAdicional: e?.message,
+					tipo: 'ADVERTENCIA',
+				},
+			]);
+		}
 	}
 
 	/** Consulta al SRI la autorización de una factura ya enviada y actualiza su estado. */
 	async checkSriAuthorization(id: number, companyId: number) {
 		const invoice = await this.findOne(id, companyId);
+		if (invoice.status === 'CANCELED') {
+			throw new BadRequestException('La factura está anulada; no se consulta ni se actualiza su autorización en el SRI.');
+		}
 		if (!invoice.access_key) throw new BadRequestException('La factura no tiene clave de acceso.');
-		if (invoice.sri_status === 'NOT_SENT' || invoice.sri_status === 'RETURNED') {
+		if (!invoice.sri_status || invoice.sri_status === 'NOT_SENT') {
 			throw new BadRequestException('La factura aún no ha sido recibida por el SRI. Envíala primero.');
+		}
+		if (invoice.sri_status === 'AUTHORIZED') {
+			return this.buildSriResult(
+				id,
+				'AUTHORIZED',
+				invoice.sri_messages || [],
+				invoice.sri_authorization_number ?? undefined,
+				invoice.sri_authorization_date ? invoice.sri_authorization_date.toISOString() : undefined,
+			);
 		}
 
 		const environment = await this.getSriEnvironment(companyId);
@@ -508,17 +611,23 @@ export class InvoiceService {
 		}
 
 		if (authorization.estado === 'AUTORIZADO') {
-			await this.invoiceRepo.update(
-				{ id },
-				{
+			// La condición sobre status evita autorizar una factura que se anuló mientras se consultaba al SRI.
+			const updated = await this.invoiceRepo
+				.createQueryBuilder()
+				.update(InvoiceOrmEntity)
+				.set({
 					sri_status: 'AUTHORIZED',
 					status: 'AUTHORIZED',
 					sri_authorization_number: authorization.numeroAutorizacion ?? invoice.access_key,
 					sri_authorization_date: authorization.fechaAutorizacion ? new Date(authorization.fechaAutorizacion) : new Date(),
 					sri_messages: authorization.mensajes,
 					sri_response_xml: authorization.rawXml,
-				},
-			);
+				})
+				.where("id = :id AND status <> 'CANCELED'", { id })
+				.execute();
+			if (!updated.affected) {
+				throw new BadRequestException('La factura fue anulada; no se actualiza su autorización en el SRI.');
+			}
 			return this.buildSriResult(id, 'AUTHORIZED', authorization.mensajes, authorization.numeroAutorizacion ?? invoice.access_key, authorization.fechaAutorizacion);
 		}
 
@@ -530,7 +639,11 @@ export class InvoiceService {
 			return this.buildSriResult(id, 'NOT_AUTHORIZED', authorization.mensajes);
 		}
 
-		// EN PROCESO: el SRI todavía no respondió; el usuario puede volver a consultar más tarde.
+		// El SRI no tiene respuesta para la clave. Si la factura estaba devuelta o no autorizada se conserva ese estado
+		// (así puede corregirse y reenviarse); solo una factura recibida sigue EN PROCESO.
+		if (invoice.sri_status !== 'IN_PROCESS') {
+			return this.buildSriResult(id, invoice.sri_status, invoice.sri_messages || []);
+		}
 		await this.invoiceRepo.update({ id }, { sri_status: 'IN_PROCESS', sri_response_xml: authorization.rawXml });
 		return this.buildSriResult(id, 'IN_PROCESS', authorization.mensajes);
 	}

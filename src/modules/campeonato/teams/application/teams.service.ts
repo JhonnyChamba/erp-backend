@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ensureCompanyScope } from '../../common/company-scope.util';
 import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
 import { TeamCategoryHistoryOrmEntity } from '../../infrastructure/persistence/team-category-history.orm-entity';
 import { CreateTeamDto, UpdateTeamDto } from './dto/team.dto';
@@ -37,13 +38,12 @@ export class TeamsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({
       where: { id: Number(id) },
       relations: ['currentCategory'],
     });
-    if (!item) throw new NotFoundException('Equipo no encontrado');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Equipo no encontrado', write);
   }
 
   async create(dto: CreateTeamDto, user: any, companyId: number) {
@@ -76,8 +76,8 @@ export class TeamsService {
     return saved;
   }
 
-  async update(id: string | number, dto: UpdateTeamDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateTeamDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
     const prevCategoryId = item.currentCategoryId;
 
     Object.assign(item, dto, {
@@ -107,8 +107,8 @@ export class TeamsService {
     return saved;
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

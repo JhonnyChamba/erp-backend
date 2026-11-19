@@ -20,6 +20,16 @@ export class UpdateWorkOrderStatusUseCase {
       realDeliveryDate = dto.realDeliveryDate ? new Date(dto.realDeliveryDate) : new Date();
     }
 
+    // Las notas del cambio de estado se agregan a las observaciones de la orden
+    // (columna notes) como una línea fechada; no reemplazan lo ya escrito.
+    let notes: string | undefined = undefined;
+    const statusNote = dto.notes?.trim();
+    if (statusNote) {
+      const stamp = new Date().toISOString().slice(0, 10);
+      const line = `[${stamp} ${dto.status}] ${statusNote}`;
+      notes = existing.notes ? `${existing.notes}\n${line}` : line;
+    }
+
     return this.repository.updateStatus(
       id,
       companyId,
@@ -27,6 +37,7 @@ export class UpdateWorkOrderStatusUseCase {
       dto.technicalDiagnosis,
       dto.solutionApplied,
       realDeliveryDate,
+      notes,
     );
   }
 }

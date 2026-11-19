@@ -8,6 +8,7 @@ import { CreatesubModulesDto } from "../application/dto/create-sub-module.dto";
 import { UpdatesubModulesDto } from "../application/dto/update-sub-module.dto";
 import { ListsubModulesDto } from "../application/dto/list-sub-module.dto";
 import { AuthGuard } from "@nestjs/passport";
+import { SuperAdminGuard } from "src/auth/guards/super-admin.guard";
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('subModule')
@@ -20,6 +21,7 @@ export class subModulesController {
 		private readonly updateUseCase: UpdatesubModulesUseCase,
 	) { }
 
+	@UseGuards(SuperAdminGuard)
 	@Post()
 	create(@Body() dto: CreatesubModulesDto, @Req() req: any) {
 		return this.createUseCase.execute(dto, req.user);
@@ -35,6 +37,7 @@ export class subModulesController {
 		return this.getUseCase.execute(Number(id), req.moduleId);
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdatesubModulesDto, @Req() req: any) {
 		return this.updateUseCase.execute(Number(id), dto.moduleId ?? req.moduleId, dto);

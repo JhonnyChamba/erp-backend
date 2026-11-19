@@ -1,4 +1,5 @@
-import { IsOptional } from "class-validator";
+import { IsInt, IsOptional } from "class-validator";
+import { Type } from "class-transformer";
 
 export class UpdatesubModulesDto {
 	@IsOptional()
@@ -15,6 +16,11 @@ export class UpdatesubModulesDto {
 
 	@IsOptional()
 	url_desc?: string;
+
+	@Type(() => Number)
+	@IsInt()
+	@IsOptional()
+	order_index?: number;
 
 	@IsOptional()
 	enabled?: boolean;

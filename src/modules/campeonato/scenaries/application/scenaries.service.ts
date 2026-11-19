@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ensureCompanyScope } from '../../common/company-scope.util';
 import { ScenaryOrmEntity } from '../../infrastructure/persistence/scenary.orm-entity';
 import { CreateScenaryDto, UpdateScenaryDto } from './dto/scenary.dto';
 
@@ -31,10 +32,9 @@ export class ScenariesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string | number) {
+  async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({ where: { id: Number(id) } });
-    if (!item) throw new NotFoundException('Escenario no encontrado');
-    return item;
+    return ensureCompanyScope(item, companyId, 'Escenario no encontrado', write);
   }
 
   async create(dto: CreateScenaryDto, user: any, companyId: number) {
@@ -48,8 +48,8 @@ export class ScenariesService {
     return this.repo.save(item);
   }
 
-  async update(id: string | number, dto: UpdateScenaryDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateScenaryDto, user: any, companyId: number) {
+    const item = await this.get(id, companyId, true);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
@@ -57,8 +57,8 @@ export class ScenariesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string | number) {
-    const item = await this.get(id);
+  async remove(id: string | number, companyId: number) {
+    const item = await this.get(id, companyId, true);
     return this.repo.remove(item);
   }
 }

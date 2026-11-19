@@ -7,6 +7,7 @@ import {
 	ManyToOne,
 	JoinColumn,
 	OneToMany,
+	Unique,
 } from 'typeorm';
 import { CompanyOrmEntity } from 'src/modules/company/infrastructure/persistence/company.orm-entity';
 import { BranchCompanyOrmEntity } from 'src/modules/branch-company/infrastructure/persistence/branch-company.orm-entity';
@@ -14,6 +15,8 @@ import { CustomerOrmEntity } from 'src/modules/contacts/infrastructure/persisten
 import { EmployeeOrmEntity } from 'src/modules/human-resources/infrastructure/persistence/employee.orm-entity';
 import { AppointmentItemOrmEntity } from './appointment-item.orm-entity';
 
+// order_number se genera por empresa: la unicidad es (company_id, order_number), no global.
+@Unique('UQ_tab_appointments_company_order_number', ['company_id', 'order_number'])
 @Entity('tab_appointments')
 export class AppointmentOrmEntity {
 	@PrimaryGeneratedColumn()
@@ -47,7 +50,7 @@ export class AppointmentOrmEntity {
 	@JoinColumn({ name: 'employee_id' })
 	employee: EmployeeOrmEntity;
 
-	@Column({ name: 'order_number', type: 'varchar', length: 30, unique: true })
+	@Column({ name: 'order_number', type: 'varchar', length: 30 })
 	order_number: string;
 
 	@Column({ name: 'appointment_date', type: 'date' })

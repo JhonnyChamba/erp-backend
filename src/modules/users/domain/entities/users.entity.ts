@@ -11,7 +11,8 @@ export class Users {
 		public name_user: string,
 		public last_name_user: string,
 		public email: string,
-		public password: string,
+		/** Hash de la contraseña. Solo se carga para el login (findByEmail); nunca viaja en las respuestas HTTP. */
+		public password: string | undefined,
 		public companyId: number,
 		public developer: boolean,
 		public multi_company: boolean,

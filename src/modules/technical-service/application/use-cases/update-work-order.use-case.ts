@@ -23,20 +23,28 @@ export class UpdateWorkOrderUseCase {
         }))
       : existing.items;
 
-    let partsCost = dto.partsCost !== undefined ? Number(dto.partsCost) : existing.partsCost;
-    let laborCost = dto.laborCost !== undefined ? Number(dto.laborCost) : existing.laborCost;
-
-    if (dto.items !== undefined && items.length > 0) {
-      const partsSum = items
-        .filter((i) => i.itemType === 'REPUESTO')
-        .reduce((sum, i) => sum + i.subtotal, 0);
-      const laborSum = items
-        .filter((i) => i.itemType === 'SERVICIO')
+    // Mismo criterio que en el alta: laborCost = mano de obra base + ítems que no
+    // son repuestos; partsCost = ítems de repuesto. La base guardada se recupera
+    // restando a existing.laborCost los ítems no-repuesto que ya tenía la orden.
+    const sumItems = (list: WorkOrderItem[], parts: boolean) =>
+      list
+        .filter((i) => (i.itemType === 'REPUESTO') === parts)
         .reduce((sum, i) => sum + i.subtotal, 0);
 
-      partsCost = partsSum;
-      laborCost = laborSum;
-    }
+    const existingBaseLabor = Math.max(0, existing.laborCost - sumItems(existing.items, false));
+    const baseLabor = dto.laborCost !== undefined ? Number(dto.laborCost) || 0 : existingBaseLabor;
+
+    const laborCost = baseLabor + sumItems(items, false);
+    const partsCost =
+      dto.items !== undefined
+        ? items.length > 0
+          ? sumItems(items, true)
+          : dto.partsCost !== undefined
+            ? Number(dto.partsCost) || 0
+            : 0
+        : dto.partsCost !== undefined
+          ? Number(dto.partsCost) || 0
+          : existing.partsCost;
 
     const subtotal = partsCost + laborCost;
     const taxAmount = dto.taxAmount !== undefined ? Number(dto.taxAmount) : existing.taxAmount;

@@ -4,7 +4,7 @@ import { AccessControlService } from '../access-control.service';
 /**
  * Aislamiento multiempresa. Debe ir DESPUÉS de AuthGuard('jwt').
  *
- * El id de empresa lo envía el cliente (header x-company-id, query o body `companyId`), por lo que no es
+ * El id de empresa lo envía el cliente (header x-company-id, query o body `companyId` / `company_id`), por lo que no es
  * confiable por sí solo: se valida que el usuario realmente pertenezca a CADA empresa indicada. Si no envía
  * ninguna, se valida la empresa del token (o la 1, que es el valor al que caen los controladores).
  * Deja el id validado en `request.companyId`.
@@ -18,7 +18,14 @@ export class CompanyAccessGuard implements CanActivate {
 		const user = request.user;
 		if (!user) throw new ForbiddenException('Usuario no autenticado');
 
-		const provided = [request.headers?.['x-company-id'], request.query?.companyId, request.body?.companyId]
+		// Se validan también las variantes snake_case: varios DTO aceptan `company_id` además de `companyId`.
+		const provided = [
+			request.headers?.['x-company-id'],
+			request.query?.companyId,
+			request.query?.company_id,
+			request.body?.companyId,
+			request.body?.company_id,
+		]
 			.filter((v) => v !== undefined && v !== null && v !== '')
 			.map((v) => Number(Array.isArray(v) ? v[0] : v));
 

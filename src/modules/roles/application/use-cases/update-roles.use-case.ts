@@ -1,5 +1,5 @@
 import { RolesRepository } from "../../domain/repositories/roles.repository";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class UpdateRolesUseCase {
@@ -7,7 +7,7 @@ export class UpdateRolesUseCase {
 
   async execute(id: number, companyId: number, dto: any) {
     const branch = await this.repository.findById(id, companyId);
-    if (!branch) throw new Error('Roles not found');
+    if (!branch) throw new NotFoundException('Rol no encontrado');
 
     branch.code = dto.code ?? branch.code;
     branch.description = dto.description ?? branch.description;

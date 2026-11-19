@@ -161,7 +161,9 @@ export class CreateCategoryEditionDto {
 
   @IsOptional()
   @IsArray()
-  availableScenaryIds?: string[];
+  @Type(() => Number)
+  @IsInt({ each: true })
+  availableScenaryIds?: number[];
 
   @IsOptional()
   @IsBoolean()
@@ -247,7 +249,9 @@ export class UpdateCategoryEditionDto {
 
   @IsOptional()
   @IsArray()
-  availableScenaryIds?: string[];
+  @Type(() => Number)
+  @IsInt({ each: true })
+  availableScenaryIds?: number[];
 
   @IsOptional()
   @IsBoolean()

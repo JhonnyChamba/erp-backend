@@ -1,5 +1,5 @@
 import { PlansRepository } from "../../domain/repositories/plans.repository";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class UpdatePlansUseCase {
@@ -7,7 +7,7 @@ export class UpdatePlansUseCase {
 
   async execute(id: number, dto: any) {
     const company = await this.repository.findById(id);
-    if (!company) throw new Error('Plans not found');
+    if (!company) throw new NotFoundException('Plans not found');
 
     company.price = dto.price ?? company.price;
     company.billing_cycle = dto.billing_cycle ?? company.billing_cycle;

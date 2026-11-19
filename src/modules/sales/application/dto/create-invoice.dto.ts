@@ -3,7 +3,9 @@ import {
 	IsNotEmpty,
 	IsNumber,
 	IsOptional,
+	IsPositive,
 	IsString,
+	Min,
 	ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -37,15 +39,18 @@ export class CreateInvoiceDetailDto {
 	description: string;
 
 	@Type(() => Number)
-	@IsNumber()
+	@IsNumber({}, { message: 'La cantidad debe ser numérica.' })
+	@IsPositive({ message: 'La cantidad debe ser mayor a 0.' })
 	quantity: number;
 
 	@Type(() => Number)
-	@IsNumber()
+	@IsNumber({}, { message: 'El precio unitario debe ser numérico.' })
+	@Min(0, { message: 'El precio unitario no puede ser negativo.' })
 	unit_price: number;
 
 	@Type(() => Number)
-	@IsNumber()
+	@IsNumber({}, { message: 'El descuento debe ser numérico.' })
+	@Min(0, { message: 'El descuento no puede ser negativo.' })
 	@IsOptional()
 	discount?: number;
 

@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -9,8 +11,49 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { MatchStatus, MeetingType } from '../../../common/enum/campeonato.enum';
+
+export class GenerateFixtureDto {
+  @IsNotEmpty({ message: 'Debe indicar la etapa del campeonato' })
+  @Type(() => Number)
+  @IsInt()
+  stageId: number;
+
+  @IsArray()
+  @ArrayMinSize(2, { message: 'Se requieren al menos 2 equipos para generar el fixture' })
+  @Type(() => Number)
+  @IsInt({ each: true })
+  teamIds: number[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  scenaryId?: number;
+
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  matchDurationMinutes?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  intervalDays?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  numberOfLaps?: number;
+}
 
 export class CreateMatchDto {
   @IsNotEmpty({ message: 'El ID de la etapa es obligatorio' })

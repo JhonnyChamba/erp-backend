@@ -8,6 +8,7 @@ import { CreatePlansModulesDto } from "../application/dto/create-plans-module.dt
 import { UpdatePlansModulesDto } from "../application/dto/update-plans-module.dto";
 import { ListPlansModulesDto } from "../application/dto/list-plans-module.dto";
 import { AuthGuard } from "@nestjs/passport";
+import { SuperAdminGuard } from "src/auth/guards/super-admin.guard";
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('plansModules')
@@ -20,6 +21,7 @@ export class PlansModulesController {
 		private readonly updateUseCase: UpdatePlansModulesUseCase,
 	) { }
 
+	@UseGuards(SuperAdminGuard)
 	@Post()
 	create(@Body() dto: CreatePlansModulesDto, @Req() req: any) {
 		return this.createUseCase.execute(dto, req.user);
@@ -35,6 +37,7 @@ export class PlansModulesController {
 		return this.getUseCase.execute(Number(id), req.planId);
 	}
 
+	@UseGuards(SuperAdminGuard)
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdatePlansModulesDto, @Req() req: any) {
 		return this.updateUseCase.execute(Number(id), req.planId, dto);
