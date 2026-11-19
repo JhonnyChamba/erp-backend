@@ -24,10 +24,10 @@ export class TeamManagementOrmEntity {
   @Column({ name: 'role_title', type: 'varchar', length: 100, nullable: true })
   roleTitle: string;
 
-  @Column({ name: 'team_id', type: 'int' })
+  @Column({ name: 'team_id', type: 'int', nullable: true })
   teamId: number;
 
-  @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'team_id' })
   team: TeamOrmEntity;
 

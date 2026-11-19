@@ -4,8 +4,8 @@ dotenv.config();
 
 const requiredEnv = (name: string): string => {
   const value = process.env[name];
-  if (!value) throw new Error(`Falta la variable de entorno ${name}`);
-  return value;
+  if (!value && !process.env.DATABASE_URL) throw new Error(`Falta la variable de entorno ${name}`);
+  return value || '';
 };
 
 const databaseUrl = process.env.DATABASE_URL;

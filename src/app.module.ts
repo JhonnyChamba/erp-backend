@@ -57,7 +57,7 @@ import { TechnicalServiceModule } from './modules/technical-service/technical-se
               host,
               port: Number(config.get<number>('DATABASE_PORT', 5432)),
               username: config.get<string>('DATABASE_USER', 'postgres'),
-              password: config.getOrThrow<string>('DATABASE_PASSWORD'),
+              password: config.get<string>('DATABASE_PASSWORD', ''),
               database: config.get<string>('DATABASE_NAME', 'db_deskounta'),
             }),
           ssl: useSsl ? { rejectUnauthorized: false } : false,
