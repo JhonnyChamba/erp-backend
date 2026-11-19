@@ -44,7 +44,6 @@ export function validarCedulaEcuador(cedula: string): boolean {
   const digitoVerificador = sum % 10 === 0 ? 0 : 10 - (sum % 10);
   return digitoVerificador === parseInt(cedula.charAt(9), 10);
 }
-
 @Injectable()
 export class PlayersService {
   constructor(
@@ -161,7 +160,33 @@ export class PlayersService {
     let player = await this.repo.findOne({ where: { identification: ident } });
 
     if (player) {
-      // Ya existe globalmente. Asegurar vinculación en la tabla intermedia de la empresa
+      // Ya existe globalmente: se actualizan solo los datos informativos editables.
+      // Nombres, apellidos, cédula, fecha de nacimiento y edad en años no se modifican.
+      const informative: Record<string, any> = {};
+      for (const f of [
+        'emergencyContactPhone',
+        'emergencyContactName',
+        'email',
+        'phone',
+        'bloodType',
+        'dominantFoot',
+        'playerClassificationId',
+        'demarcationId',
+      ] as const) {
+        const v = (dto as any)[f];
+        if (v !== undefined) informative[f] = v === '' ? null : v;
+      }
+      const ageCalcExisting = calculateAge(player.birthDate);
+      if (ageCalcExisting) informative.ageMonths = ageCalcExisting.ageMonths;
+      else if (dto.ageMonths !== undefined) informative.ageMonths = dto.ageMonths;
+      if (Object.keys(informative).length) {
+        informative.updatedBy = userId;
+        informative.updateName = userName;
+        await this.repo.update(player.id, informative);
+        Object.assign(player, informative);
+      }
+
+      // Asegurar vinculación en la tabla intermedia de la empresa
       const existingLink = await this.companyPlayerRepo.findOne({
         where: { companyId, playerId: player.id },
       });
