@@ -72,7 +72,7 @@ export class MatchesService {
 
     // Obtener todos los equipos inscritos si se filtra por etapa
     const teamMap: Record<string, {
-      teamId: string;
+      teamId: string | number;
       teamName: string;
       logoUrl: string | null;
       pj: number;
@@ -160,7 +160,7 @@ export class MatchesService {
         .andWhere('ev.eventType IN (:...eventTypes)', { eventTypes: [MatchEventType.GOAL, MatchEventType.PENALTY_GOAL] })
         .getMany();
 
-      const scorerMap: Record<string, { playerId: string; playerName: string; teamName: string; goals: number }> = {};
+      const scorerMap: Record<string, { playerId: string | number; playerName: string; teamName: string; goals: number }> = {};
       for (const ev of events) {
         if (!ev.player) continue;
         if (!scorerMap[ev.player.id]) {
@@ -180,9 +180,9 @@ export class MatchesService {
   }
 
   async generateFixture(companyId: number, dto: {
-    stageId: string;
-    teamIds: string[];
-    scenaryId?: string;
+    stageId: string | number;
+    teamIds: (string | number)[];
+    scenaryId?: string | number;
     startDate: string;
     matchDurationMinutes?: number;
     intervalDays?: number;
@@ -227,10 +227,10 @@ export class MatchesService {
 
         const match = this.repo.create({
           companyId,
-          stageId: dto.stageId,
-          scenaryId: dto.scenaryId || null,
-          localTeamId: localId,
-          awayTeamId: awayId,
+          stageId: Number(dto.stageId),
+          scenaryId: dto.scenaryId ? Number(dto.scenaryId) : null,
+          localTeamId: Number(localId),
+          awayTeamId: Number(awayId),
           roundNumber: round + 1,
           date: matchTime,
           status: MatchStatus.SCHEDULED,
@@ -259,7 +259,7 @@ export class MatchesService {
         const returnDate = new Date(m.date.getTime() + roundsCount * intervalDays * 24 * 60 * 60 * 1000);
         const returnMatch = this.repo.create({
           companyId,
-          stageId: dto.stageId,
+          stageId: Number(dto.stageId),
           scenaryId: m.scenaryId,
           localTeamId: m.awayTeamId,
           awayTeamId: m.localTeamId,
@@ -285,9 +285,9 @@ export class MatchesService {
     };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: ['stage', 'scenary', 'localTeam', 'awayTeam', 'referee', 'vocal', 'vocalTeam'],
     });
     if (!item) throw new NotFoundException('Partido no encontrado');
@@ -305,7 +305,7 @@ export class MatchesService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateMatchDto, user: any) {
+  async update(id: string | number, dto: UpdateMatchDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       date: dto.date ? new Date(dto.date) : item.date,
@@ -315,7 +315,7 @@ export class MatchesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

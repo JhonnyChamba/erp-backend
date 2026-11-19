@@ -29,8 +29,8 @@ export class DemarcationsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Demarcación no encontrada');
     return item;
   }
@@ -45,7 +45,7 @@ export class DemarcationsService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateDemarcationDto, user: any) {
+  async update(id: string | number, dto: UpdateDemarcationDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -54,7 +54,7 @@ export class DemarcationsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

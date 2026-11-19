@@ -1,8 +1,10 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -11,12 +13,14 @@ import { TeamOrigin, StageFormat, IntersectionType } from '../../../common/enum/
 
 export class CreateStageDto {
   @IsNotEmpty({ message: 'El ID de la edición es obligatorio' })
-  @IsString()
-  categoryEditionId: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryEditionId: number;
 
   @IsOptional()
-  @IsString()
-  categoryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryId?: number;
 
   @IsNotEmpty({ message: 'El nombre de la etapa es obligatorio' })
   @IsString()
@@ -36,8 +40,9 @@ export class CreateStageDto {
   teamOrigin?: TeamOrigin;
 
   @IsOptional()
-  @IsString()
-  previousStageId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  previousStageId?: number;
 
   @IsOptional()
   @IsInt()
@@ -88,12 +93,14 @@ export class CreateStageDto {
 
 export class UpdateStageDto {
   @IsOptional()
-  @IsString()
-  categoryEditionId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryEditionId?: number;
 
   @IsOptional()
-  @IsString()
-  categoryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryId?: number;
 
   @IsOptional()
   @IsString()
@@ -113,8 +120,9 @@ export class UpdateStageDto {
   teamOrigin?: TeamOrigin;
 
   @IsOptional()
-  @IsString()
-  previousStageId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  previousStageId?: number;
 
   @IsOptional()
   @IsInt()
@@ -165,8 +173,9 @@ export class UpdateStageDto {
 
 export class CreateStagePlayerClassificationDto {
   @IsNotEmpty({ message: 'La clasificación de futbolista es obligatoria' })
-  @IsString()
-  playerClassificationId: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId: number;
 
   @IsNotEmpty({ message: 'La cantidad máxima permitida es obligatoria' })
   @IsInt({ message: 'El cupo debe ser un número entero' })

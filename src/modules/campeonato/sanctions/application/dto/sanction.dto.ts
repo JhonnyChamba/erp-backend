@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsNotEmpty,
@@ -9,12 +10,14 @@ import { SanctionType, SanctionStatus } from '../../../common/enum/campeonato.en
 
 export class CreateSanctionDto {
   @IsOptional()
-  @IsString()
-  matchId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  matchId?: number;
 
   @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
-  @IsString()
-  playerId: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId: number;
 
   @IsNotEmpty({ message: 'El tipo de sanción es obligatorio' })
   @IsEnum(SanctionType)
@@ -43,12 +46,14 @@ export class CreateSanctionDto {
 
 export class UpdateSanctionDto {
   @IsOptional()
-  @IsString()
-  matchId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  matchId?: number;
 
   @IsOptional()
-  @IsString()
-  playerId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId?: number;
 
   @IsOptional()
   @IsEnum(SanctionType)

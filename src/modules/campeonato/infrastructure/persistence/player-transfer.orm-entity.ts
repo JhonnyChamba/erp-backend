@@ -9,56 +9,56 @@ import { TransferStatus } from '../../common/enum/campeonato.enum';
 
 @Entity('tab_campeonato_player_transfers')
 export class PlayerTransferOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
 
-  @Column({ name: 'edition_id', type: 'uuid', nullable: true })
-  editionId: string;
+  @Column({ name: 'edition_id', type: 'int', nullable: true })
+  editionId: number;
 
   @ManyToOne(() => CategoryEditionOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'edition_id' })
   edition: CategoryEditionOrmEntity;
 
-  @Column({ name: 'player_id', type: 'uuid' })
-  playerId: string;
+  @Column({ name: 'player_id', type: 'int' })
+  playerId: number;
 
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })
   player: PlayerOrmEntity;
 
-  @Column({ name: 'origin_team_id', type: 'uuid', nullable: true })
-  originTeamId: string;
+  @Column({ name: 'origin_team_id', type: 'int', nullable: true })
+  originTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'origin_team_id' })
   originTeam: TeamOrmEntity;
 
-  @Column({ name: 'origin_registration_id', type: 'uuid', nullable: true })
-  originRegistrationId: string;
+  @Column({ name: 'origin_registration_id', type: 'int', nullable: true })
+  originRegistrationId: number;
 
   @ManyToOne(() => PlayerRegistrationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'origin_registration_id' })
   originRegistration: PlayerRegistrationOrmEntity;
 
-  @Column({ name: 'destination_team_id', type: 'uuid' })
-  destinationTeamId: string;
+  @Column({ name: 'destination_team_id', type: 'int' })
+  destinationTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'destination_team_id' })
   destinationTeam: TeamOrmEntity;
 
-  @Column({ name: 'destination_registration_id', type: 'uuid', nullable: true })
-  destinationRegistrationId: string;
+  @Column({ name: 'destination_registration_id', type: 'int', nullable: true })
+  destinationRegistrationId: number;
 
   @ManyToOne(() => PlayerRegistrationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'destination_registration_id' })
   destinationRegistration: PlayerRegistrationOrmEntity;
 
-  @Column({ name: 'stage_id', type: 'uuid', nullable: true })
-  stageId: string;
+  @Column({ name: 'stage_id', type: 'int', nullable: true })
+  stageId: number;
 
   @ManyToOne(() => StageOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'stage_id' })
@@ -82,8 +82,8 @@ export class PlayerTransferOrmEntity {
   @Column({ name: 'pass_owner_type', type: 'varchar', length: 20, default: 'PLAYER' })
   passOwnerType: string; // 'PLAYER' o 'TEAM'
 
-  @Column({ name: 'pass_owner_team_id', type: 'uuid', nullable: true })
-  passOwnerTeamId: string;
+  @Column({ name: 'pass_owner_team_id', type: 'int', nullable: true })
+  passOwnerTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'pass_owner_team_id' })

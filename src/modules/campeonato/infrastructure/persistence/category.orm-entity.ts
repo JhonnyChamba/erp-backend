@@ -3,8 +3,8 @@ import { Gender } from '../../common/enum/campeonato.enum';
 
 @Entity('tab_campeonato_categories')
 export class CategoryOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;

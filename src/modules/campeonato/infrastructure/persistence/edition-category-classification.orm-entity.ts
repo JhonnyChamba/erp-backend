@@ -4,8 +4,8 @@ import { PlayerClassificationOrmEntity } from './player-classification.orm-entit
 
 @Entity('tab_campeonato_edition_category_classifications')
 export class EditionCategoryClassificationOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -13,15 +13,15 @@ export class EditionCategoryClassificationOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'category_detail_id', type: 'uuid' })
-  categoryDetailId: string;
+  @Column({ name: 'category_detail_id', type: 'int' })
+  categoryDetailId: number;
 
   @ManyToOne(() => EditionCategoryDetailOrmEntity, (det) => det.classifications, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_detail_id' })
   categoryDetail: EditionCategoryDetailOrmEntity;
 
-  @Column({ name: 'player_classification_id', type: 'uuid' })
-  playerClassificationId: string;
+  @Column({ name: 'player_classification_id', type: 'int' })
+  playerClassificationId: number;
 
   @ManyToOne(() => PlayerClassificationOrmEntity, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'player_classification_id' })

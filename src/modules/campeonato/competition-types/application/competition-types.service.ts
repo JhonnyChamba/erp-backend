@@ -45,8 +45,8 @@ export class CompetitionTypesService implements OnModuleInit {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Tipo de competencia no encontrado');
     return item;
   }
@@ -74,14 +74,14 @@ export class CompetitionTypesService implements OnModuleInit {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateCompetitionTypeDto, user: any) {
+  async update(id: string | number, dto: UpdateCompetitionTypeDto, user: any) {
     const item = await this.get(id);
 
     if (dto.description && dto.description.trim() !== item.description) {
       const existing = await this.repo.findOne({
         where: { description: dto.description.trim() },
       });
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== Number(id)) {
         throw new BadRequestException(`Ya existe otro tipo de competencia con la descripción "${dto.description}".`);
       }
     }
@@ -95,7 +95,7 @@ export class CompetitionTypesService implements OnModuleInit {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

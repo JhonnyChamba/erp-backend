@@ -3,14 +3,14 @@ import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
 
 @Entity('tab_campeonato_tournament_transfer_configs')
 export class TournamentTransferConfigOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
 
-  @Column({ name: 'edition_id', type: 'uuid', unique: true })
-  editionId: string;
+  @Column({ name: 'edition_id', type: 'int', unique: true })
+  editionId: number;
 
   @OneToOne(() => CategoryEditionOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'edition_id' })

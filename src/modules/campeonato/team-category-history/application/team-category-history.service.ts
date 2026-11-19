@@ -50,8 +50,8 @@ export class TeamCategoryHistoryService {
     return saved;
   }
 
-  async remove(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async remove(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Registro de historial no encontrado');
     return this.repo.remove(item);
   }

@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsNotEmpty,
@@ -10,8 +11,9 @@ import { PaymentConcept, PaymentMethod, PaymentStatus } from '../../../common/en
 
 export class CreatePaymentDto {
   @IsOptional()
-  @IsString()
-  teamRegistrationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamRegistrationId?: number;
 
   @IsNotEmpty({ message: 'El concepto de pago es obligatorio' })
   @IsEnum(PaymentConcept)
@@ -41,8 +43,9 @@ export class CreatePaymentDto {
 
 export class UpdatePaymentDto {
   @IsOptional()
-  @IsString()
-  teamRegistrationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamRegistrationId?: number;
 
   @IsOptional()
   @IsEnum(PaymentConcept)

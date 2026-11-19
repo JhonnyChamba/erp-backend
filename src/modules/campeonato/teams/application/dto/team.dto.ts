@@ -1,8 +1,10 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -72,8 +74,9 @@ export class CreateTeamDto {
   isActive?: boolean;
 
   @IsOptional()
-  @IsString()
-  currentCategoryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  currentCategoryId?: number;
 
   @IsOptional()
   @IsString()
@@ -144,8 +147,9 @@ export class UpdateTeamDto {
   isActive?: boolean;
 
   @IsOptional()
-  @IsString()
-  currentCategoryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  currentCategoryId?: number;
 
   @IsOptional()
   @IsString()

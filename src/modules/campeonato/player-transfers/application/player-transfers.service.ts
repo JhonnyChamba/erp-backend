@@ -178,9 +178,9 @@ export class PlayerTransfersService {
   /**
    * Aprobar o rechazar una solicitud de transferencia por rol
    */
-  async approve(transferId: string, dto: ApproveTransferDto, user: any) {
+  async approve(transferId: string | number, dto: ApproveTransferDto, user: any) {
     const transfer = await this.repo.findOne({
-      where: { id: transferId },
+      where: { id: Number(transferId) },
       relations: ['approvals', 'player', 'originTeam', 'destinationTeam'],
     });
     if (!transfer) throw new NotFoundException('Solicitud de transferencia no encontrada');
@@ -215,7 +215,7 @@ export class PlayerTransfersService {
     }
 
     // Verificar si todas las aprobaciones obligatorias ya están en APPROVED
-    const updatedApprovals = await this.approvalRepo.find({ where: { transferId: transfer.id } });
+    const updatedApprovals = await this.approvalRepo.find({ where: { transferId: Number(transfer.id) } });
     const allApproved = updatedApprovals.every((a) => a.status === TransferApprovalStatus.APPROVED);
 
     if (allApproved) {
@@ -231,7 +231,7 @@ export class PlayerTransfersService {
   /**
    * Ejecución atómica transaccional de la transferencia
    */
-  async execute(transferId: string, user: any) {
+  async execute(transferId: string | number, user: any) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -246,7 +246,7 @@ export class PlayerTransfersService {
 
       // 1. Obtener transferencia y validar estado
       const transfer = await transferRepo.findOne({
-        where: { id: transferId },
+        where: { id: Number(transferId) },
         relations: ['approvals', 'player', 'originRegistration', 'destinationTeam'],
       });
       if (!transfer) throw new NotFoundException('Transferencia no encontrada');
@@ -370,7 +370,7 @@ export class PlayerTransfersService {
         newStatus: PlayerRegistrationStatus.ELIGIBLE,
         performedById: user?.user_id?.toString() || user?.id?.toString(),
         performedByName: user?.user_name || user?.name,
-        comments: `Inscripción dada de alta mediante ejecución de transferencia #${transfer.id.substring(0, 8)}`,
+        comments: `Inscripción dada de alta mediante ejecución de transferencia #${transfer.id}`,
       });
 
       // 7. Asociar la nueva inscripción y actualizar la transferencia como EXECUTED
@@ -443,9 +443,9 @@ export class PlayerTransfersService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: [
         'player',
         'player.demarcation',
@@ -464,27 +464,28 @@ export class PlayerTransfersService {
   /**
    * Historial deportivo integral del futbolista (inscripciones, transferencias y trayectoria)
    */
-  async getSportsHistory(playerId: string) {
+  async getSportsHistory(playerId: string | number) {
+    const numPlayerId = Number(playerId);
     const player = await this.playerRepo.findOne({
-      where: { id: playerId },
+      where: { id: numPlayerId },
       relations: ['demarcation', 'currentTeam', 'passOwnerTeam'],
     });
     if (!player) throw new NotFoundException('Jugador no encontrado');
 
     const registrations = await this.playerRegistrationRepo.find({
-      where: { playerId },
+      where: { playerId: numPlayerId },
       relations: ['teamRegistration', 'teamRegistration.team', 'teamRegistration.categoryEdition', 'playerClassification', 'stage'],
       order: { registrationDate: 'DESC' },
     });
 
     const transfers = await this.repo.find({
-      where: { playerId },
+      where: { playerId: numPlayerId },
       relations: ['originTeam', 'destinationTeam', 'edition', 'approvals'],
       order: { createdAt: 'DESC' },
     });
 
     const historyTimeline = await this.historyRepo.find({
-      where: { playerId },
+      where: { playerId: numPlayerId },
       relations: ['playerRegistration'],
       order: { createdAt: 'DESC' },
     });
@@ -497,16 +498,17 @@ export class PlayerTransfersService {
     };
   }
 
-  async listByPlayer(playerId: string, companyId?: number) {
+  async listByPlayer(playerId: string | number, companyId?: number) {
+    const numPlayerId = Number(playerId);
     return this.repo.find({
-      where: { playerId },
+      where: { playerId: numPlayerId },
       relations: ['player', 'originTeam', 'destinationTeam', 'passOwnerTeam', 'edition', 'approvals'],
       order: { createdAt: 'DESC' },
     });
   }
 
-  async remove(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async remove(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Transferencia no encontrada');
     if (item.status === TransferStatus.EXECUTED) {
       throw new BadRequestException('No se puede eliminar una transferencia que ya fue ejecutada.');

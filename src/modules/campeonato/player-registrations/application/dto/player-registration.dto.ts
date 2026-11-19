@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -15,12 +16,14 @@ import { PlayerRegistrationStatus } from '../../../common/enum/campeonato.enum';
 
 export class CreatePlayerRegistrationDto {
   @IsNotEmpty({ message: 'El ID de la inscripción de equipo es obligatorio' })
-  @IsString()
-  teamRegistrationId: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamRegistrationId: number;
 
   @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
-  @IsString()
-  playerId: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId: number;
 
   @IsNotEmpty({ message: 'El número de camiseta es obligatorio' })
   @IsInt()
@@ -40,12 +43,14 @@ export class CreatePlayerRegistrationDto {
   isCaptain?: boolean;
 
   @IsOptional()
-  @IsString()
-  stageId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  stageId?: number;
 
   @IsOptional()
-  @IsString()
-  playerClassificationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId?: number;
 
   @IsOptional()
   @IsArray()
@@ -58,12 +63,14 @@ export class CreatePlayerRegistrationDto {
 
 export class UpdatePlayerRegistrationDto {
   @IsOptional()
-  @IsString()
-  teamRegistrationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamRegistrationId?: number;
 
   @IsOptional()
-  @IsString()
-  playerId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId?: number;
 
   @IsOptional()
   @IsInt()
@@ -83,12 +90,14 @@ export class UpdatePlayerRegistrationDto {
   isCaptain?: boolean;
 
   @IsOptional()
-  @IsString()
-  stageId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  stageId?: number;
 
   @IsOptional()
-  @IsString()
-  playerClassificationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId?: number;
 
   @IsOptional()
   @IsArray()
@@ -101,8 +110,9 @@ export class UpdatePlayerRegistrationDto {
 
 export class MassPlayerRegistrationItemDto {
   @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
-  @IsString()
-  playerId: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId: number;
 
   @IsNotEmpty({ message: 'El número de camiseta es obligatorio' })
   @IsInt()
@@ -114,8 +124,9 @@ export class MassPlayerRegistrationItemDto {
   carnetCode?: string;
 
   @IsOptional()
-  @IsString()
-  playerClassificationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId?: number;
 
   @IsOptional()
   @IsBoolean()
@@ -128,12 +139,14 @@ export class MassPlayerRegistrationItemDto {
 
 export class MassPlayerRegistrationDto {
   @IsNotEmpty({ message: 'El ID de la inscripción de equipo es obligatorio' })
-  @IsString()
-  teamRegistrationId: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamRegistrationId: number;
 
   @IsOptional()
-  @IsString()
-  stageId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  stageId?: number;
 
   @IsArray()
   @ValidateNested({ each: true })

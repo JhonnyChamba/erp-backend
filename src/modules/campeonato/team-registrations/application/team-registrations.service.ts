@@ -20,10 +20,12 @@ export class TeamRegistrationsService {
     private readonly historyRepo: Repository<TeamCategoryHistoryOrmEntity>,
   ) {}
 
-  private async syncTeamCategoryHistory(teamId: string, categoryEditionId: string, user: any, companyId: number) {
+  private async syncTeamCategoryHistory(teamId: string | number, categoryEditionId: string | number, user: any, companyId: number) {
     try {
+      const numTeamId = Number(teamId);
+      const numEditionId = Number(categoryEditionId);
       const edition = await this.editionRepo.findOne({
-        where: { id: categoryEditionId },
+        where: { id: numEditionId },
         relations: ['category'],
       });
       if (!edition || !edition.categoryId) return;
@@ -38,7 +40,7 @@ export class TeamRegistrationsService {
       }
 
       // 1. Actualizar categoría y temporada actual del equipo
-      await this.teamRepo.update(teamId, {
+      await this.teamRepo.update(numTeamId, {
         currentCategoryId: edition.categoryId,
         currentSeasonYear: seasonYear,
       });
@@ -50,7 +52,7 @@ export class TeamRegistrationsService {
       await this.historyRepo.save(
         this.historyRepo.create({
           companyId,
-          teamId,
+          teamId: numTeamId,
           categoryId: edition.categoryId,
           seasonYear,
           status: 'ACTIVE',
@@ -89,8 +91,8 @@ export class TeamRegistrationsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id }, relations: ['categoryEdition', 'team'] });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['categoryEdition', 'team'] });
     if (!item) throw new NotFoundException('Inscripción de equipo no encontrada');
     return item;
   }
@@ -111,7 +113,7 @@ export class TeamRegistrationsService {
     return saved;
   }
 
-  async update(id: string, dto: UpdateTeamRegistrationDto, user: any) {
+  async update(id: string | number, dto: UpdateTeamRegistrationDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -128,7 +130,7 @@ export class TeamRegistrationsService {
     return saved;
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

@@ -1,13 +1,21 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateTeamCategoryHistoryDto {
   @IsNotEmpty({ message: 'El ID del equipo es obligatorio' })
-  @IsUUID()
-  teamId: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId: number;
 
   @IsNotEmpty({ message: 'El ID de la categoría es obligatorio' })
-  @IsUUID()
-  categoryId: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryId: number;
 
   @IsOptional()
   @IsString()

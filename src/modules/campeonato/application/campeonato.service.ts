@@ -123,8 +123,8 @@ export class CampeonatoService {
   listPositions(companyId: number, query: any) {
     return this.genericFind(this.positionRepo, companyId, query, ['name', 'code']);
   }
-  async getPosition(id: string) {
-    const item = await this.positionRepo.findOne({ where: { id } });
+  async getPosition(id: string | number) {
+    const item = await this.positionRepo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Cargo no encontrado');
     return item;
   }
@@ -137,7 +137,7 @@ export class CampeonatoService {
     });
     return this.positionRepo.save(item);
   }
-  async updatePosition(id: string, dto: Partial<PositionOrmEntity>, user: any) {
+  async updatePosition(id: string | number, dto: Partial<PositionOrmEntity>, user: any) {
     const item = await this.getPosition(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -145,7 +145,7 @@ export class CampeonatoService {
     });
     return this.positionRepo.save(item);
   }
-  async removePosition(id: string) {
+  async removePosition(id: string | number) {
     const item = await this.getPosition(id);
     return this.positionRepo.remove(item);
   }
@@ -154,8 +154,8 @@ export class CampeonatoService {
   listDemarcations(companyId: number, query: any) {
     return this.genericFind(this.demarcationRepo, companyId, query, ['name', 'code']);
   }
-  async getDemarcation(id: string) {
-    const item = await this.demarcationRepo.findOne({ where: { id } });
+  async getDemarcation(id: string | number) {
+    const item = await this.demarcationRepo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Demarcación no encontrada');
     return item;
   }
@@ -168,7 +168,7 @@ export class CampeonatoService {
     });
     return this.demarcationRepo.save(item);
   }
-  async updateDemarcation(id: string, dto: Partial<DemarcationOrmEntity>, user: any) {
+  async updateDemarcation(id: string | number, dto: Partial<DemarcationOrmEntity>, user: any) {
     const item = await this.getDemarcation(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -176,7 +176,7 @@ export class CampeonatoService {
     });
     return this.demarcationRepo.save(item);
   }
-  async removeDemarcation(id: string) {
+  async removeDemarcation(id: string | number) {
     const item = await this.getDemarcation(id);
     return this.demarcationRepo.remove(item);
   }
@@ -185,8 +185,8 @@ export class CampeonatoService {
   listTeams(companyId: number, query: any) {
     return this.genericFind(this.teamRepo, companyId, query, ['name', 'shortName', 'acronyms']);
   }
-  async getTeam(id: string) {
-    const item = await this.teamRepo.findOne({ where: { id } });
+  async getTeam(id: string | number) {
+    const item = await this.teamRepo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Equipo no encontrado');
     return item;
   }
@@ -199,7 +199,7 @@ export class CampeonatoService {
     });
     return this.teamRepo.save(item);
   }
-  async updateTeam(id: string, dto: Partial<TeamOrmEntity>, user: any) {
+  async updateTeam(id: string | number, dto: Partial<TeamOrmEntity>, user: any) {
     const item = await this.getTeam(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -207,7 +207,7 @@ export class CampeonatoService {
     });
     return this.teamRepo.save(item);
   }
-  async removeTeam(id: string) {
+  async removeTeam(id: string | number) {
     const item = await this.getTeam(id);
     return this.teamRepo.remove(item);
   }
@@ -216,8 +216,8 @@ export class CampeonatoService {
   listPlayers(companyId: number, query: any) {
     return this.genericFind(this.playerRepo, companyId, query, ['name', 'lastName', 'identification'], ['demarcation']);
   }
-  async getPlayer(id: string) {
-    const item = await this.playerRepo.findOne({ where: { id }, relations: ['demarcation'] });
+  async getPlayer(id: string | number) {
+    const item = await this.playerRepo.findOne({ where: { id: Number(id) }, relations: ['demarcation'] });
     if (!item) throw new NotFoundException('Jugador no encontrado');
     return item;
   }
@@ -230,7 +230,7 @@ export class CampeonatoService {
     });
     return this.playerRepo.save(item);
   }
-  async updatePlayer(id: string, dto: Partial<PlayerOrmEntity>, user: any) {
+  async updatePlayer(id: string | number, dto: Partial<PlayerOrmEntity>, user: any) {
     const item = await this.getPlayer(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -238,7 +238,7 @@ export class CampeonatoService {
     });
     return this.playerRepo.save(item);
   }
-  async removePlayer(id: string) {
+  async removePlayer(id: string | number) {
     const item = await this.getPlayer(id);
     return this.playerRepo.remove(item);
   }
@@ -247,8 +247,8 @@ export class CampeonatoService {
   listCommittees(companyId: number, query: any) {
     return this.genericFind(this.committeeRepo, companyId, query, ['name', 'lastName', 'identification'], ['position']);
   }
-  async getCommittee(id: string) {
-    const item = await this.committeeRepo.findOne({ where: { id }, relations: ['position'] });
+  async getCommittee(id: string | number) {
+    const item = await this.committeeRepo.findOne({ where: { id: Number(id) }, relations: ['position'] });
     if (!item) throw new NotFoundException('Miembro de comité no encontrado');
     return item;
   }
@@ -261,7 +261,7 @@ export class CampeonatoService {
     });
     return this.committeeRepo.save(item);
   }
-  async updateCommittee(id: string, dto: Partial<TournamentCommitteeOrmEntity>, user: any) {
+  async updateCommittee(id: string | number, dto: Partial<TournamentCommitteeOrmEntity>, user: any) {
     const item = await this.getCommittee(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -269,7 +269,7 @@ export class CampeonatoService {
     });
     return this.committeeRepo.save(item);
   }
-  async removeCommittee(id: string) {
+  async removeCommittee(id: string | number) {
     const item = await this.getCommittee(id);
     return this.committeeRepo.remove(item);
   }
@@ -278,8 +278,8 @@ export class CampeonatoService {
   listTeamManagements(companyId: number, query: any) {
     return this.genericFind(this.teamManagementRepo, companyId, query, ['name', 'lastName', 'identification'], ['position', 'team', 'player']);
   }
-  async getTeamManagement(id: string) {
-    const item = await this.teamManagementRepo.findOne({ where: { id }, relations: ['position', 'team', 'player'] });
+  async getTeamManagement(id: string | number) {
+    const item = await this.teamManagementRepo.findOne({ where: { id: Number(id) }, relations: ['position', 'team', 'player'] });
     if (!item) throw new NotFoundException('Directivo/Técnico de equipo no encontrado');
     return item;
   }
@@ -292,7 +292,7 @@ export class CampeonatoService {
     });
     return this.teamManagementRepo.save(item);
   }
-  async updateTeamManagement(id: string, dto: Partial<TeamManagementOrmEntity>, user: any) {
+  async updateTeamManagement(id: string | number, dto: Partial<TeamManagementOrmEntity>, user: any) {
     const item = await this.getTeamManagement(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -300,7 +300,7 @@ export class CampeonatoService {
     });
     return this.teamManagementRepo.save(item);
   }
-  async removeTeamManagement(id: string) {
+  async removeTeamManagement(id: string | number) {
     const item = await this.getTeamManagement(id);
     return this.teamManagementRepo.remove(item);
   }
@@ -309,8 +309,8 @@ export class CampeonatoService {
   listCategories(companyId: number, query: any) {
     return this.genericFind(this.categoryRepo, companyId, query, ['name', 'code']);
   }
-  async getCategory(id: string) {
-    const item = await this.categoryRepo.findOne({ where: { id } });
+  async getCategory(id: string | number) {
+    const item = await this.categoryRepo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Categoría no encontrada');
     return item;
   }
@@ -323,7 +323,7 @@ export class CampeonatoService {
     });
     return this.categoryRepo.save(item);
   }
-  async updateCategory(id: string, dto: Partial<CategoryOrmEntity>, user: any) {
+  async updateCategory(id: string | number, dto: Partial<CategoryOrmEntity>, user: any) {
     const item = await this.getCategory(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -331,7 +331,7 @@ export class CampeonatoService {
     });
     return this.categoryRepo.save(item);
   }
-  async removeCategory(id: string) {
+  async removeCategory(id: string | number) {
     const item = await this.getCategory(id);
     return this.categoryRepo.remove(item);
   }
@@ -340,8 +340,8 @@ export class CampeonatoService {
   listCategoryEditions(companyId: number, query: any) {
     return this.genericFind(this.categoryEditionRepo, companyId, query, ['name'], ['category']);
   }
-  async getCategoryEdition(id: string) {
-    const item = await this.categoryEditionRepo.findOne({ where: { id }, relations: ['category'] });
+  async getCategoryEdition(id: string | number) {
+    const item = await this.categoryEditionRepo.findOne({ where: { id: Number(id) }, relations: ['category'] });
     if (!item) throw new NotFoundException('Edición de categoría no encontrada');
     return item;
   }
@@ -354,7 +354,7 @@ export class CampeonatoService {
     });
     return this.categoryEditionRepo.save(item);
   }
-  async updateCategoryEdition(id: string, dto: Partial<CategoryEditionOrmEntity>, user: any) {
+  async updateCategoryEdition(id: string | number, dto: Partial<CategoryEditionOrmEntity>, user: any) {
     const item = await this.getCategoryEdition(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -362,7 +362,7 @@ export class CampeonatoService {
     });
     return this.categoryEditionRepo.save(item);
   }
-  async removeCategoryEdition(id: string) {
+  async removeCategoryEdition(id: string | number) {
     const item = await this.getCategoryEdition(id);
     return this.categoryEditionRepo.remove(item);
   }
@@ -371,8 +371,8 @@ export class CampeonatoService {
   listStages(companyId: number, query: any) {
     return this.genericFind(this.stageRepo, companyId, query, ['name'], ['categoryEdition']);
   }
-  async getStage(id: string) {
-    const item = await this.stageRepo.findOne({ where: { id }, relations: ['categoryEdition'] });
+  async getStage(id: string | number) {
+    const item = await this.stageRepo.findOne({ where: { id: Number(id) }, relations: ['categoryEdition'] });
     if (!item) throw new NotFoundException('Etapa/Fase no encontrada');
     return item;
   }
@@ -385,7 +385,7 @@ export class CampeonatoService {
     });
     return this.stageRepo.save(item);
   }
-  async updateStage(id: string, dto: Partial<StageOrmEntity>, user: any) {
+  async updateStage(id: string | number, dto: Partial<StageOrmEntity>, user: any) {
     const item = await this.getStage(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -393,7 +393,7 @@ export class CampeonatoService {
     });
     return this.stageRepo.save(item);
   }
-  async removeStage(id: string) {
+  async removeStage(id: string | number) {
     const item = await this.getStage(id);
     return this.stageRepo.remove(item);
   }
@@ -402,8 +402,8 @@ export class CampeonatoService {
   listScenaries(companyId: number, query: any) {
     return this.genericFind(this.scenaryRepo, companyId, query, ['name', 'location', 'code']);
   }
-  async getScenary(id: string) {
-    const item = await this.scenaryRepo.findOne({ where: { id } });
+  async getScenary(id: string | number) {
+    const item = await this.scenaryRepo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Escenario no encontrado');
     return item;
   }
@@ -416,7 +416,7 @@ export class CampeonatoService {
     });
     return this.scenaryRepo.save(item);
   }
-  async updateScenary(id: string, dto: Partial<ScenaryOrmEntity>, user: any) {
+  async updateScenary(id: string | number, dto: Partial<ScenaryOrmEntity>, user: any) {
     const item = await this.getScenary(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -424,7 +424,7 @@ export class CampeonatoService {
     });
     return this.scenaryRepo.save(item);
   }
-  async removeScenary(id: string) {
+  async removeScenary(id: string | number) {
     const item = await this.getScenary(id);
     return this.scenaryRepo.remove(item);
   }
@@ -433,8 +433,8 @@ export class CampeonatoService {
   listTeamRegistrations(companyId: number, query: any) {
     return this.genericFind(this.teamRegistrationRepo, companyId, query, ['groupName'], ['categoryEdition', 'team']);
   }
-  async getTeamRegistration(id: string) {
-    const item = await this.teamRegistrationRepo.findOne({ where: { id }, relations: ['categoryEdition', 'team'] });
+  async getTeamRegistration(id: string | number) {
+    const item = await this.teamRegistrationRepo.findOne({ where: { id: Number(id) }, relations: ['categoryEdition', 'team'] });
     if (!item) throw new NotFoundException('Inscripción de equipo no encontrada');
     return item;
   }
@@ -447,7 +447,7 @@ export class CampeonatoService {
     });
     return this.teamRegistrationRepo.save(item);
   }
-  async updateTeamRegistration(id: string, dto: Partial<TeamRegistrationOrmEntity>, user: any) {
+  async updateTeamRegistration(id: string | number, dto: Partial<TeamRegistrationOrmEntity>, user: any) {
     const item = await this.getTeamRegistration(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -455,7 +455,7 @@ export class CampeonatoService {
     });
     return this.teamRegistrationRepo.save(item);
   }
-  async removeTeamRegistration(id: string) {
+  async removeTeamRegistration(id: string | number) {
     const item = await this.getTeamRegistration(id);
     return this.teamRegistrationRepo.remove(item);
   }
@@ -464,8 +464,8 @@ export class CampeonatoService {
   listPlayerRegistrations(companyId: number, query: any) {
     return this.genericFind(this.playerRegistrationRepo, companyId, query, ['carnetCode'], ['teamRegistration', 'teamRegistration.team', 'player']);
   }
-  async getPlayerRegistration(id: string) {
-    const item = await this.playerRegistrationRepo.findOne({ where: { id }, relations: ['teamRegistration', 'teamRegistration.team', 'player'] });
+  async getPlayerRegistration(id: string | number) {
+    const item = await this.playerRegistrationRepo.findOne({ where: { id: Number(id) }, relations: ['teamRegistration', 'teamRegistration.team', 'player'] });
     if (!item) throw new NotFoundException('Inscripción de jugador no encontrada');
     return item;
   }
@@ -478,7 +478,7 @@ export class CampeonatoService {
     });
     return this.playerRegistrationRepo.save(item);
   }
-  async updatePlayerRegistration(id: string, dto: Partial<PlayerRegistrationOrmEntity>, user: any) {
+  async updatePlayerRegistration(id: string | number, dto: Partial<PlayerRegistrationOrmEntity>, user: any) {
     const item = await this.getPlayerRegistration(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -486,7 +486,7 @@ export class CampeonatoService {
     });
     return this.playerRegistrationRepo.save(item);
   }
-  async removePlayerRegistration(id: string) {
+  async removePlayerRegistration(id: string | number) {
     const item = await this.getPlayerRegistration(id);
     return this.playerRegistrationRepo.remove(item);
   }
@@ -495,8 +495,8 @@ export class CampeonatoService {
   listReferees(companyId: number, query: any) {
     return this.genericFind(this.refereeRepo, companyId, query, ['name', 'lastName', 'identification']);
   }
-  async getReferee(id: string) {
-    const item = await this.refereeRepo.findOne({ where: { id } });
+  async getReferee(id: string | number) {
+    const item = await this.refereeRepo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Árbitro no encontrado');
     return item;
   }
@@ -509,7 +509,7 @@ export class CampeonatoService {
     });
     return this.refereeRepo.save(item);
   }
-  async updateReferee(id: string, dto: Partial<RefereeOrmEntity>, user: any) {
+  async updateReferee(id: string | number, dto: Partial<RefereeOrmEntity>, user: any) {
     const item = await this.getReferee(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -517,7 +517,7 @@ export class CampeonatoService {
     });
     return this.refereeRepo.save(item);
   }
-  async removeReferee(id: string) {
+  async removeReferee(id: string | number) {
     const item = await this.getReferee(id);
     return this.refereeRepo.remove(item);
   }
@@ -526,8 +526,8 @@ export class CampeonatoService {
   listVocals(companyId: number, query: any) {
     return this.genericFind(this.vocalRepo, companyId, query, ['name', 'lastName', 'identification'], ['team']);
   }
-  async getVocal(id: string) {
-    const item = await this.vocalRepo.findOne({ where: { id }, relations: ['team'] });
+  async getVocal(id: string | number) {
+    const item = await this.vocalRepo.findOne({ where: { id: Number(id) }, relations: ['team'] });
     if (!item) throw new NotFoundException('Vocal no encontrado');
     return item;
   }
@@ -540,7 +540,7 @@ export class CampeonatoService {
     });
     return this.vocalRepo.save(item);
   }
-  async updateVocal(id: string, dto: Partial<VocalOrmEntity>, user: any) {
+  async updateVocal(id: string | number, dto: Partial<VocalOrmEntity>, user: any) {
     const item = await this.getVocal(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -548,7 +548,7 @@ export class CampeonatoService {
     });
     return this.vocalRepo.save(item);
   }
-  async removeVocal(id: string) {
+  async removeVocal(id: string | number) {
     const item = await this.getVocal(id);
     return this.vocalRepo.remove(item);
   }
@@ -563,9 +563,9 @@ export class CampeonatoService {
       ['stage', 'scenary', 'localTeam', 'awayTeam', 'referee', 'vocal', 'vocalTeam'],
     );
   }
-  async getMatch(id: string) {
+  async getMatch(id: string | number) {
     const item = await this.matchRepo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: ['stage', 'scenary', 'localTeam', 'awayTeam', 'referee', 'vocal', 'vocalTeam'],
     });
     if (!item) throw new NotFoundException('Partido no encontrado');
@@ -580,7 +580,7 @@ export class CampeonatoService {
     });
     return this.matchRepo.save(item);
   }
-  async updateMatch(id: string, dto: Partial<MatchOrmEntity>, user: any) {
+  async updateMatch(id: string | number, dto: Partial<MatchOrmEntity>, user: any) {
     const item = await this.getMatch(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -588,7 +588,7 @@ export class CampeonatoService {
     });
     return this.matchRepo.save(item);
   }
-  async removeMatch(id: string) {
+  async removeMatch(id: string | number) {
     const item = await this.getMatch(id);
     return this.matchRepo.remove(item);
   }
@@ -597,8 +597,8 @@ export class CampeonatoService {
   listMatchLineups(companyId: number, query: any) {
     return this.genericFind(this.matchLineupRepo, companyId, query, [], ['match', 'team', 'player']);
   }
-  async getMatchLineup(id: string) {
-    const item = await this.matchLineupRepo.findOne({ where: { id }, relations: ['match', 'team', 'player'] });
+  async getMatchLineup(id: string | number) {
+    const item = await this.matchLineupRepo.findOne({ where: { id: Number(id) }, relations: ['match', 'team', 'player'] });
     if (!item) throw new NotFoundException('Registro de alineación no encontrado');
     return item;
   }
@@ -611,7 +611,7 @@ export class CampeonatoService {
     });
     return this.matchLineupRepo.save(item);
   }
-  async updateMatchLineup(id: string, dto: Partial<MatchLineupOrmEntity>, user: any) {
+  async updateMatchLineup(id: string | number, dto: Partial<MatchLineupOrmEntity>, user: any) {
     const item = await this.getMatchLineup(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -619,7 +619,7 @@ export class CampeonatoService {
     });
     return this.matchLineupRepo.save(item);
   }
-  async removeMatchLineup(id: string) {
+  async removeMatchLineup(id: string | number) {
     const item = await this.getMatchLineup(id);
     return this.matchLineupRepo.remove(item);
   }
@@ -628,8 +628,8 @@ export class CampeonatoService {
   listMatchEvents(companyId: number, query: any) {
     return this.genericFind(this.matchEventRepo, companyId, query, ['notes'], ['match', 'team', 'player', 'playerOut']);
   }
-  async getMatchEvent(id: string) {
-    const item = await this.matchEventRepo.findOne({ where: { id }, relations: ['match', 'team', 'player', 'playerOut'] });
+  async getMatchEvent(id: string | number) {
+    const item = await this.matchEventRepo.findOne({ where: { id: Number(id) }, relations: ['match', 'team', 'player', 'playerOut'] });
     if (!item) throw new NotFoundException('Evento de partido no encontrado');
     return item;
   }
@@ -642,7 +642,7 @@ export class CampeonatoService {
     });
     return this.matchEventRepo.save(item);
   }
-  async updateMatchEvent(id: string, dto: Partial<MatchEventOrmEntity>, user: any) {
+  async updateMatchEvent(id: string | number, dto: Partial<MatchEventOrmEntity>, user: any) {
     const item = await this.getMatchEvent(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -650,7 +650,7 @@ export class CampeonatoService {
     });
     return this.matchEventRepo.save(item);
   }
-  async removeMatchEvent(id: string) {
+  async removeMatchEvent(id: string | number) {
     const item = await this.getMatchEvent(id);
     return this.matchEventRepo.remove(item);
   }
@@ -659,8 +659,8 @@ export class CampeonatoService {
   listSanctions(companyId: number, query: any) {
     return this.genericFind(this.sanctionRepo, companyId, query, ['description'], ['match', 'player']);
   }
-  async getSanction(id: string) {
-    const item = await this.sanctionRepo.findOne({ where: { id }, relations: ['match', 'player'] });
+  async getSanction(id: string | number) {
+    const item = await this.sanctionRepo.findOne({ where: { id: Number(id) }, relations: ['match', 'player'] });
     if (!item) throw new NotFoundException('Sanción no encontrada');
     return item;
   }
@@ -673,7 +673,7 @@ export class CampeonatoService {
     });
     return this.sanctionRepo.save(item);
   }
-  async updateSanction(id: string, dto: Partial<SanctionOrmEntity>, user: any) {
+  async updateSanction(id: string | number, dto: Partial<SanctionOrmEntity>, user: any) {
     const item = await this.getSanction(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -681,7 +681,7 @@ export class CampeonatoService {
     });
     return this.sanctionRepo.save(item);
   }
-  async removeSanction(id: string) {
+  async removeSanction(id: string | number) {
     const item = await this.getSanction(id);
     return this.sanctionRepo.remove(item);
   }
@@ -690,8 +690,8 @@ export class CampeonatoService {
   listPayments(companyId: number, query: any) {
     return this.genericFind(this.paymentRepo, companyId, query, ['receiptNumber', 'notes'], ['teamRegistration', 'teamRegistration.team']);
   }
-  async getPayment(id: string) {
-    const item = await this.paymentRepo.findOne({ where: { id }, relations: ['teamRegistration', 'teamRegistration.team'] });
+  async getPayment(id: string | number) {
+    const item = await this.paymentRepo.findOne({ where: { id: Number(id) }, relations: ['teamRegistration', 'teamRegistration.team'] });
     if (!item) throw new NotFoundException('Pago no encontrado');
     return item;
   }
@@ -704,7 +704,7 @@ export class CampeonatoService {
     });
     return this.paymentRepo.save(item);
   }
-  async updatePayment(id: string, dto: Partial<PaymentOrmEntity>, user: any) {
+  async updatePayment(id: string | number, dto: Partial<PaymentOrmEntity>, user: any) {
     const item = await this.getPayment(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -712,7 +712,7 @@ export class CampeonatoService {
     });
     return this.paymentRepo.save(item);
   }
-  async removePayment(id: string) {
+  async removePayment(id: string | number) {
     const item = await this.getPayment(id);
     return this.paymentRepo.remove(item);
   }

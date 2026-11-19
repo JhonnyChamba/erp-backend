@@ -36,17 +36,17 @@ export class TeamManagementsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async listByTeam(teamId: string) {
+  async listByTeam(teamId: string | number) {
     return this.repo.find({
-      where: { teamId },
+      where: { teamId: Number(teamId) },
       relations: ['position'],
       order: { createdAt: 'ASC' },
     });
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: ['position', 'team', 'player'],
     });
     if (!item) throw new NotFoundException('Directivo de equipo no encontrado');
@@ -63,7 +63,7 @@ export class TeamManagementsService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateTeamManagementDto, user: any) {
+  async update(id: string | number, dto: UpdateTeamManagementDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -72,7 +72,7 @@ export class TeamManagementsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

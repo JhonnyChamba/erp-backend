@@ -37,9 +37,9 @@ export class TeamsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: ['currentCategory'],
     });
     if (!item) throw new NotFoundException('Equipo no encontrado');
@@ -76,7 +76,7 @@ export class TeamsService {
     return saved;
   }
 
-  async update(id: string, dto: UpdateTeamDto, user: any) {
+  async update(id: string | number, dto: UpdateTeamDto, user: any) {
     const item = await this.get(id);
     const prevCategoryId = item.currentCategoryId;
 
@@ -107,7 +107,7 @@ export class TeamsService {
     return saved;
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

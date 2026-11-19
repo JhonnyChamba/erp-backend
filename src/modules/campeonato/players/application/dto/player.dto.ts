@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -5,6 +6,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -26,12 +28,14 @@ export class CreatePlayerDto {
   ageMonths?: number;
 
   @IsOptional()
-  @IsString()
-  demarcationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  demarcationId?: number;
 
   @IsOptional()
-  @IsString()
-  playerClassificationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId?: number;
 
   @IsNotEmpty({ message: 'El nombre es obligatorio' })
   @IsString()
@@ -111,16 +115,18 @@ export class CreatePlayerDto {
   isActive?: boolean;
 
   @IsOptional()
-  @IsString()
-  currentTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  currentTeamId?: number;
 
   @IsOptional()
   @IsString()
   passOwnerType?: string; // 'PLAYER' | 'TEAM'
 
   @IsOptional()
-  @IsString()
-  passOwnerTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  passOwnerTeamId?: number;
 }
 
 export class UpdatePlayerDto {
@@ -138,12 +144,14 @@ export class UpdatePlayerDto {
   ageMonths?: number;
 
   @IsOptional()
-  @IsString()
-  demarcationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  demarcationId?: number;
 
   @IsOptional()
-  @IsString()
-  playerClassificationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId?: number;
 
   @IsOptional()
   @IsString()
@@ -223,14 +231,16 @@ export class UpdatePlayerDto {
   isActive?: boolean;
 
   @IsOptional()
-  @IsString()
-  currentTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  currentTeamId?: number;
 
   @IsOptional()
   @IsString()
   passOwnerType?: string; // 'PLAYER' | 'TEAM'
 
   @IsOptional()
-  @IsString()
-  passOwnerTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  passOwnerTeamId?: number;
 }

@@ -14,15 +14,16 @@ export class TournamentTransferConfigsService {
     private readonly editionRepo: Repository<CategoryEditionOrmEntity>,
   ) {}
 
-  async getByEdition(editionId: string, companyId?: number) {
-    let config = await this.repo.findOne({ where: { editionId } });
+  async getByEdition(editionId: string | number, companyId?: number) {
+    const numEditionId = Number(editionId);
+    let config = await this.repo.findOne({ where: { editionId: numEditionId } });
     if (!config) {
-      const edition = await this.editionRepo.findOne({ where: { id: editionId } });
+      const edition = await this.editionRepo.findOne({ where: { id: numEditionId } });
       if (!edition) {
         throw new NotFoundException('Edición de torneo no encontrada');
       }
       config = this.repo.create({
-        editionId,
+        editionId: numEditionId,
         companyId: companyId || edition.companyId,
         inscriptionsEnabled: true,
         inscriptionsRequireApproval: false,
@@ -39,20 +40,21 @@ export class TournamentTransferConfigsService {
     return config;
   }
 
-  async upsert(editionId: string, dto: UpsertTournamentTransferConfigDto, companyId?: number) {
-    const edition = await this.editionRepo.findOne({ where: { id: editionId } });
+  async upsert(editionId: string | number, dto: UpsertTournamentTransferConfigDto, companyId?: number) {
+    const numEditionId = Number(editionId);
+    const edition = await this.editionRepo.findOne({ where: { id: numEditionId } });
     if (!edition) {
       throw new NotFoundException('Edición de torneo no encontrada');
     }
 
-    let config = await this.repo.findOne({ where: { editionId } });
+    let config = await this.repo.findOne({ where: { editionId: numEditionId } });
     if (config) {
       Object.assign(config, dto);
       if (companyId) config.companyId = companyId;
     } else {
       config = this.repo.create({
         ...dto,
-        editionId,
+        editionId: numEditionId,
         companyId: companyId || edition.companyId,
       });
     }

@@ -5,21 +5,21 @@ import { PlayerClassificationOrmEntity } from './player-classification.orm-entit
 @Entity('tab_campeonato_stage_player_classifications')
 @Unique(['stageId', 'playerClassificationId'])
 export class StagePlayerClassificationOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
 
-  @Column({ name: 'stage_id', type: 'uuid' })
-  stageId: string;
+  @Column({ name: 'stage_id', type: 'int' })
+  stageId: number;
 
   @ManyToOne(() => StageOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'stage_id' })
   stage: StageOrmEntity;
 
-  @Column({ name: 'player_classification_id', type: 'uuid' })
-  playerClassificationId: string;
+  @Column({ name: 'player_classification_id', type: 'int' })
+  playerClassificationId: number;
 
   @ManyToOne(() => PlayerClassificationOrmEntity, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'player_classification_id' })

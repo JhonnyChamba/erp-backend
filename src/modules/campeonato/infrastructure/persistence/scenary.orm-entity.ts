@@ -3,8 +3,8 @@ import { SurfaceType } from '../../common/enum/campeonato.enum';
 
 @Entity('tab_campeonato_scenaries')
 export class ScenaryOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;

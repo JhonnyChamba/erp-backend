@@ -5,8 +5,8 @@ import { EditionCategoryClassificationOrmEntity } from './edition-category-class
 
 @Entity('tab_campeonato_edition_category_details')
 export class EditionCategoryDetailOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -14,15 +14,15 @@ export class EditionCategoryDetailOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'edition_id', type: 'uuid' })
-  editionId: string;
+  @Column({ name: 'edition_id', type: 'int' })
+  editionId: number;
 
   @ManyToOne(() => CategoryEditionOrmEntity, (edition) => edition.categoriesDetail, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'edition_id' })
   edition: CategoryEditionOrmEntity;
 
-  @Column({ name: 'category_id', type: 'uuid' })
-  categoryId: string;
+  @Column({ name: 'category_id', type: 'int' })
+  categoryId: number;
 
   @ManyToOne(() => CategoryOrmEntity, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'category_id' })

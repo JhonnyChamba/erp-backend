@@ -1,7 +1,9 @@
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -10,12 +12,14 @@ import { RegistrationStatus, PaymentStatus } from '../../../common/enum/campeona
 
 export class CreateTeamRegistrationDto {
   @IsNotEmpty({ message: 'El ID de la edición es obligatorio' })
-  @IsString()
-  categoryEditionId: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryEditionId: number;
 
   @IsNotEmpty({ message: 'El ID del equipo es obligatorio' })
-  @IsString()
-  teamId: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId: number;
 
   @IsOptional()
   @IsString()
@@ -37,12 +41,14 @@ export class CreateTeamRegistrationDto {
 
 export class UpdateTeamRegistrationDto {
   @IsOptional()
-  @IsString()
-  categoryEditionId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryEditionId?: number;
 
   @IsOptional()
-  @IsString()
-  teamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId?: number;
 
   @IsOptional()
   @IsString()

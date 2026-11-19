@@ -1,23 +1,28 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
 
 export class CreateMatchLineupDto {
   @IsNotEmpty({ message: 'El ID del partido es obligatorio' })
-  @IsString()
-  matchId: string;
+  @Type(() => Number)
+  @IsNumber()
+  matchId: number;
 
   @IsNotEmpty({ message: 'El ID del equipo es obligatorio' })
-  @IsString()
-  teamId: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId: number;
 
   @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
-  @IsString()
-  playerId: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId: number;
 
   @IsNotEmpty({ message: 'El número de camiseta es obligatorio' })
   @IsInt()
@@ -42,16 +47,19 @@ export class CreateMatchLineupDto {
 
 export class UpdateMatchLineupDto {
   @IsOptional()
-  @IsString()
-  matchId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  matchId?: number;
 
   @IsOptional()
-  @IsString()
-  teamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId?: number;
 
   @IsOptional()
-  @IsString()
-  playerId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId?: number;
 
   @IsOptional()
   @IsInt()

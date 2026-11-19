@@ -5,8 +5,8 @@ import { CategoryOrmEntity } from './category.orm-entity';
 
 @Entity('tab_campeonato_stages')
 export class StageOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -14,15 +14,15 @@ export class StageOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'category_edition_id', type: 'uuid' })
-  categoryEditionId: string;
+  @Column({ name: 'category_edition_id', type: 'int' })
+  categoryEditionId: number;
 
   @ManyToOne(() => CategoryEditionOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_edition_id' })
   categoryEdition: CategoryEditionOrmEntity;
 
-  @Column({ name: 'category_id', type: 'uuid', nullable: true })
-  categoryId: string;
+  @Column({ name: 'category_id', type: 'int', nullable: true })
+  categoryId: number;
 
   @ManyToOne(() => CategoryOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'category_id' })
@@ -40,8 +40,8 @@ export class StageOrmEntity {
   @Column({ name: 'team_origin', type: 'enum', enum: TeamOrigin, default: TeamOrigin.FULL_CATEGORY })
   teamOrigin: TeamOrigin;
 
-  @Column({ name: 'previous_stage_id', type: 'uuid', nullable: true })
-  previousStageId: string;
+  @Column({ name: 'previous_stage_id', type: 'int', nullable: true })
+  previousStageId: number;
 
   @ManyToOne(() => StageOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'previous_stage_id' })

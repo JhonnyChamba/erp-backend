@@ -1,7 +1,9 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -24,8 +26,9 @@ export class CreateRefereeDto {
   identification: string;
 
   @IsOptional()
-  @IsString()
-  guildId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  guildId?: number;
 
   @IsOptional()
   @IsString()
@@ -64,8 +67,9 @@ export class UpdateRefereeDto {
   identification?: string;
 
   @IsOptional()
-  @IsString()
-  guildId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  guildId?: number;
 
   @IsOptional()
   @IsString()

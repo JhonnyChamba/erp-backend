@@ -1,9 +1,11 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -12,20 +14,24 @@ import { MatchStatus, MeetingType } from '../../../common/enum/campeonato.enum';
 
 export class CreateMatchDto {
   @IsNotEmpty({ message: 'El ID de la etapa es obligatorio' })
-  @IsString()
-  stageId: string;
+  @Type(() => Number)
+  @IsNumber()
+  stageId: number;
 
   @IsOptional()
-  @IsString()
-  scenaryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  scenaryId?: number;
 
   @IsNotEmpty({ message: 'El equipo local es obligatorio' })
-  @IsString()
-  localTeamId: string;
+  @Type(() => Number)
+  @IsNumber()
+  localTeamId: number;
 
   @IsNotEmpty({ message: 'El equipo visitante es obligatorio' })
-  @IsString()
-  awayTeamId: string;
+  @Type(() => Number)
+  @IsNumber()
+  awayTeamId: number;
 
   @IsNotEmpty({ message: 'La fecha es obligatoria' })
   @IsDateString()
@@ -60,8 +66,9 @@ export class CreateMatchDto {
   awayPenalties?: number;
 
   @IsOptional()
-  @IsString()
-  winnerTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  winnerTeamId?: number;
 
   @IsOptional()
   @IsEnum(MatchStatus)
@@ -81,16 +88,19 @@ export class CreateMatchDto {
   isWalkover?: boolean;
 
   @IsOptional()
-  @IsString()
-  refereeId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  refereeId?: number;
 
   @IsOptional()
-  @IsString()
-  vocalId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  vocalId?: number;
 
   @IsOptional()
-  @IsString()
-  vocalTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  vocalTeamId?: number;
 
   @IsOptional()
   @IsString()
@@ -108,20 +118,24 @@ export class CreateMatchDto {
 
 export class UpdateMatchDto {
   @IsOptional()
-  @IsString()
-  stageId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  stageId?: number;
 
   @IsOptional()
-  @IsString()
-  scenaryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  scenaryId?: number;
 
   @IsOptional()
-  @IsString()
-  localTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  localTeamId?: number;
 
   @IsOptional()
-  @IsString()
-  awayTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  awayTeamId?: number;
 
   @IsOptional()
   @IsDateString()
@@ -156,8 +170,9 @@ export class UpdateMatchDto {
   awayPenalties?: number;
 
   @IsOptional()
-  @IsString()
-  winnerTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  winnerTeamId?: number;
 
   @IsOptional()
   @IsEnum(MatchStatus)
@@ -177,16 +192,19 @@ export class UpdateMatchDto {
   isWalkover?: boolean;
 
   @IsOptional()
-  @IsString()
-  refereeId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  refereeId?: number;
 
   @IsOptional()
-  @IsString()
-  vocalId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  vocalId?: number;
 
   @IsOptional()
-  @IsString()
-  vocalTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  vocalTeamId?: number;
 
   @IsOptional()
   @IsString()

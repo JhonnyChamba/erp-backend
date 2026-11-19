@@ -3,8 +3,8 @@ import { StageTemplateDetailOrmEntity } from './stage-template-detail.orm-entity
 
 @Entity('tab_campeonato_stage_templates')
 export class StageTemplateOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;

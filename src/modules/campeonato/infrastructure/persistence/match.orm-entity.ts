@@ -8,8 +8,8 @@ import { VocalOrmEntity } from './vocal.orm-entity';
 
 @Entity('tab_campeonato_matches')
 export class MatchOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -17,29 +17,29 @@ export class MatchOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'stage_id', type: 'uuid' })
-  stageId: string;
+  @Column({ name: 'stage_id', type: 'int' })
+  stageId: number;
 
   @ManyToOne(() => StageOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'stage_id' })
   stage: StageOrmEntity;
 
-  @Column({ name: 'scenary_id', type: 'uuid', nullable: true })
-  scenaryId: string;
+  @Column({ name: 'scenary_id', type: 'int', nullable: true })
+  scenaryId: number;
 
   @ManyToOne(() => ScenaryOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'scenary_id' })
   scenary: ScenaryOrmEntity;
 
-  @Column({ name: 'local_team_id', type: 'uuid' })
-  localTeamId: string;
+  @Column({ name: 'local_team_id', type: 'int' })
+  localTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'local_team_id' })
   localTeam: TeamOrmEntity;
 
-  @Column({ name: 'away_team_id', type: 'uuid' })
-  awayTeamId: string;
+  @Column({ name: 'away_team_id', type: 'int' })
+  awayTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'away_team_id' })
@@ -69,8 +69,8 @@ export class MatchOrmEntity {
   @Column({ name: 'away_penalties', type: 'int', nullable: true })
   awayPenalties: number;
 
-  @Column({ name: 'winner_team_id', type: 'uuid', nullable: true })
-  winnerTeamId: string;
+  @Column({ name: 'winner_team_id', type: 'int', nullable: true })
+  winnerTeamId: number;
 
   @Column({ type: 'enum', enum: MatchStatus, default: MatchStatus.SCHEDULED })
   status: MatchStatus;
@@ -84,22 +84,22 @@ export class MatchOrmEntity {
   @Column({ name: 'is_walkover', type: 'boolean', default: false })
   isWalkover: boolean;
 
-  @Column({ name: 'referee_id', type: 'uuid', nullable: true })
-  refereeId: string;
+  @Column({ name: 'referee_id', type: 'int', nullable: true })
+  refereeId: number;
 
   @ManyToOne(() => RefereeOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'referee_id' })
   referee: RefereeOrmEntity;
 
-  @Column({ name: 'vocal_id', type: 'uuid', nullable: true })
-  vocalId: string;
+  @Column({ name: 'vocal_id', type: 'int', nullable: true })
+  vocalId: number;
 
   @ManyToOne(() => VocalOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'vocal_id' })
   vocal: VocalOrmEntity;
 
-  @Column({ name: 'vocal_team_id', type: 'uuid', nullable: true })
-  vocalTeamId: string;
+  @Column({ name: 'vocal_team_id', type: 'int', nullable: true })
+  vocalTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'vocal_team_id' })

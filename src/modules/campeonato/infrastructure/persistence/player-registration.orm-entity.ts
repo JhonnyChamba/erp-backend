@@ -8,8 +8,8 @@ import { StageOrmEntity } from './stage.orm-entity';
 @Entity('tab_campeonato_player_registrations')
 @Unique(['teamRegistrationId', 'playerId'])
 export class PlayerRegistrationOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -17,29 +17,29 @@ export class PlayerRegistrationOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'team_registration_id', type: 'uuid' })
-  teamRegistrationId: string;
+  @Column({ name: 'team_registration_id', type: 'int' })
+  teamRegistrationId: number;
 
   @ManyToOne(() => TeamRegistrationOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'team_registration_id' })
   teamRegistration: TeamRegistrationOrmEntity;
 
-  @Column({ name: 'player_id', type: 'uuid' })
-  playerId: string;
+  @Column({ name: 'player_id', type: 'int' })
+  playerId: number;
 
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })
   player: PlayerOrmEntity;
 
-  @Column({ name: 'stage_id', type: 'uuid', nullable: true })
-  stageId: string;
+  @Column({ name: 'stage_id', type: 'int', nullable: true })
+  stageId: number;
 
   @ManyToOne(() => StageOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'stage_id' })
   stage: StageOrmEntity;
 
-  @Column({ name: 'player_classification_id', type: 'uuid', nullable: true })
-  playerClassificationId: string;
+  @Column({ name: 'player_classification_id', type: 'int', nullable: true })
+  playerClassificationId: number;
 
   @ManyToOne(() => PlayerClassificationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'player_classification_id' })

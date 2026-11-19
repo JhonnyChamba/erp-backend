@@ -116,9 +116,9 @@ export class PlayersService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: ['demarcation', 'playerClassification'],
     });
     if (!item) throw new NotFoundException('Jugador no encontrado');
@@ -250,7 +250,7 @@ export class PlayersService {
     return savedPlayer;
   }
 
-  async update(id: string, dto: UpdatePlayerDto, user: any) {
+  async update(id: string | number, dto: UpdatePlayerDto, user: any) {
     const item = await this.get(id);
 
     const targetIdent = dto.identification !== undefined ? dto.identification?.trim() : item.identification;
@@ -280,7 +280,7 @@ export class PlayersService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

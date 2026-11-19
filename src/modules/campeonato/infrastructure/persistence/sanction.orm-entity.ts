@@ -5,8 +5,8 @@ import { PlayerOrmEntity } from './player.orm-entity';
 
 @Entity('tab_campeonato_sanctions')
 export class SanctionOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -14,15 +14,15 @@ export class SanctionOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'match_id', type: 'uuid', nullable: true })
-  matchId: string;
+  @Column({ name: 'match_id', type: 'int', nullable: true })
+  matchId: number;
 
   @ManyToOne(() => MatchOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'match_id' })
   match: MatchOrmEntity;
 
-  @Column({ name: 'player_id', type: 'uuid' })
-  playerId: string;
+  @Column({ name: 'player_id', type: 'int' })
+  playerId: number;
 
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })

@@ -45,9 +45,9 @@ export class CategoryEditionsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: [
         'category',
         'categoriesDetail',
@@ -144,8 +144,9 @@ export class CategoryEditionsService {
     return this.get(saved.id);
   }
 
-  async update(id: string, dto: UpdateCategoryEditionDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateCategoryEditionDto, user: any) {
+    const numId = Number(id);
+    const item = await this.get(numId);
     const { categoriesDetail, ...editionData } = dto;
 
     if (categoriesDetail !== undefined && categoriesDetail.length > 0) {
@@ -165,11 +166,11 @@ export class CategoryEditionsService {
     await this.repo.save(item);
 
     if (dto.availableScenaryIds !== undefined) {
-      await this.repo.query('DELETE FROM tab_campeonato_edition_scenaries WHERE edition_id = $1', [id]);
+      await this.repo.query('DELETE FROM tab_campeonato_edition_scenaries WHERE edition_id = $1', [numId]);
       if (Array.isArray(dto.availableScenaryIds)) {
         for (const scId of dto.availableScenaryIds) {
           if (scId) {
-            await this.repo.query('INSERT INTO tab_campeonato_edition_scenaries (edition_id, scenary_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, scId]);
+            await this.repo.query('INSERT INTO tab_campeonato_edition_scenaries (edition_id, scenary_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [numId, scId]);
           }
         }
       }
@@ -177,17 +178,17 @@ export class CategoryEditionsService {
 
     if (categoriesDetail !== undefined) {
       // Eliminar detalles previos y clasificaciones asociadas
-      const oldDetails = await this.detailRepo.find({ where: { editionId: id } });
+      const oldDetails = await this.detailRepo.find({ where: { editionId: numId } });
       for (const od of oldDetails) {
         await this.classificationRepo.delete({ categoryDetailId: od.id });
       }
-      await this.detailRepo.delete({ editionId: id });
+      await this.detailRepo.delete({ editionId: numId });
 
       if (categoriesDetail.length > 0) {
         for (const det of categoriesDetail) {
           const detailEntity = this.detailRepo.create({
-            editionId: id,
-            categoryId: det.categoryId,
+            editionId: numId,
+            categoryId: Number(det.categoryId),
             categoryDescription: det.categoryDescription,
             startDate: det.startDate ? new Date(det.startDate) : undefined,
             endDate: det.endDate ? new Date(det.endDate) : undefined,
@@ -201,13 +202,13 @@ export class CategoryEditionsService {
             createdBy: user?.user_id?.toString() || user?.id?.toString(),
             createdName: user?.user_name || user?.name,
           });
-          const savedDetail = await this.detailRepo.save(detailEntity);
+          const savedDetail: EditionCategoryDetailOrmEntity = await this.detailRepo.save(detailEntity);
 
           if (det.classifications && det.classifications.length > 0) {
             const classEntities = det.classifications.map((c: any) =>
               this.classificationRepo.create({
                 categoryDetailId: savedDetail.id,
-                playerClassificationId: c.playerClassificationId,
+                playerClassificationId: Number(c.playerClassificationId),
                 maxPlayers: Number(c.maxPlayers) || 0,
                 maxInactivityMonths: c.maxInactivityMonths !== undefined && c.maxInactivityMonths !== null && c.maxInactivityMonths !== '' ? Number(c.maxInactivityMonths) : null,
                 maxMonths: c.maxMonths !== undefined && c.maxMonths !== null && c.maxMonths !== '' ? Number(c.maxMonths) : null,
@@ -222,16 +223,17 @@ export class CategoryEditionsService {
       }
     }
 
-    return this.get(id);
+    return this.get(numId);
   }
 
-  async remove(id: string) {
-    const item = await this.get(id);
-    const oldDetails = await this.detailRepo.find({ where: { editionId: id } });
+  async remove(id: string | number) {
+    const numId = Number(id);
+    const item = await this.get(numId);
+    const oldDetails = await this.detailRepo.find({ where: { editionId: numId } });
     for (const od of oldDetails) {
       await this.classificationRepo.delete({ categoryDetailId: od.id });
     }
-    await this.detailRepo.delete({ editionId: id });
+    await this.detailRepo.delete({ editionId: numId });
     return this.repo.remove(item);
   }
 }

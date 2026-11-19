@@ -3,8 +3,8 @@ import { RefereeGuildOrmEntity } from './referee-guild.orm-entity';
 
 @Entity('tab_campeonato_referees')
 export class RefereeOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -12,8 +12,8 @@ export class RefereeOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'guild_id', type: 'uuid', nullable: true })
-  guildId: string;
+  @Column({ name: 'guild_id', type: 'int', nullable: true })
+  guildId: number;
 
   @ManyToOne(() => RefereeGuildOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'guild_id' })

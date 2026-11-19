@@ -38,8 +38,8 @@ export class PlayerClassificationsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Clasificación de futbolista no encontrada');
     return item;
   }
@@ -68,8 +68,9 @@ export class PlayerClassificationsService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdatePlayerClassificationDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdatePlayerClassificationDto, user: any) {
+    const numId = Number(id);
+    const item = await this.get(numId);
 
     if (dto.description && dto.description.trim() !== item.description) {
       const existing = await this.repo.findOne({
@@ -78,7 +79,7 @@ export class PlayerClassificationsService {
           companyId: item.companyId || undefined,
         },
       });
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== numId) {
         throw new BadRequestException(`Ya existe otra clasificación con la descripción "${dto.description}".`);
       }
     }
@@ -92,12 +93,13 @@ export class PlayerClassificationsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
-    const item = await this.get(id);
+  async remove(id: string | number) {
+    const numId = Number(id);
+    const item = await this.get(numId);
 
     // 1. Validar si está asignada en etapas
     const countInStages = await this.stageClassificationRepo.count({
-      where: { playerClassificationId: id },
+      where: { playerClassificationId: numId },
     });
     if (countInStages > 0) {
       throw new BadRequestException(
@@ -107,7 +109,7 @@ export class PlayerClassificationsService {
 
     // 2. Validar si está asignada en inscripciones de jugadores
     const countInRegistrations = await this.playerRegistrationRepo.count({
-      where: { playerClassificationId: id },
+      where: { playerClassificationId: numId },
     });
     if (countInRegistrations > 0) {
       throw new BadRequestException(
@@ -117,7 +119,7 @@ export class PlayerClassificationsService {
 
     // 3. Validar si está asignada en fichas de jugadores
     const countInPlayers = await this.playerRepo.count({
-      where: { playerClassificationId: id },
+      where: { playerClassificationId: numId },
     });
     if (countInPlayers > 0) {
       throw new BadRequestException(

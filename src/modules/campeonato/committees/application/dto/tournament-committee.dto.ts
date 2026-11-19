@@ -1,7 +1,9 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -9,8 +11,9 @@ import {
 
 export class CreateTournamentCommitteeDto {
   @IsNotEmpty({ message: 'El ID de la posición/cargo es obligatorio' })
-  @IsString()
-  positionId: string;
+  @Type(() => Number)
+  @IsNumber()
+  positionId: number;
 
   @IsNotEmpty({ message: 'El nombre es obligatorio' })
   @IsString()
@@ -53,8 +56,9 @@ export class CreateTournamentCommitteeDto {
 
 export class UpdateTournamentCommitteeDto {
   @IsOptional()
-  @IsString()
-  positionId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  positionId?: number;
 
   @IsOptional()
   @IsString()

@@ -4,14 +4,14 @@ import { PlayerOrmEntity } from './player.orm-entity';
 @Entity('tab_campeonato_company_players')
 @Unique(['companyId', 'playerId'])
 export class CompanyPlayerOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int' })
   companyId: number;
 
-  @Column({ name: 'player_id', type: 'uuid' })
-  playerId: string;
+  @Column({ name: 'player_id', type: 'int' })
+  playerId: number;
 
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })

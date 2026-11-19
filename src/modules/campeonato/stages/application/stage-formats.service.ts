@@ -28,8 +28,8 @@ export class StageFormatsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Formato de disputa no encontrado');
     return item;
   }
@@ -52,7 +52,7 @@ export class StageFormatsService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateStageFormatDto, user: any) {
+  async update(id: string | number, dto: UpdateStageFormatDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -61,7 +61,7 @@ export class StageFormatsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     await this.repo.remove(item);
     return { message: 'Formato de disputa eliminado exitosamente' };

@@ -5,18 +5,18 @@ import { PlayerRegistrationHistoryAction } from '../../common/enum/campeonato.en
 
 @Entity('tab_campeonato_player_registration_history')
 export class PlayerRegistrationHistoryOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ name: 'player_registration_id', type: 'uuid', nullable: true })
-  playerRegistrationId: string;
+  @Column({ name: 'player_registration_id', type: 'int', nullable: true })
+  playerRegistrationId: number;
 
   @ManyToOne(() => PlayerRegistrationOrmEntity, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_registration_id' })
   playerRegistration: PlayerRegistrationOrmEntity;
 
-  @Column({ name: 'player_id', type: 'uuid' })
-  playerId: string;
+  @Column({ name: 'player_id', type: 'int' })
+  playerId: number;
 
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })

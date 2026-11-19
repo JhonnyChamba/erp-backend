@@ -4,11 +4,11 @@ import { TransferApprovalRole, TransferApprovalStatus } from '../../common/enum/
 
 @Entity('tab_campeonato_player_transfer_approvals')
 export class PlayerTransferApprovalOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ name: 'transfer_id', type: 'uuid' })
-  transferId: string;
+  @Column({ name: 'transfer_id', type: 'int' })
+  transferId: number;
 
   @ManyToOne(() => PlayerTransferOrmEntity, (t) => t.approvals, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'transfer_id' })

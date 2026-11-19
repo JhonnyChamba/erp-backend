@@ -3,8 +3,8 @@ import { CategoryOrmEntity } from './category.orm-entity';
 
 @Entity('tab_campeonato_teams')
 export class TeamOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -12,8 +12,8 @@ export class TeamOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'current_category_id', type: 'uuid', nullable: true })
-  currentCategoryId: string;
+  @Column({ name: 'current_category_id', type: 'int', nullable: true })
+  currentCategoryId: number;
 
   @ManyToOne(() => CategoryOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'current_category_id' })

@@ -39,9 +39,9 @@ export class MatchLineupsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: ['match', 'team', 'player'],
     });
     if (!item) throw new NotFoundException('Registro de alineación no encontrado');
@@ -58,7 +58,7 @@ export class MatchLineupsService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateMatchLineupDto, user: any) {
+  async update(id: string | number, dto: UpdateMatchLineupDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -67,7 +67,7 @@ export class MatchLineupsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

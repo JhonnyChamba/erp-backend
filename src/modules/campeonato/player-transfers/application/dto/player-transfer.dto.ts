@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
@@ -13,28 +14,33 @@ import { TransferApprovalRole, TransferApprovalStatus, TransferStatus } from '..
 
 export class CreatePlayerTransferDto {
   @IsNotEmpty({ message: 'El ID de la edición de torneo es obligatorio' })
-  @IsUUID()
-  editionId: string;
+  @Type(() => Number)
+  @IsNumber()
+  editionId: number;
 
   @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
-  @IsUUID()
-  playerId: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId: number;
 
   @IsNotEmpty({ message: 'El equipo de destino es obligatorio' })
-  @IsUUID()
-  destinationTeamId: string;
+  @Type(() => Number)
+  @IsNumber()
+  destinationTeamId: number;
 
   @IsNotEmpty({ message: 'La inscripción del equipo de destino es obligatoria' })
   @IsUUID()
   destinationTeamRegistrationId: string;
 
   @IsOptional()
-  @IsUUID()
-  stageId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  stageId?: number;
 
   @IsOptional()
-  @IsUUID()
-  targetClassificationId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  targetClassificationId?: number;
 
   @IsOptional()
   @IsInt()
@@ -54,8 +60,9 @@ export class CreatePlayerTransferDto {
   passOwnerType?: string; // 'PLAYER' o 'TEAM'
 
   @IsOptional()
-  @IsUUID()
-  passOwnerTeamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  passOwnerTeamId?: number;
 
   @IsOptional()
   @IsNumber()
@@ -89,19 +96,19 @@ export class ApproveTransferDto {
 
 export class FilterTransferQueryDto {
   @IsOptional()
-  editionId?: string;
+  editionId?: number;
 
   @IsOptional()
   status?: TransferStatus;
 
   @IsOptional()
-  originTeamId?: string;
+  originTeamId?: number;
 
   @IsOptional()
-  destinationTeamId?: string;
+  destinationTeamId?: number;
 
   @IsOptional()
-  playerId?: string;
+  playerId?: number;
 
   @IsOptional()
   search?: string;

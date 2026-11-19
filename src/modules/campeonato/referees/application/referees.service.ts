@@ -98,8 +98,8 @@ export class RefereesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id }, relations: ['guild'] });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['guild'] });
     if (!item) throw new NotFoundException('Árbitro no encontrado');
     return item;
   }
@@ -160,12 +160,12 @@ export class RefereesService {
     return this.get(referee.id);
   }
 
-  async update(id: string, dto: UpdateRefereeDto, user: any) {
+  async update(id: string | number, dto: UpdateRefereeDto, user: any) {
     const item = await this.get(id);
     if (dto.name !== undefined) item.name = dto.name.trim();
     if (dto.lastName !== undefined) item.lastName = dto.lastName.trim();
     if (dto.identification !== undefined) item.identification = dto.identification.trim();
-    if (dto.guildId !== undefined) item.guildId = dto.guildId;
+    if (dto.guildId !== undefined) item.guildId = dto.guildId ? Number(dto.guildId) : null;
     if (dto.phone !== undefined) item.phone = dto.phone?.trim() || null;
     if (dto.email !== undefined) item.email = dto.email?.trim() || null;
     if (dto.category !== undefined) item.category = dto.category?.trim() || null;
@@ -181,10 +181,10 @@ export class RefereesService {
    * Si se provee companyId y existe en tab_campeonato_company_referees, desvincula de la liga.
    * Si query.global === 'true', elimina el árbitro del padrón global.
    */
-  async remove(id: string, companyId?: number, isGlobal = false) {
+  async remove(id: string | number, companyId?: number, isGlobal = false) {
     if (!isGlobal && companyId) {
       const link = await this.companyRefereeRepo.findOne({
-        where: { refereeId: id, companyId },
+        where: { refereeId: Number(id), companyId },
       });
       if (link) {
         await this.companyRefereeRepo.remove(link);

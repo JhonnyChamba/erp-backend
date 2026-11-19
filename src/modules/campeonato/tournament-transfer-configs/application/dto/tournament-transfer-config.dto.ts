@@ -1,4 +1,10 @@
-import { IsBoolean, IsOptional, IsString, IsInt, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class UpsertTournamentTransferConfigDto {
   @IsOptional()

@@ -44,13 +44,14 @@ export class StageTemplatesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string, companyId?: number) {
+  async get(id: string | number, companyId?: number) {
+    const numId = Number(id);
     const qb = this.repo.createQueryBuilder('st')
       .leftJoinAndSelect('st.details', 'det')
       .leftJoinAndSelect('det.competitionType', 'ct')
       .leftJoinAndSelect('det.competitionLap', 'cl')
       .leftJoinAndSelect('det.tieBreakerCriterion', 'tb')
-      .where('st.id = :id', { id });
+      .where('st.id = :id', { id: numId });
 
     if (companyId) {
       qb.andWhere('(st.companyId = :companyId OR st.companyId IS NULL)', { companyId });
@@ -78,7 +79,7 @@ export class StageTemplatesService {
       createdBy: user?.id ? String(user.id) : user?.sub ? String(user.sub) : null,
     });
 
-    const savedTemplate = await this.repo.save(template);
+    const savedTemplate: StageTemplateOrmEntity = await this.repo.save(template);
 
     if (dto.details && dto.details.length > 0) {
       const detailsToSave = dto.details.map((d, index) => {
@@ -86,9 +87,9 @@ export class StageTemplatesService {
           stageTemplateId: savedTemplate.id,
           stageOrder: Number(d.stageOrder) || index + 1,
           name: d.name.trim(),
-          competitionTypeId: d.competitionTypeId || null,
-          competitionLapId: d.competitionLapId || null,
-          tieBreakerCriterionId: d.tieBreakerCriterionId || null,
+          competitionTypeId: d.competitionTypeId ? Number(d.competitionTypeId) : null,
+          competitionLapId: d.competitionLapId ? Number(d.competitionLapId) : null,
+          tieBreakerCriterionId: d.tieBreakerCriterionId ? Number(d.tieBreakerCriterionId) : null,
         });
       });
       await this.detailRepo.save(detailsToSave);
@@ -97,8 +98,9 @@ export class StageTemplatesService {
     return this.get(savedTemplate.id, companyId);
   }
 
-  async update(id: string, dto: UpdateStageTemplateDto, user: any, companyId?: number) {
-    const template = await this.get(id, companyId);
+  async update(id: string | number, dto: UpdateStageTemplateDto, user: any, companyId?: number) {
+    const numId = Number(id);
+    const template = await this.get(numId, companyId);
 
     if (dto.name !== undefined) {
       const cleanName = dto.name.trim();
@@ -119,28 +121,29 @@ export class StageTemplatesService {
 
     if (dto.details !== undefined) {
       // Reemplazar detalles anteriores
-      await this.detailRepo.delete({ stageTemplateId: id });
+      await this.detailRepo.delete({ stageTemplateId: numId });
       if (dto.details && dto.details.length > 0) {
         const detailsToSave = dto.details.map((d, index) => {
           return this.detailRepo.create({
-            stageTemplateId: id,
+            stageTemplateId: numId,
             stageOrder: Number(d.stageOrder) || index + 1,
             name: d.name.trim(),
-            competitionTypeId: d.competitionTypeId || null,
-            competitionLapId: d.competitionLapId || null,
-            tieBreakerCriterionId: d.tieBreakerCriterionId || null,
+            competitionTypeId: d.competitionTypeId ? Number(d.competitionTypeId) : null,
+            competitionLapId: d.competitionLapId ? Number(d.competitionLapId) : null,
+            tieBreakerCriterionId: d.tieBreakerCriterionId ? Number(d.tieBreakerCriterionId) : null,
           });
         });
         await this.detailRepo.save(detailsToSave);
       }
     }
 
-    return this.get(id, companyId);
+    return this.get(numId, companyId);
   }
 
-  async remove(id: string, companyId?: number) {
-    const template = await this.get(id, companyId);
-    await this.detailRepo.delete({ stageTemplateId: id });
+  async remove(id: string | number, companyId?: number) {
+    const numId = Number(id);
+    const template = await this.get(numId, companyId);
+    await this.detailRepo.delete({ stageTemplateId: numId });
     await this.repo.remove(template);
     return { success: true, message: 'Plantilla de etapas y fases eliminada con éxito' };
   }

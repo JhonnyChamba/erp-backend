@@ -6,8 +6,8 @@ import { PlayerOrmEntity } from './player.orm-entity';
 @Entity('tab_campeonato_match_lineups')
 @Unique(['matchId', 'playerId'])
 export class MatchLineupOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -15,22 +15,22 @@ export class MatchLineupOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'match_id', type: 'uuid' })
-  matchId: string;
+  @Column({ name: 'match_id', type: 'int' })
+  matchId: number;
 
   @ManyToOne(() => MatchOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'match_id' })
   match: MatchOrmEntity;
 
-  @Column({ name: 'team_id', type: 'uuid' })
-  teamId: string;
+  @Column({ name: 'team_id', type: 'int' })
+  teamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'team_id' })
   team: TeamOrmEntity;
 
-  @Column({ name: 'player_id', type: 'uuid' })
-  playerId: string;
+  @Column({ name: 'player_id', type: 'int' })
+  playerId: number;
 
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })

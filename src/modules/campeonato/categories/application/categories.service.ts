@@ -31,8 +31,8 @@ export class CategoriesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Categoría no encontrada');
     return item;
   }
@@ -72,7 +72,7 @@ export class CategoriesService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateCategoryDto, user: any) {
+  async update(id: string | number, dto: UpdateCategoryDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -81,7 +81,7 @@ export class CategoriesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

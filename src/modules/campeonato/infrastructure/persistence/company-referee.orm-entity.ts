@@ -3,14 +3,14 @@ import { RefereeOrmEntity } from './referee.orm-entity';
 
 @Entity('tab_campeonato_company_referees')
 export class CompanyRefereeOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int' })
   companyId: number;
 
-  @Column({ name: 'referee_id', type: 'uuid' })
-  refereeId: string;
+  @Column({ name: 'referee_id', type: 'int' })
+  refereeId: number;
 
   @ManyToOne(() => RefereeOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'referee_id' })

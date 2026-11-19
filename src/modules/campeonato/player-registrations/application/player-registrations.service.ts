@@ -37,15 +37,15 @@ export class PlayerRegistrationsService {
   ) {}
 
   private async validateDemarcationLimit(
-    playerId: string,
-    teamRegistrationId: string,
-    currentRegistrationId?: string,
+    playerId: string | number,
+    teamRegistrationId: string | number,
+    currentRegistrationId?: string | number,
     runnerRepo?: Repository<PlayerRegistrationOrmEntity>,
   ) {
     if (!playerId || !teamRegistrationId) return;
 
     const player = await this.playerRepo.findOne({
-      where: { id: playerId },
+      where: { id: Number(playerId) },
       relations: ['demarcation'],
     });
 
@@ -78,10 +78,10 @@ export class PlayerRegistrationsService {
   }
 
   private async validateDuplicateAndJersey(
-    playerId: string,
-    teamRegistrationId: string,
+    playerId: string | number,
+    teamRegistrationId: string | number,
     jerseyNumber?: number,
-    currentRegistrationId?: string,
+    currentRegistrationId?: string | number,
     runnerRepo?: Repository<PlayerRegistrationOrmEntity>,
   ) {
     if (!teamRegistrationId) return;
@@ -123,16 +123,16 @@ export class PlayerRegistrationsService {
   }
 
   private async validateStageAndClassificationLimits(
-    teamRegistrationId: string,
-    playerClassificationId?: string,
-    stageId?: string,
-    currentRegistrationId?: string,
+    teamRegistrationId: string | number,
+    playerClassificationId?: string | number,
+    stageId?: string | number,
+    currentRegistrationId?: string | number,
     runnerRepo?: Repository<PlayerRegistrationOrmEntity>,
   ) {
     if (!teamRegistrationId) return;
 
     const teamRegistration = await this.teamRegistrationRepo.findOne({
-      where: { id: teamRegistrationId },
+      where: { id: Number(teamRegistrationId) },
       relations: ['team', 'categoryEdition'],
     });
 
@@ -196,7 +196,7 @@ export class PlayerRegistrationsService {
       }
 
       const classConfig = classifications.find(
-        (c) => c.playerClassificationId === playerClassificationId,
+        (c) => c.playerClassificationId === Number(playerClassificationId),
       );
       if (!classConfig) {
         throw new BadRequestException(
@@ -261,9 +261,9 @@ export class PlayerRegistrationsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: [
         'teamRegistration',
         'teamRegistration.team',
@@ -291,7 +291,7 @@ export class PlayerRegistrationsService {
     // Determinar estado inicial según configuración de torneo
     let initialStatus = dto.status || PlayerRegistrationStatus.ELIGIBLE;
     const teamReg = await this.teamRegistrationRepo.findOne({
-      where: { id: dto.teamRegistrationId },
+      where: { id: Number(dto.teamRegistrationId) },
     });
     if (teamReg?.categoryEditionId) {
       const config = await this.transferConfigRepo.findOne({
@@ -336,7 +336,7 @@ export class PlayerRegistrationsService {
     }
 
     const teamRegistration = await this.teamRegistrationRepo.findOne({
-      where: { id: dto.teamRegistrationId },
+      where: { id: Number(dto.teamRegistrationId) },
       relations: ['team', 'categoryEdition'],
     });
     if (!teamRegistration) {
@@ -434,7 +434,7 @@ export class PlayerRegistrationsService {
     }
   }
 
-  async update(id: string, dto: UpdatePlayerRegistrationDto, user: any) {
+  async update(id: string | number, dto: UpdatePlayerRegistrationDto, user: any) {
     const item = await this.get(id);
 
     const targetPlayerId = dto.playerId || item.playerId;
@@ -519,9 +519,10 @@ export class PlayerRegistrationsService {
   /**
    * Obtiene la plantilla completa y el balance de cupos ocupados vs disponibles
    */
-  async getRosterByTeamRegistration(teamRegistrationId: string) {
+  async getRosterByTeamRegistration(teamRegistrationId: string | number) {
+    const numTeamRegId = Number(teamRegistrationId);
     const teamReg = await this.teamRegistrationRepo.findOne({
-      where: { id: teamRegistrationId },
+      where: { id: numTeamRegId },
       relations: ['team', 'categoryEdition', 'categoryEdition.category'],
     });
     if (!teamReg) {
@@ -529,7 +530,7 @@ export class PlayerRegistrationsService {
     }
 
     const registrations = await this.repo.find({
-      where: { teamRegistrationId },
+      where: { teamRegistrationId: numTeamRegId },
       relations: ['player', 'player.demarcation', 'playerClassification', 'stage'],
       order: { jerseyNumber: 'ASC' },
     });
@@ -569,7 +570,7 @@ export class PlayerRegistrationsService {
     };
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

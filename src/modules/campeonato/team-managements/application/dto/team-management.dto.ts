@@ -1,7 +1,9 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -9,8 +11,9 @@ import {
 
 export class CreateTeamManagementDto {
   @IsOptional()
-  @IsString()
-  positionId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  positionId?: number;
 
   @IsOptional()
   @IsString()
@@ -18,12 +21,14 @@ export class CreateTeamManagementDto {
   roleTitle?: string;
 
   @IsNotEmpty({ message: 'El ID del equipo es obligatorio' })
-  @IsString()
-  teamId: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId: number;
 
   @IsOptional()
-  @IsString()
-  playerId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId?: number;
 
   @IsNotEmpty({ message: 'El nombre es obligatorio' })
   @IsString()
@@ -67,8 +72,9 @@ export class CreateTeamManagementDto {
 
 export class UpdateTeamManagementDto {
   @IsOptional()
-  @IsString()
-  positionId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  positionId?: number;
 
   @IsOptional()
   @IsString()
@@ -76,12 +82,14 @@ export class UpdateTeamManagementDto {
   roleTitle?: string;
 
   @IsOptional()
-  @IsString()
-  teamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId?: number;
 
   @IsOptional()
-  @IsString()
-  playerId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerId?: number;
 
   @IsOptional()
   @IsString()

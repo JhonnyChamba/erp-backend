@@ -6,11 +6,11 @@ import { TieBreakerCriterionOrmEntity } from './tie-breaker-criterion.orm-entity
 
 @Entity('tab_campeonato_stage_template_details')
 export class StageTemplateDetailOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ name: 'stage_template_id', type: 'uuid' })
-  stageTemplateId: string;
+  @Column({ name: 'stage_template_id', type: 'int' })
+  stageTemplateId: number;
 
   @ManyToOne(() => StageTemplateOrmEntity, (template) => template.details, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'stage_template_id' })
@@ -22,22 +22,22 @@ export class StageTemplateDetailOrmEntity {
   @Column({ type: 'varchar', length: 150 })
   name: string;
 
-  @Column({ name: 'competition_type_id', type: 'uuid', nullable: true })
-  competitionTypeId: string;
+  @Column({ name: 'competition_type_id', type: 'int', nullable: true })
+  competitionTypeId: number;
 
   @ManyToOne(() => CompetitionTypeOrmEntity, { nullable: true, onDelete: 'SET NULL', eager: true })
   @JoinColumn({ name: 'competition_type_id' })
   competitionType: CompetitionTypeOrmEntity;
 
-  @Column({ name: 'competition_lap_id', type: 'uuid', nullable: true })
-  competitionLapId: string;
+  @Column({ name: 'competition_lap_id', type: 'int', nullable: true })
+  competitionLapId: number;
 
   @ManyToOne(() => CompetitionLapOrmEntity, { nullable: true, onDelete: 'SET NULL', eager: true })
   @JoinColumn({ name: 'competition_lap_id' })
   competitionLap: CompetitionLapOrmEntity;
 
-  @Column({ name: 'tie_breaker_criterion_id', type: 'uuid', nullable: true })
-  tieBreakerCriterionId: string;
+  @Column({ name: 'tie_breaker_criterion_id', type: 'int', nullable: true })
+  tieBreakerCriterionId: number;
 
   @ManyToOne(() => TieBreakerCriterionOrmEntity, { nullable: true, onDelete: 'SET NULL', eager: true })
   @JoinColumn({ name: 'tie_breaker_criterion_id' })

@@ -1,6 +1,8 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -8,8 +10,9 @@ import {
 
 export class CreateVocalDto {
   @IsOptional()
-  @IsString()
-  teamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId?: number;
 
   @IsNotEmpty({ message: 'El nombre es obligatorio' })
   @IsString()
@@ -33,8 +36,9 @@ export class CreateVocalDto {
 
 export class UpdateVocalDto {
   @IsOptional()
-  @IsString()
-  teamId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  teamId?: number;
 
   @IsOptional()
   @IsString()

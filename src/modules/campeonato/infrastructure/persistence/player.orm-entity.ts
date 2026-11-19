@@ -6,8 +6,8 @@ import { PlayerClassificationOrmEntity } from './player-classification.orm-entit
 
 @Entity('tab_campeonato_players')
 export class PlayerOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -15,22 +15,22 @@ export class PlayerOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'demarcation_id', type: 'uuid', nullable: true })
-  demarcationId: string;
+  @Column({ name: 'demarcation_id', type: 'int', nullable: true })
+  demarcationId: number;
 
   @ManyToOne(() => DemarcationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'demarcation_id' })
   demarcation: DemarcationOrmEntity;
 
-  @Column({ name: 'player_classification_id', type: 'uuid', nullable: true })
-  playerClassificationId: string;
+  @Column({ name: 'player_classification_id', type: 'int', nullable: true })
+  playerClassificationId: number;
 
   @ManyToOne(() => PlayerClassificationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'player_classification_id' })
   playerClassification: PlayerClassificationOrmEntity;
 
-  @Column({ name: 'current_team_id', type: 'uuid', nullable: true })
-  currentTeamId: string;
+  @Column({ name: 'current_team_id', type: 'int', nullable: true })
+  currentTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'current_team_id' })
@@ -39,8 +39,8 @@ export class PlayerOrmEntity {
   @Column({ name: 'pass_owner_type', type: 'varchar', length: 20, default: 'PLAYER' })
   passOwnerType: string; // 'PLAYER' (dueño de su pase) o 'TEAM' (club es dueño del pase)
 
-  @Column({ name: 'pass_owner_team_id', type: 'uuid', nullable: true })
-  passOwnerTeamId: string;
+  @Column({ name: 'pass_owner_team_id', type: 'int', nullable: true })
+  passOwnerTeamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'pass_owner_team_id' })

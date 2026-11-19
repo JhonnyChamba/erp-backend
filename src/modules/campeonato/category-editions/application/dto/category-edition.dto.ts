@@ -16,8 +16,9 @@ import { EditionStatus } from '../../../common/enum/campeonato.enum';
 
 export class EditionCategoryClassificationItemDto {
   @IsNotEmpty({ message: 'El ID de clasificación es obligatorio' })
-  @IsString()
-  playerClassificationId: string;
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId: number;
 
   @IsNotEmpty({ message: 'La cantidad máxima de jugadores es obligatoria' })
   @IsInt()
@@ -34,8 +35,9 @@ export class EditionCategoryClassificationItemDto {
 
 export class EditionCategoryDetailItemDto {
   @IsNotEmpty({ message: 'El ID de la categoría es obligatorio' })
-  @IsString()
-  categoryId: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryId: number;
 
   @IsOptional()
   @IsString()
@@ -82,8 +84,9 @@ export class EditionCategoryDetailItemDto {
 
 export class CreateCategoryEditionDto {
   @IsOptional()
-  @IsString()
-  categoryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryId?: number;
 
   @IsNotEmpty({ message: 'El nombre de la edición es obligatorio' })
   @IsString()
@@ -167,8 +170,9 @@ export class CreateCategoryEditionDto {
 
 export class UpdateCategoryEditionDto {
   @IsOptional()
-  @IsString()
-  categoryId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  categoryId?: number;
 
   @IsOptional()
   @IsString()

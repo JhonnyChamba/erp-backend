@@ -4,11 +4,11 @@ import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
 
 @Entity('tab_campeonato_player_transactions')
 export class PlayerTransactionOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ name: 'player_id', type: 'uuid' })
-  playerId: string;
+  @Column({ name: 'player_id', type: 'int' })
+  playerId: number;
 
   @ManyToOne(() => PlayerOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'player_id' })
@@ -17,8 +17,8 @@ export class PlayerTransactionOrmEntity {
   @Column({ name: 'company_id', type: 'int' })
   companyId: number;
 
-  @Column({ name: 'edition_id', type: 'uuid', nullable: true })
-  editionId: string;
+  @Column({ name: 'edition_id', type: 'int', nullable: true })
+  editionId: number;
 
   @ManyToOne(() => CategoryEditionOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'edition_id' })

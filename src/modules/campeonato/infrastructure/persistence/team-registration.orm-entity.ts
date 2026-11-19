@@ -6,8 +6,8 @@ import { TeamOrmEntity } from './team.orm-entity';
 @Entity('tab_campeonato_team_registrations')
 @Unique(['categoryEditionId', 'teamId'])
 export class TeamRegistrationOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -15,15 +15,15 @@ export class TeamRegistrationOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'category_edition_id', type: 'uuid' })
-  categoryEditionId: string;
+  @Column({ name: 'category_edition_id', type: 'int' })
+  categoryEditionId: number;
 
   @ManyToOne(() => CategoryEditionOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_edition_id' })
   categoryEdition: CategoryEditionOrmEntity;
 
-  @Column({ name: 'team_id', type: 'uuid' })
-  teamId: string;
+  @Column({ name: 'team_id', type: 'int' })
+  teamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'team_id' })

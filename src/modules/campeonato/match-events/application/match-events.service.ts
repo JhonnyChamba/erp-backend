@@ -40,9 +40,9 @@ export class MatchEventsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
+  async get(id: string | number) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: Number(id) },
       relations: ['match', 'team', 'player', 'playerOut'],
     });
     if (!item) throw new NotFoundException('Evento de partido no encontrado');
@@ -59,7 +59,7 @@ export class MatchEventsService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateMatchEventDto, user: any) {
+  async update(id: string | number, dto: UpdateMatchEventDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -68,7 +68,7 @@ export class MatchEventsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

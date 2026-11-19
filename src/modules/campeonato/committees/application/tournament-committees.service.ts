@@ -31,8 +31,8 @@ export class TournamentCommitteesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id }, relations: ['position'] });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['position'] });
     if (!item) throw new NotFoundException('Miembro de comité no encontrado');
     return item;
   }
@@ -47,7 +47,7 @@ export class TournamentCommitteesService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateTournamentCommitteeDto, user: any) {
+  async update(id: string | number, dto: UpdateTournamentCommitteeDto, user: any) {
     const item = await this.get(id);
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -56,7 +56,7 @@ export class TournamentCommitteesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

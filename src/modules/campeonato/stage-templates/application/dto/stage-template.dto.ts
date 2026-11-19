@@ -1,4 +1,14 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsArray, ValidateNested, IsInt, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class StageTemplateDetailItemDto {
@@ -16,16 +26,19 @@ export class StageTemplateDetailItemDto {
   name: string;
 
   @IsOptional()
-  @IsString()
-  competitionTypeId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  competitionTypeId?: number;
 
   @IsOptional()
-  @IsString()
-  competitionLapId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  competitionLapId?: number;
 
   @IsOptional()
-  @IsString()
-  tieBreakerCriterionId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  tieBreakerCriterionId?: number;
 }
 
 export class CreateStageTemplateDto {

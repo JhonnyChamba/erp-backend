@@ -3,8 +3,8 @@ import { PositionScope } from '../../common/enum/campeonato.enum';
 
 @Entity('tab_campeonato_positions')
 export class PositionOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;

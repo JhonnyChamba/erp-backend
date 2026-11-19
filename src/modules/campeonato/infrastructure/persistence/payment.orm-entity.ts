@@ -4,8 +4,8 @@ import { TeamRegistrationOrmEntity } from './team-registration.orm-entity';
 
 @Entity('tab_campeonato_payments')
 export class PaymentOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
@@ -13,8 +13,8 @@ export class PaymentOrmEntity {
   @Column({ name: 'tournaments_id', type: 'varchar', nullable: true })
   tournamentId: string;
 
-  @Column({ name: 'team_registration_id', type: 'uuid', nullable: true })
-  teamRegistrationId: string;
+  @Column({ name: 'team_registration_id', type: 'int', nullable: true })
+  teamRegistrationId: number;
 
   @ManyToOne(() => TeamRegistrationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'team_registration_id' })

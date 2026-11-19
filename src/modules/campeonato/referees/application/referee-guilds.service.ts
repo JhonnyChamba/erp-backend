@@ -28,8 +28,8 @@ export class RefereeGuildsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id } });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) } });
     if (!item) throw new NotFoundException('Gremio arbitral no encontrado');
     return item;
   }
@@ -45,7 +45,7 @@ export class RefereeGuildsService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateRefereeGuildDto, user: any) {
+  async update(id: string | number, dto: UpdateRefereeGuildDto, user: any) {
     const item = await this.get(id);
     if (dto.description !== undefined) item.description = dto.description.trim();
     if (dto.acronyms !== undefined) item.acronyms = dto.acronyms ? dto.acronyms.trim().toUpperCase() : '';
@@ -55,7 +55,7 @@ export class RefereeGuildsService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }

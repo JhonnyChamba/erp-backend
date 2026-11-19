@@ -4,21 +4,21 @@ import { CategoryOrmEntity } from './category.orm-entity';
 
 @Entity('tab_campeonato_team_category_history')
 export class TeamCategoryHistoryOrmEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ name: 'company_id', type: 'int', nullable: true })
   companyId: number;
 
-  @Column({ name: 'team_id', type: 'uuid' })
-  teamId: string;
+  @Column({ name: 'team_id', type: 'int' })
+  teamId: number;
 
   @ManyToOne(() => TeamOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'team_id' })
   team: TeamOrmEntity;
 
-  @Column({ name: 'category_id', type: 'uuid' })
-  categoryId: string;
+  @Column({ name: 'category_id', type: 'int' })
+  categoryId: number;
 
   @ManyToOne(() => CategoryOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_id' })

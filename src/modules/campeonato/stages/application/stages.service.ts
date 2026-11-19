@@ -49,8 +49,8 @@ export class StagesService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async get(id: string) {
-    const item = await this.repo.findOne({ where: { id }, relations: ['categoryEdition'] });
+  async get(id: string | number) {
+    const item = await this.repo.findOne({ where: { id: Number(id) }, relations: ['categoryEdition'] });
     if (!item) throw new NotFoundException('Etapa no encontrada');
     return item;
   }
@@ -69,8 +69,9 @@ export class StagesService {
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdateStageDto, user: any) {
-    const item = await this.get(id);
+  async update(id: string | number, dto: UpdateStageDto, user: any) {
+    const numId = Number(id);
+    const item = await this.get(numId);
 
     if (dto.maxPlayersPerTeam !== undefined && dto.maxPlayersPerTeam !== null) {
       if (dto.maxPlayersPerTeam <= 0) {
@@ -78,7 +79,7 @@ export class StagesService {
       }
 
       // Regla 4: Validar que el nuevo límite no sea menor a la suma de clasificaciones ya configuradas
-      const stageClassifications = await this.stageClassificationRepo.find({ where: { stageId: id } });
+      const stageClassifications = await this.stageClassificationRepo.find({ where: { stageId: numId } });
       const currentSum = stageClassifications.reduce((acc, curr) => acc + curr.maxPlayers, 0);
       if (dto.maxPlayersPerTeam < currentSum) {
         throw new BadRequestException(
@@ -94,7 +95,7 @@ export class StagesService {
     return this.repo.save(item);
   }
 
-  async remove(id: string) {
+  async remove(id: string | number) {
     const item = await this.get(id);
     return this.repo.remove(item);
   }
@@ -103,10 +104,11 @@ export class StagesService {
   // GESTIÓN DE CLASIFICACIONES DE FUTBOLISTAS POR ETAPA / FASE
   // ==============================================================
 
-  async listClassifications(stageId: string) {
-    const stage = await this.get(stageId);
+  async listClassifications(stageId: string | number) {
+    const numStageId = Number(stageId);
+    const stage = await this.get(numStageId);
     const classifications = await this.stageClassificationRepo.find({
-      where: { stageId },
+      where: { stageId: numStageId },
       relations: ['playerClassification'],
       order: { createdAt: 'ASC' },
     });
@@ -115,7 +117,7 @@ export class StagesService {
     const remainingSlots = (stage.maxPlayersPerTeam || 0) > 0 ? Math.max(0, stage.maxPlayersPerTeam - totalDistributed) : null;
 
     return {
-      stageId,
+      stageId: numStageId,
       stageName: stage.name,
       maxPlayersPerTeam: stage.maxPlayersPerTeam,
       totalDistributed,
@@ -124,8 +126,9 @@ export class StagesService {
     };
   }
 
-  async addClassification(stageId: string, dto: CreateStagePlayerClassificationDto, user: any, companyId: number) {
-    const stage = await this.get(stageId);
+  async addClassification(stageId: string | number, dto: CreateStagePlayerClassificationDto, user: any, companyId: number) {
+    const numStageId = Number(stageId);
+    const stage = await this.get(numStageId);
 
     // Regla 2: Cantidades estrictamente positivas
     if (!dto.maxPlayers || dto.maxPlayers <= 0) {
@@ -134,7 +137,7 @@ export class StagesService {
 
     // Validar existencia de la clasificación
     const classification = await this.playerClassificationRepo.findOne({
-      where: { id: dto.playerClassificationId },
+      where: { id: Number(dto.playerClassificationId) },
     });
     if (!classification) {
       throw new NotFoundException('La clasificación de futbolista seleccionada no existe.');
@@ -142,14 +145,14 @@ export class StagesService {
 
     // Regla 3: No duplicar la misma clasificación en la etapa
     const existing = await this.stageClassificationRepo.findOne({
-      where: { stageId, playerClassificationId: dto.playerClassificationId },
+      where: { stageId: numStageId, playerClassificationId: Number(dto.playerClassificationId) },
     });
     if (existing) {
       throw new BadRequestException(`La clasificación "${classification.description}" ya está asignada a esta etapa.`);
     }
 
     // Regla 1: Suma de cantidades máximas no puede superar el límite de la etapa
-    const currentList = await this.stageClassificationRepo.find({ where: { stageId } });
+    const currentList = await this.stageClassificationRepo.find({ where: { stageId: numStageId } });
     const currentSum = currentList.reduce((acc, curr) => acc + curr.maxPlayers, 0);
     const stageLimit = stage.maxPlayersPerTeam;
 
@@ -161,8 +164,8 @@ export class StagesService {
     }
 
     const item = this.stageClassificationRepo.create({
-      stageId,
-      playerClassificationId: dto.playerClassificationId,
+      stageId: numStageId,
+      playerClassificationId: Number(dto.playerClassificationId),
       maxPlayers: dto.maxPlayers,
       companyId,
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -170,12 +173,13 @@ export class StagesService {
     });
     await this.stageClassificationRepo.save(item);
 
-    return this.listClassifications(stageId);
+    return this.listClassifications(numStageId);
   }
 
-  async updateClassification(id: string, dto: UpdateStagePlayerClassificationDto, user: any) {
+  async updateClassification(id: string | number, dto: UpdateStagePlayerClassificationDto, user: any) {
+    const numId = Number(id);
     const item = await this.stageClassificationRepo.findOne({
-      where: { id },
+      where: { id: numId },
       relations: ['stage', 'playerClassification'],
     });
     if (!item) {
@@ -192,7 +196,7 @@ export class StagesService {
         where: { stageId: item.stageId },
       });
       const otherSum = otherList
-        .filter((c) => c.id !== id)
+        .filter((c) => c.id !== numId)
         .reduce((acc, curr) => acc + curr.maxPlayers, 0);
 
       const stageLimit = item.stage.maxPlayersPerTeam;
@@ -232,9 +236,10 @@ export class StagesService {
     return this.listClassifications(item.stageId);
   }
 
-  async removeClassification(id: string) {
+  async removeClassification(id: string | number) {
+    const numId = Number(id);
     const item = await this.stageClassificationRepo.findOne({
-      where: { id },
+      where: { id: numId },
       relations: ['stage', 'playerClassification'],
     });
     if (!item) {
