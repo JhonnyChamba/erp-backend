@@ -49,6 +49,7 @@ import { TechnicalServiceModule } from './modules/technical-service/technical-se
           host.includes('supabase.com') ||
           Boolean(databaseUrl && databaseUrl.includes('supabase'));
 
+        const isVercel = Boolean(process.env.VERCEL);
         return {
           type: 'postgres',
           ...(databaseUrl
@@ -61,11 +62,11 @@ import { TechnicalServiceModule } from './modules/technical-service/technical-se
               database: config.get<string>('DATABASE_NAME', 'db_deskounta'),
             }),
           ssl: useSsl ? { rejectUnauthorized: false } : false,
-          retryAttempts: 2,
+          retryAttempts: isVercel ? 1 : 2,
           retryDelay: 1000,
           autoLoadEntities: true,
-          // El esquema se sincroniza con las entidades al iniciar (también en producción); solo se desactiva con DATABASE_SYNCHRONIZE=false.
-          synchronize: config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
+          // En Vercel Serverless NUNCA sincronizar en cada invocación lambda (evita timeout 500 FUNCTION_INVOCATION_FAILED)
+          synchronize: isVercel ? false : config.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true',
         };
       },
     }),
