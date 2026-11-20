@@ -192,7 +192,10 @@ export class PlayersService {
   /**
    * Listar jugadores de la liga/empresa actual o padrón global
    */
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string; global?: string }) {
+  async list(
+    companyId: number,
+    query: { page?: number; limit?: number; search?: string; global?: string; status?: string; identification?: string; name?: string; lastName?: string },
+  ) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
@@ -212,6 +215,19 @@ export class PlayersService {
       qb.andWhere('(LOWER(p.name) LIKE :term OR LOWER(p.lastName) LIKE :term OR LOWER(p.identification) LIKE :term OR LOWER(p.code) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,
       });
+    }
+
+    if (query.status === 'true' || query.status === 'false') {
+      qb.andWhere('p.isActive = :isActive', { isActive: query.status === 'true' });
+    }
+    if (query.identification?.trim()) {
+      qb.andWhere('LOWER(p.identification) LIKE :ident', { ident: `%${query.identification.trim().toLowerCase()}%` });
+    }
+    if (query.name?.trim()) {
+      qb.andWhere('LOWER(p.name) LIKE :fname', { fname: `%${query.name.trim().toLowerCase()}%` });
+    }
+    if (query.lastName?.trim()) {
+      qb.andWhere('LOWER(p.lastName) LIKE :flast', { flast: `%${query.lastName.trim().toLowerCase()}%` });
     }
 
     qb.orderBy('p.createdAt', 'DESC').skip(skip).take(limit);
@@ -320,24 +336,12 @@ export class PlayersService {
     }
 
     // 2. No existe: Generar código secuencial global automático JUG-XXXXX
-    let playerCode = dto.code?.trim();
-    if (!playerCode) {
-      const latest = await this.repo
-        .createQueryBuilder('p')
-        .where("p.code LIKE 'JUG-%'")
-        .orderBy('p.createdAt', 'DESC')
-        .getOne();
-
-      let nextNum = 1;
-      if (latest && latest.code) {
-        const m = latest.code.match(/JUG-(\d+)/i);
-        if (m) nextNum = parseInt(m[1], 10) + 1;
-        else nextNum = (await this.repo.count()) + 1;
-      } else {
-        nextNum = (await this.repo.count()) + 1;
-      }
-      playerCode = `JUG-${String(nextNum).padStart(5, '0')}`;
-    }
+    // El código es siempre autogenerado: siguiente número después del mayor JUG-XXXXX existente
+    const maxRow = await this.repo.query(
+      "SELECT COALESCE(MAX(CAST(SUBSTRING(code FROM 5) AS INTEGER)), 0) AS max FROM tab_campeonato_players WHERE code ~ '^JUG-[0-9]+$'",
+    );
+    const nextNum = Number(maxRow?.[0]?.max || 0) + 1;
+    const playerCode = `JUG-${String(nextNum).padStart(5, '0')}`;
 
     // Calcular edad en años y meses
     const ageCalc = calculateAge(dto.birthDate);
