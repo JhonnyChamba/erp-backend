@@ -36,6 +36,11 @@ export class PlayersController {
     return this.service.findGlobalByIdentification(identification, this.resolveCompanyId(req));
   }
 
+  @Get('consulta-registro-civil/:identification')
+  consultaRegistroCivil(@Param('identification') identification: string, @Req() req: any) {
+    return this.service.consultaRegistroCivil(identification, this.resolveCompanyId(req));
+  }
+
   @Get(':id')
   get(@Param('id') id: string, @Req() req: any) {
     return this.service.get(id, this.resolveCompanyId(req), req.user);

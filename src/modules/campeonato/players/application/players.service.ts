@@ -89,6 +89,107 @@ export class PlayersService {
   }
 
   /**
+   * Consulta oficial de identidad / Registro Civil por cédula
+   */
+  async consultaRegistroCivil(identification: string, companyId?: number) {
+    const ident = (identification || '').trim();
+    if (!ident) {
+      throw new BadRequestException('El número de cédula es obligatorio');
+    }
+
+    const isValid = validarCedulaEcuador(ident);
+    if (!isValid) {
+      throw new BadRequestException('El número ingresado no es una cédula ecuatoriana válida');
+    }
+
+    // 1. Primero consultar en el padrón local (base de datos)
+    const local = await this.findGlobalByIdentification(ident, companyId);
+    if (local.exists && local.player) {
+      return {
+        exists: true,
+        source: 'LOCAL_PADRON' as const,
+        isValidCedula: true,
+        player: local.player,
+        isLinkedToCurrentCompany: local.isLinkedToCurrentCompany,
+      };
+    }
+
+    // 2. Si no está en el padrón local, consultar proveedor externo (Registro Civil / EcuadorAPI)
+    const apiUrl = process.env.REGISTRO_CIVIL_API_URL || 'https://api.ecuadorapi.com/v1/cedula';
+    const apiKey = process.env.REGISTRO_CIVIL_API_KEY || '';
+
+    if (apiKey) {
+      try {
+        const url = apiUrl.endsWith('/') ? `${apiUrl}${ident}` : `${apiUrl}/${ident}`;
+        const resp = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (resp.ok) {
+          const raw = (await resp.json()) as any;
+          const d = raw?.data || raw;
+
+          let name = d.nombres || d.first_name || '';
+          let lastName = d.apellidos || d.last_name || '';
+
+          if (!name && !lastName && (d.nombre_completo || d.full_name || d.nombre)) {
+            const full = (d.nombre_completo || d.full_name || d.nombre).trim().split(/\s+/);
+            if (full.length >= 4) {
+              lastName = `${full[0]} ${full[1]}`;
+              name = full.slice(2).join(' ');
+            } else if (full.length === 3) {
+              lastName = `${full[0]} ${full[1]}`;
+              name = full[2];
+            } else if (full.length === 2) {
+              lastName = full[0];
+              name = full[1];
+            } else {
+              name = full[0] || '';
+            }
+          }
+
+          let birthDate = d.fecha_nacimiento || d.birth_date || null;
+          if (birthDate && String(birthDate).length >= 10) {
+            birthDate = String(birthDate).slice(0, 10);
+          }
+
+          const address = d.direccion || d.domicilio || d.lugar_nacimiento || d.residencia || '';
+          const gender = d.genero || d.sexo || '';
+
+          return {
+            exists: true,
+            source: 'REGISTRO_CIVIL' as const,
+            isValidCedula: true,
+            player: {
+              identification: ident,
+              name: name.trim(),
+              lastName: lastName.trim(),
+              birthDate,
+              gender: gender.toUpperCase().startsWith('M') ? 'MALE' : gender.toUpperCase().startsWith('F') ? 'FEMALE' : undefined,
+              address: address.trim(),
+            },
+          };
+        }
+      } catch (err) {
+        console.warn('Error al consultar proveedor externo de Registro Civil:', err);
+      }
+    }
+
+    // 3. Si la cédula es válida pero no figura en registros previos
+    return {
+      exists: false,
+      source: null,
+      isValidCedula: true,
+      player: { identification: ident },
+      message: 'Cédula válida. Puedes ingresar los datos del futbolista.',
+    };
+  }
+
+  /**
    * Listar jugadores de la liga/empresa actual o padrón global
    */
   async list(companyId: number, query: { page?: number; limit?: number; search?: string; global?: string }) {
