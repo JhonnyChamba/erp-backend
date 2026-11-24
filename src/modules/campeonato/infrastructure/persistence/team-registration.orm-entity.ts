@@ -5,7 +5,7 @@ import { CategoryOrmEntity } from './category.orm-entity';
 import { TeamOrmEntity } from './team.orm-entity';
 
 @Entity('tab_campeonato_team_registrations')
-@Unique(['categoryEditionId', 'teamId'])
+@Unique(['categoryEditionId', 'categoryId', 'teamId'])
 export class TeamRegistrationOrmEntity {
   @PrimaryGeneratedColumn()
   id: number;

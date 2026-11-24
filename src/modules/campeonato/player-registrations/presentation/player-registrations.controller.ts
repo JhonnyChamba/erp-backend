@@ -18,6 +18,7 @@ import {
   UpdatePlayerRegistrationDto,
   MassPlayerRegistrationDto,
   UpdatePlayerRegistrationStatusDto,
+  SyncTeamEditionRosterDto,
 } from '../application/dto/player-registration.dto';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
@@ -34,6 +35,16 @@ export class PlayerRegistrationsController {
   @Get()
   list(@Query() query: any, @Req() req: any) {
     return this.service.list(this.resolveCompanyId(req), query);
+  }
+
+  @Get('grouped')
+  listGrouped(@Query() query: any, @Req() req: any) {
+    return this.service.listByTeamAndEdition(this.resolveCompanyId(req), query);
+  }
+
+  @Post('sync-team-roster')
+  syncTeamRoster(@Body() dto: SyncTeamEditionRosterDto, @Req() req: any) {
+    return this.service.syncTeamEditionRoster(dto, req.user, this.resolveCompanyId(req));
   }
 
   @Get('roster/:teamRegistrationId')

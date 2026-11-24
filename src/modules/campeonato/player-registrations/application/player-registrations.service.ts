@@ -15,6 +15,7 @@ import {
   UpdatePlayerRegistrationDto,
   MassPlayerRegistrationDto,
   UpdatePlayerRegistrationStatusDto,
+  SyncTeamEditionRosterDto,
 } from './dto/player-registration.dto';
 
 @Injectable()
@@ -170,14 +171,17 @@ export class PlayerRegistrationsService {
       }
     }
 
-    // Buscar el detalle de categoría correspondiente
+    // Buscar el detalle de categoría correspondiente a la categoría específica de esta inscripción de equipo
     const categoryDetails = await this.editionCategoryDetailRepo.find({
       where: { editionId: teamRegistration.categoryEditionId },
       relations: ['classifications', 'classifications.playerClassification'],
     });
 
     if (!categoryDetails || categoryDetails.length === 0) return;
-    const categoryDetail = categoryDetails[0];
+    const categoryDetail =
+      (teamRegistration.categoryId
+        ? categoryDetails.find((cd) => Number(cd.categoryId) === Number(teamRegistration.categoryId))
+        : null) || categoryDetails[0];
 
     // 1. Validar límite máximo de jugadores inscritos por equipo
     const maxPlayers = categoryDetail.maxPlayers;
@@ -276,6 +280,430 @@ export class PlayerRegistrationsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
+  /**
+   * Listado agrupado de Inscripción y Carnets:
+   * Una fila por cada (Equipo + Edición del Torneo) que haya sido registrado en Inscripción de Equipos.
+   * Nivel 1 (Cabecera): Datos del Equipo y Edición del Torneo.
+   * Nivel 2 (Detalle de Categorías): Categorías en las que ese equipo está permitido inscribir jugadores.
+   * Nivel 3 (Detalle de Jugadores): Array de jugadores inscritos en cada categoría del equipo.
+   */
+  async listByTeamAndEdition(
+    companyId: number,
+    query: { page?: number; limit?: number; search?: string; categoryEditionId?: number; status?: string },
+  ) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query.limit) || 10));
+
+    const trQb = this.teamRegistrationRepo
+      .createQueryBuilder('tr')
+      .leftJoinAndSelect('tr.team', 'team')
+      .leftJoinAndSelect('tr.categoryEdition', 'categoryEdition')
+      .leftJoinAndSelect('tr.category', 'category');
+
+    if (companyId) {
+      trQb.andWhere('(tr.companyId = :companyId OR tr.companyId IS NULL)', { companyId });
+    }
+    if (query.categoryEditionId) {
+      trQb.andWhere('tr.categoryEditionId = :edId', { edId: Number(query.categoryEditionId) });
+    }
+    if (query.search?.trim()) {
+      const term = `%${query.search.trim().toLowerCase()}%`;
+      trQb.andWhere(
+        '(LOWER(team.name) LIKE :term OR LOWER(team.acronyms) LIKE :term OR LOWER(team.shortName) LIKE :term OR LOWER(categoryEdition.name) LIKE :term OR LOWER(category.name) LIKE :term)',
+        { term },
+      );
+    }
+
+    trQb.orderBy('tr.categoryEditionId', 'DESC').addOrderBy('team.name', 'ASC');
+    const allTeamRegs = await trQb.getMany();
+
+    // Agrupar por llave compuesta (categoryEditionId + teamId)
+    const groupsMap = new Map<
+      string,
+      {
+        categoryEditionId: number;
+        teamId: number;
+        team: any;
+        categoryEdition: any;
+        teamRegs: TeamRegistrationOrmEntity[];
+      }
+    >();
+
+    for (const tr of allTeamRegs) {
+      const key = `${tr.categoryEditionId}_${tr.teamId}`;
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          categoryEditionId: Number(tr.categoryEditionId),
+          teamId: Number(tr.teamId),
+          team: tr.team,
+          categoryEdition: tr.categoryEdition,
+          teamRegs: [],
+        });
+      }
+      groupsMap.get(key)!.teamRegs.push(tr);
+    }
+
+    const allGroups = Array.from(groupsMap.values());
+    const total = allGroups.length;
+    const pagedGroups = allGroups.slice((page - 1) * limit, page * limit);
+
+    if (pagedGroups.length === 0) {
+      return { data: [], total, page, limit, totalPages: Math.ceil(total / limit) || 1 };
+    }
+
+    const relevantTeamRegIds = pagedGroups.flatMap((g) => g.teamRegs.map((tr) => Number(tr.id)));
+    const relevantEditionIds = Array.from(new Set(pagedGroups.map((g) => g.categoryEditionId)));
+
+    // Consultar todos los jugadores inscritos en estos teamRegistrations
+    const playerRegs = relevantTeamRegIds.length
+      ? await this.repo
+          .createQueryBuilder('pr')
+          .leftJoinAndSelect('pr.player', 'player')
+          .leftJoinAndSelect('player.demarcation', 'demarcation')
+          .leftJoinAndSelect('pr.playerClassification', 'playerClassification')
+          .where('pr.teamRegistrationId IN (:...trIds)', { trIds: relevantTeamRegIds })
+          .andWhere('pr.status != :finalizedStatus', {
+            finalizedStatus: PlayerRegistrationStatus.FINALIZED_BY_TRANSFER,
+          })
+          .orderBy('pr.jerseyNumber', 'ASC')
+          .getMany()
+      : [];
+
+    // Consultar detalles de categorías de las ediciones involucradas (cupos y clasificaciones permitidas)
+    const editionDetails = relevantEditionIds.length
+      ? await this.editionCategoryDetailRepo
+          .createQueryBuilder('ecd')
+          .leftJoinAndSelect('ecd.category', 'category')
+          .leftJoinAndSelect('ecd.classifications', 'classifications')
+          .leftJoinAndSelect('classifications.playerClassification', 'playerClassification')
+          .where('ecd.editionId IN (:...edIds)', { edIds: relevantEditionIds })
+          .getMany()
+      : [];
+
+    const data = pagedGroups.map((grp) => {
+      const edDetailsForEdition = editionDetails.filter(
+        (ed) => Number(ed.editionId) === Number(grp.categoryEditionId),
+      );
+      const firstDetail = edDetailsForEdition[0] || null;
+
+      const categories = grp.teamRegs.map((tr) => {
+        const matchedDetail =
+          (tr.categoryId
+            ? edDetailsForEdition.find((ed) => Number(ed.categoryId) === Number(tr.categoryId))
+            : null) || firstDetail;
+
+        const categoryId = Number(tr.categoryId || matchedDetail?.categoryId || 0);
+        const categoryName =
+          tr.category?.name ||
+          matchedDetail?.categoryDescription ||
+          matchedDetail?.category?.name ||
+          'Categoría';
+        const categoryAcronyms =
+          tr.category?.acronyms || matchedDetail?.category?.acronyms || '';
+        const gender = tr.category?.gender || matchedDetail?.category?.gender || 'MALE';
+        const maxPlayers = Number(matchedDetail?.maxPlayers) || 25;
+
+        const allowedClassifications = (matchedDetail?.classifications || []).map((c) => ({
+          playerClassificationId: Number(c.playerClassificationId),
+          description: c.playerClassification?.description || 'Clasificación',
+          code: c.playerClassification?.code || '',
+          maxPlayers: Number(c.maxPlayers) || 0,
+          maxInactivityMonths: c.maxInactivityMonths ?? null,
+          maxMonths: c.maxMonths ?? null,
+        }));
+
+        const playersForCat = playerRegs
+          .filter((pr) => Number(pr.teamRegistrationId) === Number(tr.id))
+          .map((pr) => ({
+            id: pr.id,
+            teamRegistrationId: pr.teamRegistrationId,
+            playerId: pr.playerId,
+            playerName: `${pr.player?.name || ''} ${pr.player?.lastName || ''}`.trim(),
+            firstName: pr.player?.name || '',
+            lastName: pr.player?.lastName || '',
+            identification: pr.player?.identification || '',
+            photo: pr.player?.photo || '',
+            demarcationName: pr.player?.demarcation?.name || '',
+            carnetCode: pr.player?.code || pr.carnetCode || '',
+            playerClassificationId: pr.playerClassificationId || pr.player?.playerClassificationId || null,
+            playerClassificationName: pr.playerClassification?.description || '',
+            jerseyNumber: pr.jerseyNumber,
+            isCaptain: Boolean(pr.isCaptain),
+            status: pr.status,
+          }));
+
+        return {
+          teamRegistrationId: Number(tr.id),
+          categoryId,
+          categoryName,
+          categoryAcronyms,
+          gender,
+          maxPlayers,
+          registrationStatus: tr.status,
+          paymentStatus: tr.paymentStatus,
+          allowedClassifications,
+          playersCount: playersForCat.length,
+          players: playersForCat,
+        };
+      });
+
+      const allPlayers = categories.flatMap((c) =>
+        c.players.map((p) => ({
+          ...p,
+          categoryId: c.categoryId,
+          categoryName: c.categoryName,
+        })),
+      );
+
+      return {
+        id: `${grp.categoryEditionId}_${grp.teamId}`,
+        categoryEditionId: grp.categoryEditionId,
+        teamId: grp.teamId,
+        team: {
+          id: grp.team?.id || grp.teamId,
+          name: grp.team?.name || `Equipo #${grp.teamId}`,
+          shortName: grp.team?.shortName || '',
+          acronyms: grp.team?.acronyms || '',
+          logo: grp.team?.logo || '',
+          color1: grp.team?.color1 || '',
+          color2: grp.team?.color2 || '',
+        },
+        categoryEdition: {
+          id: grp.categoryEdition?.id || grp.categoryEditionId,
+          name: grp.categoryEdition?.name || `Edición #${grp.categoryEditionId}`,
+        },
+        categoriesCount: categories.length,
+        playersCount: allPlayers.length,
+        categories,
+        players: allPlayers,
+      };
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
+  }
+
+  /**
+   * Sincroniza la plantilla de jugadores por cada categoría permitida de un equipo en una edición
+   */
+  async syncTeamEditionRoster(dto: SyncTeamEditionRosterDto, user: any, companyId: number) {
+    const editionId = Number(dto.categoryEditionId);
+    const teamId = Number(dto.teamId);
+
+    // Verificar todas las categorías enviadas
+    const trIds = (dto.categories || []).map((c) => Number(c.teamRegistrationId)).filter(Boolean);
+    if (trIds.length === 0) {
+      throw new BadRequestException('El equipo no tiene categorías válidas para sincronizar su plantilla.');
+    }
+
+    const teamRegs = await this.teamRegistrationRepo.find({
+      where: trIds.map((id) => ({ id, companyId })),
+      relations: ['team', 'category', 'categoryEdition'],
+    });
+
+    if (teamRegs.length === 0) {
+      throw new NotFoundException('No se encontraron las inscripciones de categoría para este equipo.');
+    }
+
+    // Obtener detalles de categorías de la edición para validar cupos por categoría y clasificaciones
+    const editionDetails = await this.editionCategoryDetailRepo.find({
+      where: { editionId },
+      relations: ['classifications', 'classifications.playerClassification'],
+    });
+
+    // Determinar estado inicial si hay configuración de torneo
+    let defaultInitialStatus = PlayerRegistrationStatus.ELIGIBLE;
+    const config = await this.transferConfigRepo.findOne({ where: { editionId } });
+    if (config?.inscriptionsRequireApproval) {
+      defaultInitialStatus = PlayerRegistrationStatus.PENDING_APPROVAL;
+    }
+
+    // Recolectar todos los playerIds para cargar sus códigos de ficha oficial
+    const allIncomingPlayerIds = Array.from(
+      new Set(
+        (dto.categories || []).flatMap((cg) =>
+          (cg.players || []).map((p) => Number(p.playerId)).filter(Boolean),
+        ),
+      ),
+    );
+
+    for (const pId of allIncomingPlayerIds) {
+      await assertPlayerInCompany(this.repo.manager, pId, companyId);
+    }
+
+    const playerEntities = allIncomingPlayerIds.length
+      ? await this.playerRepo.find({
+          where: allIncomingPlayerIds.map((id) => ({ id })),
+          relations: ['demarcation'],
+        })
+      : [];
+    const playerById = new Map(playerEntities.map((p) => [Number(p.id), p]));
+
+    const userId = user?.user_id?.toString() || user?.id?.toString();
+    const userName = user?.user_name || user?.name;
+
+    // Validar reglas por cada categoría antes de persistir
+    for (const catGroup of dto.categories || []) {
+      const trId = Number(catGroup.teamRegistrationId);
+      const tr = teamRegs.find((r) => Number(r.id) === trId);
+      if (!tr) continue;
+
+      const catDetail =
+        (tr.categoryId
+          ? editionDetails.find((ed) => Number(ed.categoryId) === Number(tr.categoryId))
+          : null) || editionDetails[0];
+      const catLabel = tr.category?.name || catDetail?.categoryDescription || 'Categoría';
+      const maxPlayers = Number(catDetail?.maxPlayers) || 25;
+
+      const incomingPlayers = (catGroup.players || []).filter((p) => Boolean(p.playerId));
+      if (incomingPlayers.length > maxPlayers) {
+        throw new BadRequestException(
+          `La categoría "${catLabel}" permite un máximo de ${maxPlayers} jugadores inscritos (intentaste registrar ${incomingPlayers.length}).`,
+        );
+      }
+
+      const seenPlayersInCat = new Set<number>();
+      const seenJerseysInCat = new Set<number>();
+      const classCounts = new Map<number, number>();
+
+      for (const p of incomingPlayers) {
+        const pId = Number(p.playerId);
+        const jersey = Number(p.jerseyNumber);
+        if (!jersey || jersey <= 0) {
+          const pl = playerById.get(pId);
+          throw new BadRequestException(
+            `Debe asignar un número de dorsal válido al jugador "${pl ? pl.name + ' ' + pl.lastName : '#' + pId}" en la categoría "${catLabel}".`,
+          );
+        }
+        if (seenPlayersInCat.has(pId)) {
+          const pl = playerById.get(pId);
+          throw new BadRequestException(
+            `El jugador "${pl ? pl.name + ' ' + pl.lastName : '#' + pId}" está repetido en la categoría "${catLabel}".`,
+          );
+        }
+        seenPlayersInCat.add(pId);
+
+        if (seenJerseysInCat.has(jersey)) {
+          throw new BadRequestException(
+            `El número de dorsal #${jersey} está repetido en la categoría "${catLabel}".`,
+          );
+        }
+        seenJerseysInCat.add(jersey);
+
+        if (p.playerClassificationId) {
+          const cId = Number(p.playerClassificationId);
+          classCounts.set(cId, (classCounts.get(cId) || 0) + 1);
+        } else if (catDetail?.classifications && catDetail.classifications.length > 0) {
+          const pl = playerById.get(pId);
+          throw new BadRequestException(
+            `Debe seleccionar la clasificación para el jugador "${pl ? pl.name + ' ' + pl.lastName : '#' + pId}" en la categoría "${catLabel}".`,
+          );
+        }
+      }
+
+      // Validar cupos por clasificación si la categoría tiene clasificaciones configuradas
+      if (catDetail?.classifications && catDetail.classifications.length > 0) {
+        for (const [cId, count] of classCounts.entries()) {
+          const cfg = catDetail.classifications.find((c) => Number(c.playerClassificationId) === cId);
+          if (cfg && cfg.maxPlayers > 0 && count > cfg.maxPlayers) {
+            const desc = cfg.playerClassification?.description || 'Clasificación';
+            throw new BadRequestException(
+              `Cupo excedido para "${desc}" en la categoría "${catLabel}": máximo permitido ${cfg.maxPlayers}, seleccionados ${count}.`,
+            );
+          }
+        }
+      }
+    }
+
+    // Persistir cambios por categoría
+    let totalSaved = 0;
+    for (const catGroup of dto.categories || []) {
+      const trId = Number(catGroup.teamRegistrationId);
+      const existingRegs = await this.repo.find({
+        where: { teamRegistrationId: trId },
+      });
+
+      const existingByPlayerId = new Map<number, PlayerRegistrationOrmEntity>();
+      for (const ex of existingRegs) {
+        existingByPlayerId.set(Number(ex.playerId), ex);
+      }
+
+      const incomingPlayers = (catGroup.players || []).filter((p) => Boolean(p.playerId));
+      const incomingPlayerIdsSet = new Set(incomingPlayers.map((p) => Number(p.playerId)));
+
+      // Eliminar los que fueron quitados de la tabla
+      const toRemove = existingRegs.filter(
+        (ex) =>
+          !incomingPlayerIdsSet.has(Number(ex.playerId)) &&
+          ex.status !== PlayerRegistrationStatus.FINALIZED_BY_TRANSFER,
+      );
+      if (toRemove.length > 0) {
+        await this.repo.remove(toRemove);
+      }
+
+      for (const inc of incomingPlayers) {
+        const pId = Number(inc.playerId);
+        const plEntity = playerById.get(pId);
+        const officialCode = plEntity?.code || inc.carnetCode || `JUG-${String(pId).padStart(5, '0')}`;
+        const prev = existingByPlayerId.get(pId);
+
+        if (prev) {
+          prev.jerseyNumber = Number(inc.jerseyNumber);
+          prev.carnetCode = officialCode;
+          prev.playerClassificationId = inc.playerClassificationId
+            ? Number(inc.playerClassificationId)
+            : (plEntity?.playerClassificationId ?? null);
+          prev.isCaptain = Boolean(inc.isCaptain);
+          prev.updatedBy = userId;
+          prev.updateName = userName;
+          await this.repo.save(prev);
+          totalSaved++;
+        } else {
+          const created = await this.repo.save(
+            this.repo.create({
+              companyId,
+              teamRegistrationId: trId,
+              playerId: pId,
+              jerseyNumber: Number(inc.jerseyNumber),
+              carnetCode: officialCode,
+              playerClassificationId: inc.playerClassificationId
+                ? Number(inc.playerClassificationId)
+                : (plEntity?.playerClassificationId ?? null),
+              isCaptain: Boolean(inc.isCaptain),
+              status: defaultInitialStatus,
+              createdBy: userId,
+              createdName: userName,
+            }),
+          );
+          totalSaved++;
+
+          await this.historyRepo.save({
+            playerRegistrationId: created.id,
+            playerId: created.playerId,
+            action: PlayerRegistrationHistoryAction.CREATED,
+            newStatus: created.status,
+            performedById: resolveUserId(user),
+            performedByName: userName,
+            comments: 'Inscripción registrada desde Configuración de Plantilla por Categoría',
+            metadata: { jerseyNumber: created.jerseyNumber, teamRegistrationId: trId },
+          });
+        }
+      }
+    }
+
+    return {
+      categoryEditionId: editionId,
+      teamId,
+      totalSaved,
+      message: 'Plantilla y carnets del equipo guardados exitosamente.',
+    };
+  }
+
   async get(id: string | number, companyId: number, write = false) {
     const item = await this.repo.findOne({
       where: { id: Number(id) },
@@ -322,8 +750,12 @@ export class PlayerRegistrationsService {
       }
     }
 
+    const playerEntity = await this.playerRepo.findOne({ where: { id: Number(dto.playerId) } });
+    const officialCarnetCode = playerEntity?.code || dto.carnetCode || undefined;
+
     const item = this.repo.create({
       ...dto,
+      carnetCode: officialCarnetCode,
       status: initialStatus,
       registrationDate: dto.registrationDate ? new Date(dto.registrationDate) : undefined,
       companyId,

@@ -266,9 +266,11 @@ export class TeamRegistrationsService {
     const editionId = Number(dto.categoryEditionId);
     await assertBelongsToCompany(this.editionRepo, editionId, companyId, 'Edición de torneo no encontrada');
 
-    // Validar que un mismo equipo no esté repetido en múltiples categorías de la misma edición
-    const seenTeams = new Set<number>();
+    // Validar que un mismo equipo no esté repetido dentro de la MISMA categoría
+    // (Sí puede participar en múltiples categorías de la misma edición, ej. Máxima Varones y Primera Mujeres)
+    const seenCategoryTeams = new Set<string>();
     const incomingItems: Array<{
+      id?: number;
       categoryId: number;
       teamId: number;
       groupName?: string;
@@ -279,15 +281,19 @@ export class TeamRegistrationsService {
 
     for (const catGroup of dto.categories || []) {
       const catId = Number(catGroup.categoryId);
+      const seenInThisCat = new Set<number>();
       for (const tm of catGroup.teams || []) {
         const tId = Number(tm.teamId);
         if (!tId) continue;
-        if (seenTeams.has(tId)) {
-          throw new BadRequestException('Un mismo equipo no puede estar inscrito más de una vez en la misma edición del torneo.');
+        if (seenInThisCat.has(tId)) {
+          throw new BadRequestException('Un mismo equipo no puede estar inscrito dos veces en la misma categoría.');
         }
-        seenTeams.add(tId);
+        seenInThisCat.add(tId);
+        const key = `${catId}_${tId}`;
+        seenCategoryTeams.add(key);
         await assertBelongsToCompany(this.teamRepo, tId, companyId, 'Equipo no encontrado');
         incomingItems.push({
+          id: tm.id ? Number(tm.id) : undefined,
           categoryId: catId,
           teamId: tId,
           groupName: tm.groupName?.trim() || undefined,
@@ -303,24 +309,33 @@ export class TeamRegistrationsService {
       where: { categoryEditionId: editionId, companyId },
     });
 
-    const existingByTeamId = new Map<number, TeamRegistrationOrmEntity>();
+    const existingById = new Map<number, TeamRegistrationOrmEntity>();
+    const existingByCatAndTeam = new Map<string, TeamRegistrationOrmEntity>();
     for (const ex of existing) {
-      existingByTeamId.set(Number(ex.teamId), ex);
+      existingById.set(Number(ex.id), ex);
+      if (ex.categoryId) {
+        existingByCatAndTeam.set(`${Number(ex.categoryId)}_${Number(ex.teamId)}`, ex);
+      }
     }
 
-    // Eliminar equipos que fueron quitados de la edición
-    const toRemove = existing.filter((ex) => !seenTeams.has(Number(ex.teamId)));
-    if (toRemove.length > 0) {
-      await this.repo.remove(toRemove);
-    }
-
+    const keptIds = new Set<number>();
     const savedResults: TeamRegistrationOrmEntity[] = [];
     const userId = user?.user_id?.toString() || user?.id?.toString();
     const userName = user?.user_name || user?.name;
 
     for (const inc of incomingItems) {
-      const prev = existingByTeamId.get(inc.teamId);
+      const compositeKey = `${inc.categoryId}_${inc.teamId}`;
+      let prev =
+        (inc.id ? existingById.get(Number(inc.id)) : undefined) ||
+        existingByCatAndTeam.get(compositeKey) ||
+        existing.find((ex) => !ex.categoryId && Number(ex.teamId) === inc.teamId && !keptIds.has(Number(ex.id)));
+
+      if (prev && keptIds.has(Number(prev.id))) {
+        prev = undefined;
+      }
+
       if (prev) {
+        keptIds.add(Number(prev.id));
         const categoryChanged = Number(prev.categoryId) !== Number(inc.categoryId);
         prev.categoryId = inc.categoryId;
         prev.groupName = inc.groupName ?? null;
@@ -349,9 +364,16 @@ export class TeamRegistrationsService {
             createdName: userName,
           }),
         );
+        keptIds.add(Number(created.id));
         savedResults.push(created);
         await this.syncTeamCategoryHistory(inc.teamId, editionId, user, companyId, inc.categoryId);
       }
+    }
+
+    // Eliminar inscripciones que fueron quitadas de la edición
+    const toRemove = existing.filter((ex) => !keptIds.has(Number(ex.id)));
+    if (toRemove.length > 0) {
+      await this.repo.remove(toRemove);
     }
 
     return {

@@ -163,3 +163,64 @@ export class UpdatePlayerRegistrationStatusDto {
   @IsString()
   comments?: string;
 }
+
+export class SyncTeamCategoryPlayerItemDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  id?: number;
+
+  @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
+  @Type(() => Number)
+  @IsNumber()
+  playerId: number;
+
+  @IsNotEmpty({ message: 'El número de camiseta es obligatorio' })
+  @Type(() => Number)
+  @IsInt()
+  jerseyNumber: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  carnetCode?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  playerClassificationId?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isCaptain?: boolean;
+}
+
+export class SyncTeamCategoryRosterGroupDto {
+  @IsNotEmpty({ message: 'El ID de la inscripción de equipo en la categoría es obligatorio' })
+  @Type(() => Number)
+  @IsNumber()
+  teamRegistrationId: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SyncTeamCategoryPlayerItemDto)
+  players: SyncTeamCategoryPlayerItemDto[];
+}
+
+export class SyncTeamEditionRosterDto {
+  @IsNotEmpty({ message: 'El ID de la edición del torneo es obligatorio' })
+  @Type(() => Number)
+  @IsNumber()
+  categoryEditionId: number;
+
+  @IsNotEmpty({ message: 'El ID del equipo es obligatorio' })
+  @Type(() => Number)
+  @IsNumber()
+  teamId: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SyncTeamCategoryRosterGroupDto)
+  categories: SyncTeamCategoryRosterGroupDto[];
+}
+
