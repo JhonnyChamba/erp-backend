@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { EditionScenaryOrmEntity } from '../../infrastructure/persistence/edition-scenary.orm-entity';
 import { ScenaryOrmEntity } from '../../infrastructure/persistence/scenary.orm-entity';
 import { CategoryOrmEntity } from '../../infrastructure/persistence/category.orm-entity';
@@ -9,7 +9,11 @@ import { CategoryEditionOrmEntity } from '../../infrastructure/persistence/categ
 import { EditionCategoryDetailOrmEntity } from '../../infrastructure/persistence/edition-category-detail.orm-entity';
 import { EditionCategoryClassificationOrmEntity } from '../../infrastructure/persistence/edition-category-classification.orm-entity';
 import { CreateCategoryEditionDto, UpdateCategoryEditionDto } from './dto/category-edition.dto';
-import { EditionStatus } from '../../common/enum/campeonato.enum';
+import { StageOrmEntity } from '../../infrastructure/persistence/stage.orm-entity';
+import { CompetitionTypeOrmEntity } from '../../infrastructure/persistence/competition-type.orm-entity';
+import { CompetitionLapOrmEntity } from '../../infrastructure/persistence/competition-lap.orm-entity';
+import { MatchOrmEntity } from '../../infrastructure/persistence/match.orm-entity';
+import { EditionStatus, StageFormat, StageStatus, TeamOrigin } from '../../common/enum/campeonato.enum';
 
 @Injectable()
 export class CategoryEditionsService {
@@ -24,7 +28,112 @@ export class CategoryEditionsService {
     private readonly editionScenaryRepo: Repository<EditionScenaryOrmEntity>,
     @InjectRepository(ScenaryOrmEntity)
     private readonly scenaryRepo: Repository<ScenaryOrmEntity>,
+    @InjectRepository(StageOrmEntity)
+    private readonly stageRepo: Repository<StageOrmEntity>,
+    @InjectRepository(CompetitionTypeOrmEntity)
+    private readonly competitionTypeRepo: Repository<CompetitionTypeOrmEntity>,
+    @InjectRepository(CompetitionLapOrmEntity)
+    private readonly competitionLapRepo: Repository<CompetitionLapOrmEntity>,
+    @InjectRepository(MatchOrmEntity)
+    private readonly matchRepo: Repository<MatchOrmEntity>,
   ) {}
+
+  /**
+   * Genera (o ajusta) las etapas reales de la edición a partir de las etapas configuradas en cada categoría.
+   * Las etapas nuevas nacen PENDIENTES. Una etapa ya iniciada no se modifica, y de las que dejaron de estar configuradas
+   * solo se eliminan las pendientes que no tienen partidos.
+   */
+  async syncStages(editionId: number, user: any) {
+    const details = await this.detailRepo.find({ where: { editionId } });
+    const typeIds = new Set<number>();
+    const lapIds = new Set<number>();
+    for (const detail of details) {
+      for (const stage of detail.stages ?? []) {
+        if (stage.competitionTypeId) typeIds.add(Number(stage.competitionTypeId));
+        if (stage.competitionLapId) lapIds.add(Number(stage.competitionLapId));
+      }
+    }
+    const types = typeIds.size ? await this.competitionTypeRepo.find({ where: { id: In([...typeIds]) } }) : [];
+    const laps = lapIds.size ? await this.competitionLapRepo.find({ where: { id: In([...lapIds]) } }) : [];
+    const existing = await this.stageRepo.find({ where: { categoryEditionId: editionId } });
+    const kept = new Set<number>();
+    const actor = { createdBy: user?.user_id?.toString() || user?.id?.toString(), createdName: user?.user_name || user?.name };
+
+    for (const detail of details) {
+      const configured = [...(detail.stages ?? [])].sort((a, b) => (Number(a.stageOrder) || 0) - (Number(b.stageOrder) || 0));
+      let previousStageId: number | undefined;
+
+      for (let index = 0; index < configured.length; index++) {
+        const config = configured[index];
+        const stageOrder = Number(config.stageOrder) || index + 1;
+        const type = types.find((item) => Number(item.id) === Number(config.competitionTypeId));
+        const lap = laps.find((item) => Number(item.id) === Number(config.competitionLapId));
+        const values = {
+          name: String(config.name || `Etapa ${stageOrder}`).trim(),
+          stageOrder,
+          categoryId: Number(detail.categoryId),
+          competitionTypeCode: type?.code ?? null,
+          format: type?.code === 'PLAY_OFF' ? StageFormat.DIRECT_ELIMINATION : StageFormat.EVERYONE_AGAINST_EVERYONE,
+          numberOfLaps: Number(lap?.numberOfLaps) > 0 ? Number(lap.numberOfLaps) : 1,
+          teamOrigin: index === 0 ? TeamOrigin.FULL_CATEGORY : TeamOrigin.PREVIOUS_STAGE,
+          previousStageId: previousStageId ?? null,
+          fromEdition: true,
+        };
+
+        const current = existing.find((stage) => Number(stage.categoryId) === Number(detail.categoryId) && Number(stage.stageOrder) === stageOrder);
+        let saved: StageOrmEntity;
+        if (current) {
+          saved = current.status === StageStatus.PENDING ? await this.stageRepo.save(Object.assign(current, values, { updatedBy: actor.createdBy, updateName: actor.createdName })) : current;
+        } else {
+          saved = await this.stageRepo.save(this.stageRepo.create({ ...values, categoryEditionId: editionId, companyId: detail.companyId, status: StageStatus.PENDING, ...actor } as Partial<StageOrmEntity>));
+        }
+        kept.add(saved.id);
+        previousStageId = saved.id;
+      }
+    }
+
+    for (const stage of existing.filter((item) => item.fromEdition && !kept.has(item.id) && item.status === StageStatus.PENDING)) {
+      if ((await this.matchRepo.count({ where: { stageId: stage.id } })) === 0) await this.stageRepo.remove(stage);
+    }
+  }
+
+  /**
+   * Inicia el campeonato de una categoría de la edición (una sola vez por categoría): su primera etapa pasa a EN PROCESO.
+   * La edición queda EN CURSO desde que se inicia su primera categoría.
+   */
+  async start(id: string | number, categoryId: string | number, user: any, companyId: number) {
+    const edition = await this.get(Number(id), companyId, true);
+    if (edition.status === EditionStatus.COMPLETED || edition.status === EditionStatus.CANCELLED) {
+      throw new BadRequestException('No se puede iniciar el campeonato de una edición finalizada o cancelada.');
+    }
+
+    const detail = (edition.categoriesDetail ?? []).find((item) => Number(item.categoryId) === Number(categoryId));
+    if (!detail) {
+      throw new BadRequestException('La categoría no pertenece a esta edición de torneo.');
+    }
+    if (detail.startedAt) {
+      throw new BadRequestException('El campeonato de esta categoría ya fue iniciado; solo se puede iniciar una vez.');
+    }
+
+    await this.syncStages(edition.id, user);
+    const stages = await this.stageRepo.find({ where: { categoryEditionId: edition.id, categoryId: detail.categoryId, fromEdition: true }, order: { stageOrder: 'ASC' } });
+    if (stages.length === 0) {
+      throw new BadRequestException('La categoría no tiene etapas configuradas. Agrega sus etapas en la edición antes de iniciar el campeonato.');
+    }
+
+    const now = new Date();
+    const actor = { updatedBy: user?.user_id?.toString() || user?.id?.toString(), updateName: user?.user_name || user?.name };
+    await this.repo.manager.transaction(async (manager) => {
+      // Condicionado a que siga sin iniciarse: dos clics seguidos no inician dos veces
+      const started = await manager.getRepository(EditionCategoryDetailOrmEntity).update({ id: detail.id, startedAt: IsNull() }, { startedAt: now, startedName: actor.updateName, ...actor });
+      if (!started.affected) throw new BadRequestException('El campeonato de esta categoría ya fue iniciado; solo se puede iniciar una vez.');
+
+      await manager.getRepository(StageOrmEntity).update(stages[0].id, { status: StageStatus.IN_PROGRESS, startedAt: now });
+      await manager.getRepository(CategoryEditionOrmEntity).update({ id: edition.id, startedAt: IsNull() }, { status: EditionStatus.IN_PROGRESS, startedAt: now, startedName: actor.updateName, ...actor });
+    });
+
+    return this.get(edition.id, companyId);
+  }
 
   /** Normaliza los ids de escenarios a enteros únicos y valida que pertenezcan a la empresa activa. */
   private async resolveScenaryIds(raw: unknown, companyId: number): Promise<number[]> {
@@ -119,7 +228,8 @@ export class CategoryEditionsService {
 
     const item = this.repo.create({
       ...editionData,
-      status: dto.status || EditionStatus.IN_PROGRESS,
+      // La edición nace pendiente: pasa a EN CURSO al iniciar el campeonato
+      status: EditionStatus.PENDING,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
       matchDurationMinutes: dto.matchDurationMinutes ? Number(dto.matchDurationMinutes) : 60,
@@ -143,6 +253,7 @@ export class CategoryEditionsService {
           startDate: det.startDate ? new Date(det.startDate) : undefined,
           endDate: det.endDate ? new Date(det.endDate) : undefined,
           registrationFee: det.registrationFee || 0,
+          guaranteeFee: det.guaranteeFee || 0,
           maxPlayers: Number(det.maxPlayers) > 0 ? Number(det.maxPlayers) : 25,
           matchDurationMinutes: det.matchDurationMinutes !== undefined && det.matchDurationMinutes !== null ? Number(det.matchDurationMinutes) : 60,
           breakDurationMinutes: det.breakDurationMinutes !== undefined && det.breakDurationMinutes !== null ? Number(det.breakDurationMinutes) : 10,
@@ -172,6 +283,9 @@ export class CategoryEditionsService {
       }
     }
 
+    // Todas las etapas configuradas se generan en estado pendiente
+    await this.syncStages(saved.id, user);
+
     return this.get(saved.id, companyId);
   }
 
@@ -185,6 +299,9 @@ export class CategoryEditionsService {
     }
     await this.assertCategories(dto, companyId);
     const scenaryIds = dto.availableScenaryIds !== undefined ? await this.resolveScenaryIds(dto.availableScenaryIds, companyId) : undefined;
+
+    // Una edición pendiente solo pasa a EN CURSO con la acción «Iniciar campeonato»
+    if (!item.startedAt && editionData.status === EditionStatus.IN_PROGRESS) delete editionData.status;
 
     Object.assign(item, editionData, {
       startDate: dto.startDate ? new Date(dto.startDate) : item.startDate,
@@ -219,11 +336,15 @@ export class CategoryEditionsService {
             startDate: det.startDate ? new Date(det.startDate) : undefined,
             endDate: det.endDate ? new Date(det.endDate) : undefined,
             registrationFee: det.registrationFee || 0,
+            guaranteeFee: det.guaranteeFee || 0,
             maxPlayers: Number(det.maxPlayers) > 0 ? Number(det.maxPlayers) : 25,
             matchDurationMinutes: det.matchDurationMinutes !== undefined && det.matchDurationMinutes !== null ? Number(det.matchDurationMinutes) : 60,
             breakDurationMinutes: det.breakDurationMinutes !== undefined && det.breakDurationMinutes !== null ? Number(det.breakDurationMinutes) : 10,
             waitBetweenMatchesMinutes: det.waitBetweenMatchesMinutes !== undefined && det.waitBetweenMatchesMinutes !== null ? Number(det.waitBetweenMatchesMinutes) : 10,
             stages: Array.isArray(det.stages) ? det.stages : [],
+            // El detalle se vuelve a crear en cada modificación: la categoría ya iniciada conserva su inicio
+            startedAt: oldDetails.find((od) => Number(od.categoryId) === Number(det.categoryId))?.startedAt ?? undefined,
+            startedName: oldDetails.find((od) => Number(od.categoryId) === Number(det.categoryId))?.startedName ?? undefined,
             companyId: item.companyId,
             createdBy: user?.user_id?.toString() || user?.id?.toString(),
             createdName: user?.user_name || user?.name,
@@ -247,6 +368,11 @@ export class CategoryEditionsService {
           }
         }
       }
+    }
+
+    // Las etapas pendientes siguen la configuración de cada categoría (las ya iniciadas no se modifican): con el inicio por categoría, una edición en curso todavía puede tener categorías sin iniciar
+    if (categoriesDetail !== undefined) {
+      await this.syncStages(numId, user);
     }
 
     return this.get(numId, companyId, true);

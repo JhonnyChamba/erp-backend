@@ -45,7 +45,8 @@ export class MatchOrmEntity {
   @JoinColumn({ name: 'away_team_id' })
   awayTeam: TeamOrmEntity;
 
-  @Column({ type: 'timestamp' })
+  // Nula mientras el partido no esté programado (el fixture no asigna días, horarios ni canchas)
+  @Column({ type: 'timestamp', nullable: true })
   date: Date;
 
   @Column({ name: 'round_number', type: 'int', nullable: true })

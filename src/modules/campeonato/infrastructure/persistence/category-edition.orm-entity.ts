@@ -39,6 +39,13 @@ export class CategoryEditionOrmEntity {
   @Column({ type: 'enum', enum: EditionStatus, default: EditionStatus.IN_PROGRESS })
   status: EditionStatus;
 
+  // Inicio de la primera categoría de la edición (el campeonato se inicia por categoría): mientras sea nulo la edición está pendiente de inicio
+  @Column({ name: 'started_at', type: 'timestamp', nullable: true })
+  startedAt: Date;
+
+  @Column({ name: 'started_name', type: 'varchar', nullable: true })
+  startedName: string;
+
   @Column({ name: 'min_players_per_team', type: 'int', default: 7 })
   minPlayersPerTeam: number;
 

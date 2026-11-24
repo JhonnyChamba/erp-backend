@@ -17,6 +17,12 @@ export class CreatePlayerTransferDto {
   @IsNumber()
   editionId: number;
 
+  // Categoría de la edición. Si no se envía, se toma la de la inscripción vigente del jugador.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  categoryId?: number;
+
   @IsNotEmpty({ message: 'El ID del jugador es obligatorio' })
   @Type(() => Number)
   @IsNumber()
@@ -98,6 +104,9 @@ export class ApproveTransferDto {
 export class FilterTransferQueryDto {
   @IsOptional()
   editionId?: number;
+
+  @IsOptional()
+  categoryId?: number;
 
   @IsOptional()
   status?: TransferStatus;

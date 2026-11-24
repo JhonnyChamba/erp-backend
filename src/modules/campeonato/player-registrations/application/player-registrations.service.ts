@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
 import { assertBelongsToCompany, assertPlayerInCompany, ensureCompanyScope, resolveUserId } from '../../common/company-scope.util';
 import { PlayerRegistrationOrmEntity } from '../../infrastructure/persistence/player-registration.orm-entity';
 import { PlayerOrmEntity } from '../../infrastructure/persistence/player.orm-entity';
@@ -9,6 +9,7 @@ import { StageOrmEntity } from '../../infrastructure/persistence/stage.orm-entit
 import { EditionCategoryDetailOrmEntity } from '../../infrastructure/persistence/edition-category-detail.orm-entity';
 import { TournamentTransferConfigOrmEntity } from '../../infrastructure/persistence/tournament-transfer-config.orm-entity';
 import { PlayerRegistrationHistoryOrmEntity } from '../../infrastructure/persistence/player-registration-history.orm-entity';
+import { DemarcationOrmEntity } from '../../infrastructure/persistence/demarcation.orm-entity';
 import { PlayerRegistrationStatus, PlayerRegistrationHistoryAction } from '../../common/enum/campeonato.enum';
 import {
   CreatePlayerRegistrationDto,
@@ -57,17 +58,21 @@ export class PlayerRegistrationsService {
     teamRegistrationId: string | number,
     currentRegistrationId?: string | number,
     runnerRepo?: Repository<PlayerRegistrationOrmEntity>,
+    demarcationId?: string | number | null,
   ) {
     if (!playerId || !teamRegistrationId) return;
 
-    const player = await this.playerRepo.findOne({
-      where: { id: Number(playerId) },
-      relations: ['demarcation'],
-    });
+    // La demarcación elegida en la inscripción manda; si no se eligió, se usa la del jugador
+    let targetDemarcationId = demarcationId ? Number(demarcationId) : null;
+    if (!targetDemarcationId) {
+      const player = await this.playerRepo.findOne({ where: { id: Number(playerId) } });
+      targetDemarcationId = player?.demarcationId ? Number(player.demarcationId) : null;
+    }
+    if (!targetDemarcationId) return;
 
-    if (!player || !player.demarcation) return;
+    const demarcation = await this.repo.manager.getRepository(DemarcationOrmEntity).findOne({ where: { id: targetDemarcationId } });
+    if (!demarcation) return;
 
-    const demarcation = player.demarcation;
     const maxAllowed = Number(demarcation.maxPlayers);
 
     if (!maxAllowed || maxAllowed <= 0) return;
@@ -78,7 +83,8 @@ export class PlayerRegistrationsService {
       .leftJoin('pr.player', 'p')
       .where('pr.teamRegistrationId = :teamRegistrationId', { teamRegistrationId })
       .andWhere('pr.status != :finalizedStatus', { finalizedStatus: PlayerRegistrationStatus.FINALIZED_BY_TRANSFER })
-      .andWhere('p.demarcationId = :demarcationId', { demarcationId: demarcation.id });
+      // Demarcación efectiva: la de la inscripción o, en las inscripciones anteriores a esa columna, la del jugador
+      .andWhere('COALESCE(pr.demarcationId, p.demarcationId) = :demarcationId', { demarcationId: demarcation.id });
 
     if (currentRegistrationId) {
       qb.andWhere('pr.id != :currentRegistrationId', { currentRegistrationId });
@@ -243,7 +249,7 @@ export class PlayerRegistrationsService {
     }
   }
 
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string; teamRegistrationId?: string; status?: string }) {
+  async list(companyId: number, query: { page?: number; limit?: number; search?: string; teamRegistrationId?: string; status?: string; playerId?: string | number; categoryEditionId?: string | number; categoryId?: string | number }) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
@@ -265,6 +271,15 @@ export class PlayerRegistrationsService {
     }
     if (query.status) {
       qb.andWhere('pr.status = :status', { status: query.status });
+    }
+    if (query.playerId) {
+      qb.andWhere('pr.playerId = :playerId', { playerId: Number(query.playerId) });
+    }
+    if (query.categoryEditionId) {
+      qb.andWhere('teamRegistration.categoryEditionId = :categoryEditionId', { categoryEditionId: Number(query.categoryEditionId) });
+    }
+    if (query.categoryId) {
+      qb.andWhere('teamRegistration.categoryId = :categoryId', { categoryId: Number(query.categoryId) });
     }
     if (query.search?.trim()) {
       qb.andWhere(
@@ -360,6 +375,7 @@ export class PlayerRegistrationsService {
           .createQueryBuilder('pr')
           .leftJoinAndSelect('pr.player', 'player')
           .leftJoinAndSelect('player.demarcation', 'demarcation')
+          .leftJoinAndSelect('pr.demarcation', 'registrationDemarcation')
           .leftJoinAndSelect('pr.playerClassification', 'playerClassification')
           .where('pr.teamRegistrationId IN (:...trIds)', { trIds: relevantTeamRegIds })
           .andWhere('pr.status != :finalizedStatus', {
@@ -423,7 +439,8 @@ export class PlayerRegistrationsService {
             lastName: pr.player?.lastName || '',
             identification: pr.player?.identification || '',
             photo: pr.player?.photo || '',
-            demarcationName: pr.player?.demarcation?.name || '',
+            demarcationId: pr.demarcationId ?? pr.player?.demarcationId ?? null,
+            demarcationName: pr.demarcation?.name || pr.player?.demarcation?.name || '',
             carnetCode: pr.player?.code || pr.carnetCode || '',
             playerClassificationId: pr.playerClassificationId || pr.player?.playerClassificationId || null,
             playerClassificationName: pr.playerClassification?.description || '',
@@ -495,10 +512,13 @@ export class PlayerRegistrationsService {
     const editionId = Number(dto.categoryEditionId);
     const teamId = Number(dto.teamId);
 
-    // Verificar todas las categorías enviadas
-    const trIds = (dto.categories || []).map((c) => Number(c.teamRegistrationId)).filter(Boolean);
+    const groups = dto.categories || [];
+    const trIds = groups.map((c) => Number(c.teamRegistrationId)).filter(Boolean);
     if (trIds.length === 0) {
       throw new BadRequestException('El equipo no tiene categorías válidas para sincronizar su plantilla.');
+    }
+    if (new Set(trIds).size !== trIds.length) {
+      throw new BadRequestException('Una misma categoría viene repetida en la plantilla.');
     }
 
     const teamRegs = await this.teamRegistrationRepo.find({
@@ -508,6 +528,16 @@ export class PlayerRegistrationsService {
 
     if (teamRegs.length === 0) {
       throw new NotFoundException('No se encontraron las inscripciones de categoría para este equipo.');
+    }
+
+    // Cada inscripción enviada debe ser de la empresa activa y del equipo y la edición indicados:
+    // fuera de ellas no se lee, no se escribe y no se borra nada.
+    for (const trId of trIds) {
+      const tr = teamRegs.find((r) => Number(r.id) === trId);
+      if (!tr) throw new NotFoundException(`Inscripción de equipo no encontrada (#${trId}).`);
+      if (Number(tr.teamId) !== teamId || Number(tr.categoryEditionId) !== editionId) {
+        throw new BadRequestException(`La inscripción #${trId} no pertenece al equipo y la edición indicados.`);
+      }
     }
 
     // Obtener detalles de categorías de la edición para validar cupos por categoría y clasificaciones
@@ -524,13 +554,7 @@ export class PlayerRegistrationsService {
     }
 
     // Recolectar todos los playerIds para cargar sus códigos de ficha oficial
-    const allIncomingPlayerIds = Array.from(
-      new Set(
-        (dto.categories || []).flatMap((cg) =>
-          (cg.players || []).map((p) => Number(p.playerId)).filter(Boolean),
-        ),
-      ),
-    );
+    const allIncomingPlayerIds = Array.from(new Set(groups.flatMap((cg) => (cg.players || []).map((p) => Number(p.playerId)).filter(Boolean))));
 
     for (const pId of allIncomingPlayerIds) {
       await assertPlayerInCompany(this.repo.manager, pId, companyId);
@@ -544,54 +568,87 @@ export class PlayerRegistrationsService {
       : [];
     const playerById = new Map(playerEntities.map((p) => [Number(p.id), p]));
 
+    // Demarcación efectiva de cada jugador entrante: la elegida en la plantilla o, si no, la del jugador
+    const effectiveDemarcationId = (p: { playerId: number; demarcationId?: number }): number | null => {
+      if (p.demarcationId) return Number(p.demarcationId);
+      const pl = playerById.get(Number(p.playerId));
+      return pl?.demarcationId ? Number(pl.demarcationId) : null;
+    };
+    const demarcationIds = Array.from(new Set(groups.flatMap((cg) => (cg.players || []).filter((p) => Boolean(p.playerId)).map((p) => effectiveDemarcationId(p)).filter((id): id is number => Boolean(id)))));
+    const demarcations = demarcationIds.length
+      ? await this.repo.manager.getRepository(DemarcationOrmEntity).find({
+          where: demarcationIds.flatMap((id) => [{ id, companyId }, { id, companyId: IsNull() }]),
+        })
+      : [];
+    const demarcationById = new Map(demarcations.map((d) => [Number(d.id), d]));
+
+    // Inscripciones de jugadores que ya existen en estas categorías (una sola consulta)
+    const existingAll = await this.repo.find({ where: trIds.map((id) => ({ teamRegistrationId: id })) });
+    const existingByTr = new Map<number, PlayerRegistrationOrmEntity[]>();
+    for (const ex of existingAll) {
+      existingByTr.set(Number(ex.teamRegistrationId), [...(existingByTr.get(Number(ex.teamRegistrationId)) ?? []), ex]);
+    }
+
+    // Plazo de inscripciones: solo bloquea agregar jugadores (o reincorporar a uno transferido); editar dorsales o clasificaciones de los ya inscritos sigue permitido
+    const addsPlayers = groups.some((cg) =>
+      (cg.players || [])
+        .filter((p) => Boolean(p.playerId))
+        .some((p) => {
+          const ex = (existingByTr.get(Number(cg.teamRegistrationId)) ?? []).find((e) => Number(e.playerId) === Number(p.playerId));
+          return !ex || ex.status === PlayerRegistrationStatus.FINALIZED_BY_TRANSFER;
+        }),
+    );
+    if (config && addsPlayers) {
+      if (!config.inscriptionsEnabled) {
+        throw new BadRequestException('El período de inscripciones se encuentra cerrado para este campeonato.');
+      }
+      const now = new Date();
+      if (config.inscriptionsStartDate && new Date(config.inscriptionsStartDate) > now) {
+        throw new BadRequestException(`Las inscripciones abrirán el ${new Date(config.inscriptionsStartDate).toLocaleDateString()}.`);
+      }
+      if (config.inscriptionsEndDate && new Date(config.inscriptionsEndDate) < now) {
+        throw new BadRequestException(`El plazo de inscripciones finalizó el ${new Date(config.inscriptionsEndDate).toLocaleDateString()}.`);
+      }
+    }
+
     const userId = user?.user_id?.toString() || user?.id?.toString();
     const userName = user?.user_name || user?.name;
 
     // Validar reglas por cada categoría antes de persistir
-    for (const catGroup of dto.categories || []) {
+    for (const catGroup of groups) {
       const trId = Number(catGroup.teamRegistrationId);
-      const tr = teamRegs.find((r) => Number(r.id) === trId);
-      if (!tr) continue;
+      const tr = teamRegs.find((r) => Number(r.id) === trId)!;
 
-      const catDetail =
-        (tr.categoryId
-          ? editionDetails.find((ed) => Number(ed.categoryId) === Number(tr.categoryId))
-          : null) || editionDetails[0];
+      const catDetail = (tr.categoryId ? editionDetails.find((ed) => Number(ed.categoryId) === Number(tr.categoryId)) : null) || editionDetails[0];
       const catLabel = tr.category?.name || catDetail?.categoryDescription || 'Categoría';
       const maxPlayers = Number(catDetail?.maxPlayers) || 25;
 
       const incomingPlayers = (catGroup.players || []).filter((p) => Boolean(p.playerId));
       if (incomingPlayers.length > maxPlayers) {
-        throw new BadRequestException(
-          `La categoría "${catLabel}" permite un máximo de ${maxPlayers} jugadores inscritos (intentaste registrar ${incomingPlayers.length}).`,
-        );
+        throw new BadRequestException(`La categoría "${catLabel}" permite un máximo de ${maxPlayers} jugadores inscritos (intentaste registrar ${incomingPlayers.length}).`);
       }
 
       const seenPlayersInCat = new Set<number>();
       const seenJerseysInCat = new Set<number>();
       const classCounts = new Map<number, number>();
+      const demarcationCounts = new Map<number, number>();
 
       for (const p of incomingPlayers) {
         const pId = Number(p.playerId);
         const jersey = Number(p.jerseyNumber);
+        const pl = playerById.get(pId);
+        const playerLabel = pl ? pl.name + ' ' + pl.lastName : '#' + pId;
+
         if (!jersey || jersey <= 0) {
-          const pl = playerById.get(pId);
-          throw new BadRequestException(
-            `Debe asignar un número de dorsal válido al jugador "${pl ? pl.name + ' ' + pl.lastName : '#' + pId}" en la categoría "${catLabel}".`,
-          );
+          throw new BadRequestException(`Debe asignar un número de dorsal válido al jugador "${playerLabel}" en la categoría "${catLabel}".`);
         }
         if (seenPlayersInCat.has(pId)) {
-          const pl = playerById.get(pId);
-          throw new BadRequestException(
-            `El jugador "${pl ? pl.name + ' ' + pl.lastName : '#' + pId}" está repetido en la categoría "${catLabel}".`,
-          );
+          throw new BadRequestException(`El jugador "${playerLabel}" está repetido en la categoría "${catLabel}".`);
         }
         seenPlayersInCat.add(pId);
 
         if (seenJerseysInCat.has(jersey)) {
-          throw new BadRequestException(
-            `El número de dorsal #${jersey} está repetido en la categoría "${catLabel}".`,
-          );
+          throw new BadRequestException(`El número de dorsal #${jersey} está repetido en la categoría "${catLabel}".`);
         }
         seenJerseysInCat.add(jersey);
 
@@ -599,11 +656,15 @@ export class PlayerRegistrationsService {
           const cId = Number(p.playerClassificationId);
           classCounts.set(cId, (classCounts.get(cId) || 0) + 1);
         } else if (catDetail?.classifications && catDetail.classifications.length > 0) {
-          const pl = playerById.get(pId);
-          throw new BadRequestException(
-            `Debe seleccionar la clasificación para el jugador "${pl ? pl.name + ' ' + pl.lastName : '#' + pId}" en la categoría "${catLabel}".`,
-          );
+          throw new BadRequestException(`Debe seleccionar la clasificación para el jugador "${playerLabel}" en la categoría "${catLabel}".`);
         }
+
+        // Demarcación / posición en campo: debe existir y cuenta para el límite de la demarcación
+        const demId = effectiveDemarcationId(p);
+        if (p.demarcationId && !demarcationById.has(Number(p.demarcationId))) {
+          throw new BadRequestException(`La demarcación elegida para el jugador "${playerLabel}" no existe.`);
+        }
+        if (demId) demarcationCounts.set(demId, (demarcationCounts.get(demId) || 0) + 1);
       }
 
       // Validar cupos por clasificación si la categoría tiene clasificaciones configuradas
@@ -612,88 +673,124 @@ export class PlayerRegistrationsService {
           const cfg = catDetail.classifications.find((c) => Number(c.playerClassificationId) === cId);
           if (cfg && cfg.maxPlayers > 0 && count > cfg.maxPlayers) {
             const desc = cfg.playerClassification?.description || 'Clasificación';
-            throw new BadRequestException(
-              `Cupo excedido para "${desc}" en la categoría "${catLabel}": máximo permitido ${cfg.maxPlayers}, seleccionados ${count}.`,
-            );
+            throw new BadRequestException(`Cupo excedido para "${desc}" en la categoría "${catLabel}": máximo permitido ${cfg.maxPlayers}, seleccionados ${count}.`);
           }
+        }
+      }
+
+      // Límite de jugadores por demarcación (el mismo que aplican la inscripción individual y la masiva)
+      for (const [demId, count] of demarcationCounts.entries()) {
+        const dem = demarcationById.get(demId);
+        const max = Number(dem?.maxPlayers);
+        if (dem && max > 0 && count > max) {
+          throw new BadRequestException(`Límite de inscripción excedido en la categoría "${catLabel}": la posición/demarcación "${dem.name}" permite un máximo de ${max} jugador(es) y seleccionaste ${count}.`);
         }
       }
     }
 
-    // Persistir cambios por categoría
+    // Persistir cambios de todas las categorías en una sola transacción: o se guarda toda la plantilla o nada
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     let totalSaved = 0;
-    for (const catGroup of dto.categories || []) {
-      const trId = Number(catGroup.teamRegistrationId);
-      const existingRegs = await this.repo.find({
-        where: { teamRegistrationId: trId },
-      });
+    try {
+      const runnerRepo = queryRunner.manager.getRepository(PlayerRegistrationOrmEntity);
+      const historyRunnerRepo = queryRunner.manager.getRepository(PlayerRegistrationHistoryOrmEntity);
 
-      const existingByPlayerId = new Map<number, PlayerRegistrationOrmEntity>();
-      for (const ex of existingRegs) {
-        existingByPlayerId.set(Number(ex.playerId), ex);
-      }
+      for (const catGroup of groups) {
+        const trId = Number(catGroup.teamRegistrationId);
+        const existingRegs = existingByTr.get(trId) ?? [];
 
-      const incomingPlayers = (catGroup.players || []).filter((p) => Boolean(p.playerId));
-      const incomingPlayerIdsSet = new Set(incomingPlayers.map((p) => Number(p.playerId)));
+        const existingByPlayerId = new Map<number, PlayerRegistrationOrmEntity>();
+        for (const ex of existingRegs) {
+          existingByPlayerId.set(Number(ex.playerId), ex);
+        }
 
-      // Eliminar los que fueron quitados de la tabla
-      const toRemove = existingRegs.filter(
-        (ex) =>
-          !incomingPlayerIdsSet.has(Number(ex.playerId)) &&
-          ex.status !== PlayerRegistrationStatus.FINALIZED_BY_TRANSFER,
-      );
-      if (toRemove.length > 0) {
-        await this.repo.remove(toRemove);
-      }
+        const incomingPlayers = (catGroup.players || []).filter((p) => Boolean(p.playerId));
+        const incomingPlayerIdsSet = new Set(incomingPlayers.map((p) => Number(p.playerId)));
 
-      for (const inc of incomingPlayers) {
-        const pId = Number(inc.playerId);
-        const plEntity = playerById.get(pId);
-        const officialCode = plEntity?.code || inc.carnetCode || `JUG-${String(pId).padStart(5, '0')}`;
-        const prev = existingByPlayerId.get(pId);
+        // Eliminar los que fueron quitados de la tabla
+        const toRemove = existingRegs.filter((ex) => !incomingPlayerIdsSet.has(Number(ex.playerId)) && ex.status !== PlayerRegistrationStatus.FINALIZED_BY_TRANSFER);
+        if (toRemove.length > 0) {
+          await runnerRepo.remove(toRemove);
+        }
 
-        if (prev) {
-          prev.jerseyNumber = Number(inc.jerseyNumber);
-          prev.carnetCode = officialCode;
-          prev.playerClassificationId = inc.playerClassificationId
-            ? Number(inc.playerClassificationId)
-            : (plEntity?.playerClassificationId ?? null);
-          prev.isCaptain = Boolean(inc.isCaptain);
-          prev.updatedBy = userId;
-          prev.updateName = userName;
-          await this.repo.save(prev);
-          totalSaved++;
-        } else {
-          const created = await this.repo.save(
-            this.repo.create({
-              companyId,
-              teamRegistrationId: trId,
-              playerId: pId,
-              jerseyNumber: Number(inc.jerseyNumber),
-              carnetCode: officialCode,
-              playerClassificationId: inc.playerClassificationId
-                ? Number(inc.playerClassificationId)
-                : (plEntity?.playerClassificationId ?? null),
-              isCaptain: Boolean(inc.isCaptain),
-              status: defaultInitialStatus,
-              createdBy: userId,
-              createdName: userName,
-            }),
-          );
-          totalSaved++;
+        for (const inc of incomingPlayers) {
+          const pId = Number(inc.playerId);
+          const plEntity = playerById.get(pId);
+          const officialCode = plEntity?.code || inc.carnetCode || `JUG-${String(pId).padStart(5, '0')}`;
+          const classificationId = inc.playerClassificationId ? Number(inc.playerClassificationId) : (plEntity?.playerClassificationId ?? null);
+          const demarcationId = effectiveDemarcationId(inc);
+          const prev = existingByPlayerId.get(pId);
 
-          await this.historyRepo.save({
-            playerRegistrationId: created.id,
-            playerId: created.playerId,
-            action: PlayerRegistrationHistoryAction.CREATED,
-            newStatus: created.status,
-            performedById: resolveUserId(user),
-            performedByName: userName,
-            comments: 'Inscripción registrada desde Configuración de Plantilla por Categoría',
-            metadata: { jerseyNumber: created.jerseyNumber, teamRegistrationId: trId },
-          });
+          if (prev) {
+            // Un jugador transferido que vuelve a este equipo se reincorpora (la inscripción es única por jugador y equipo)
+            const previousStatus = prev.status;
+            const reactivated = previousStatus === PlayerRegistrationStatus.FINALIZED_BY_TRANSFER;
+
+            prev.jerseyNumber = Number(inc.jerseyNumber);
+            prev.carnetCode = officialCode;
+            prev.playerClassificationId = classificationId;
+            prev.demarcationId = demarcationId;
+            prev.isCaptain = Boolean(inc.isCaptain);
+            if (reactivated) prev.status = defaultInitialStatus;
+            prev.updatedBy = userId;
+            prev.updateName = userName;
+            await runnerRepo.save(prev);
+            totalSaved++;
+
+            if (reactivated) {
+              await historyRunnerRepo.save({
+                playerRegistrationId: prev.id,
+                playerId: prev.playerId,
+                action: PlayerRegistrationHistoryAction.REACTIVATED,
+                previousStatus,
+                newStatus: prev.status,
+                performedById: resolveUserId(user),
+                performedByName: userName,
+                comments: 'Jugador reincorporado al equipo desde Configuración de Plantilla por Categoría',
+                metadata: { jerseyNumber: prev.jerseyNumber, teamRegistrationId: trId },
+              });
+            }
+          } else {
+            const created = await runnerRepo.save(
+              runnerRepo.create({
+                companyId,
+                teamRegistrationId: trId,
+                playerId: pId,
+                jerseyNumber: Number(inc.jerseyNumber),
+                carnetCode: officialCode,
+                playerClassificationId: classificationId,
+                demarcationId,
+                isCaptain: Boolean(inc.isCaptain),
+                status: defaultInitialStatus,
+                createdBy: userId,
+                createdName: userName,
+              }),
+            );
+            totalSaved++;
+
+            await historyRunnerRepo.save({
+              playerRegistrationId: created.id,
+              playerId: created.playerId,
+              action: PlayerRegistrationHistoryAction.CREATED,
+              newStatus: created.status,
+              performedById: resolveUserId(user),
+              performedByName: userName,
+              comments: 'Inscripción registrada desde Configuración de Plantilla por Categoría',
+              metadata: { jerseyNumber: created.jerseyNumber, teamRegistrationId: trId },
+            });
+          }
         }
       }
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
 
     return {
@@ -727,7 +824,7 @@ export class PlayerRegistrationsService {
     });
 
     if (dto.playerId && dto.teamRegistrationId) {
-      await this.validateDemarcationLimit(dto.playerId, dto.teamRegistrationId);
+      await this.validateDemarcationLimit(dto.playerId, dto.teamRegistrationId, undefined, undefined, dto.demarcationId);
       await this.validateDuplicateAndJersey(dto.playerId, dto.teamRegistrationId, dto.jerseyNumber);
       await this.validateStageAndClassificationLimits(
         dto.teamRegistrationId,
@@ -756,6 +853,8 @@ export class PlayerRegistrationsService {
     const item = this.repo.create({
       ...dto,
       carnetCode: officialCarnetCode,
+      // Sin demarcación elegida, queda la del jugador
+      demarcationId: dto.demarcationId ?? playerEntity?.demarcationId ?? undefined,
       status: initialStatus,
       registrationDate: dto.registrationDate ? new Date(dto.registrationDate) : undefined,
       companyId,
@@ -838,7 +937,7 @@ export class PlayerRegistrationsService {
       }
 
       for (const reg of dto.registrations) {
-        await this.validateDemarcationLimit(reg.playerId, dto.teamRegistrationId, undefined, runnerRepo);
+        await this.validateDemarcationLimit(reg.playerId, dto.teamRegistrationId, undefined, runnerRepo, reg.demarcationId);
         await this.validateDuplicateAndJersey(reg.playerId, dto.teamRegistrationId, reg.jerseyNumber, undefined, runnerRepo);
         await this.validateStageAndClassificationLimits(
           dto.teamRegistrationId,
@@ -855,6 +954,7 @@ export class PlayerRegistrationsService {
           jerseyNumber: reg.jerseyNumber,
           carnetCode: reg.carnetCode,
           playerClassificationId: reg.playerClassificationId,
+          demarcationId: reg.demarcationId,
           isCaptain: Boolean(reg.isCaptain),
           documents: reg.documents || [],
           status: initialStatus,
@@ -907,7 +1007,7 @@ export class PlayerRegistrationsService {
     const targetStageId = dto.stageId !== undefined ? dto.stageId : item.stageId;
 
     if (targetPlayerId && targetTeamRegId) {
-      await this.validateDemarcationLimit(targetPlayerId, targetTeamRegId, id);
+      await this.validateDemarcationLimit(targetPlayerId, targetTeamRegId, id, undefined, dto.demarcationId !== undefined ? dto.demarcationId : item.demarcationId);
       const targetJersey = dto.jerseyNumber !== undefined ? dto.jerseyNumber : item.jerseyNumber;
       await this.validateDuplicateAndJersey(targetPlayerId, targetTeamRegId, targetJersey, id);
       await this.validateStageAndClassificationLimits(
@@ -992,7 +1092,7 @@ export class PlayerRegistrationsService {
 
     const registrations = await this.repo.find({
       where: { teamRegistrationId: numTeamRegId },
-      relations: ['player', 'player.demarcation', 'playerClassification', 'stage'],
+      relations: ['player', 'player.demarcation', 'demarcation', 'playerClassification', 'stage'],
       order: { jerseyNumber: 'ASC' },
     });
 

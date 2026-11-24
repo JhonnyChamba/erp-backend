@@ -41,6 +41,12 @@ export class CategoryEditionsController {
     return this.service.create(dto, req.user, this.resolveCompanyId(req));
   }
 
+  // Inicia el campeonato de una categoría de la edición (una sola vez por categoría): su primera etapa pasa a EN PROCESO
+  @Post(':id/categories/:categoryId/start')
+  start(@Param('id') id: string, @Param('categoryId') categoryId: string, @Req() req: any) {
+    return this.service.start(id, categoryId, req.user, this.resolveCompanyId(req));
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateCategoryEditionDto, @Req() req: any) {
     return this.service.update(id, dto, req.user, this.resolveCompanyId(req));

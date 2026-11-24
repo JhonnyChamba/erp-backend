@@ -59,6 +59,11 @@ export class CreatePlayerRegistrationDto {
   @IsOptional()
   @IsDateString()
   registrationDate?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  demarcationId?: number;
 }
 
 export class UpdatePlayerRegistrationDto {
@@ -106,6 +111,11 @@ export class UpdatePlayerRegistrationDto {
   @IsOptional()
   @IsDateString()
   registrationDate?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  demarcationId?: number;
 }
 
 export class MassPlayerRegistrationItemDto {
@@ -135,6 +145,11 @@ export class MassPlayerRegistrationItemDto {
   @IsOptional()
   @IsArray()
   documents?: any[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  demarcationId?: number;
 }
 
 export class MassPlayerRegistrationDto {
@@ -193,6 +208,11 @@ export class SyncTeamCategoryPlayerItemDto {
   @IsOptional()
   @IsBoolean()
   isCaptain?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  demarcationId?: number;
 }
 
 export class SyncTeamCategoryRosterGroupDto {

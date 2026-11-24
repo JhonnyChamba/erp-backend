@@ -4,6 +4,7 @@ import { TeamOrmEntity } from './team.orm-entity';
 import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
 import { PlayerRegistrationOrmEntity } from './player-registration.orm-entity';
 import { StageOrmEntity } from './stage.orm-entity';
+import { CategoryOrmEntity } from './category.orm-entity';
 import { PlayerTransferApprovalOrmEntity } from './player-transfer-approval.orm-entity';
 import { TransferStatus } from '../../common/enum/campeonato.enum';
 
@@ -21,6 +22,14 @@ export class PlayerTransferOrmEntity {
   @ManyToOne(() => CategoryEditionOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'edition_id' })
   edition: CategoryEditionOrmEntity;
+
+  // Categoría de la edición en la que se tramita la orden de transferencia
+  @Column({ name: 'category_id', type: 'int', nullable: true })
+  categoryId: number;
+
+  @ManyToOne(() => CategoryOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'category_id' })
+  category: CategoryOrmEntity;
 
   @Column({ name: 'player_id', type: 'int' })
   playerId: number;

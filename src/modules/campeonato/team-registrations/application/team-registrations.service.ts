@@ -13,6 +13,7 @@ import {
   SyncEditionTeamRegistrationsDto,
 } from './dto/team-registration.dto';
 import { RegistrationStatus, PaymentStatus } from '../../common/enum/campeonato.enum';
+import { TeamPaymentOrdersService } from '../../team-payment-orders/application/team-payment-orders.service';
 
 @Injectable()
 export class TeamRegistrationsService {
@@ -25,6 +26,7 @@ export class TeamRegistrationsService {
     private readonly editionRepo: Repository<CategoryEditionOrmEntity>,
     @InjectRepository(TeamCategoryHistoryOrmEntity)
     private readonly historyRepo: Repository<TeamCategoryHistoryOrmEntity>,
+    private readonly paymentOrders: TeamPaymentOrdersService,
   ) {}
 
   private async syncTeamCategoryHistory(
@@ -249,6 +251,9 @@ export class TeamRegistrationsService {
     await assertBelongsToCompany(this.editionRepo, dto.categoryEditionId, companyId, 'Edición de torneo no encontrada');
     const item = this.repo.create({
       ...dto,
+      // Toda inscripción nueva queda pendiente de aprobación y de pago
+      status: dto.status ?? RegistrationStatus.PENDING,
+      paymentStatus: dto.paymentStatus ?? PaymentStatus.UNPAID,
       companyId,
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
       createdName: user?.user_name || user?.name,
@@ -259,7 +264,9 @@ export class TeamRegistrationsService {
       await this.syncTeamCategoryHistory(dto.teamId, dto.categoryEditionId, user, companyId, dto.categoryId);
     }
 
-    return this.get(saved.id, companyId);
+    const paymentOrders = await this.paymentOrders.generateForRegistrations([saved], user, companyId);
+
+    return { ...(await this.get(saved.id, companyId)), paymentOrders };
   }
 
   async syncByEdition(dto: SyncEditionTeamRegistrationsDto, user: any, companyId: number) {
@@ -274,8 +281,8 @@ export class TeamRegistrationsService {
       categoryId: number;
       teamId: number;
       groupName?: string;
-      status: RegistrationStatus;
-      paymentStatus: PaymentStatus;
+      status?: RegistrationStatus;
+      paymentStatus?: PaymentStatus;
       pointsPenalty: number;
     }> = [];
 
@@ -297,8 +304,9 @@ export class TeamRegistrationsService {
           categoryId: catId,
           teamId: tId,
           groupName: tm.groupName?.trim() || undefined,
-          status: tm.status || RegistrationStatus.APPROVED,
-          paymentStatus: tm.paymentStatus || PaymentStatus.UNPAID,
+          // Sin estado enviado: una inscripción nueva queda pendiente y una existente conserva el suyo
+          status: tm.status,
+          paymentStatus: tm.paymentStatus,
           pointsPenalty: Number(tm.pointsPenalty) || 0,
         });
       }
@@ -320,6 +328,7 @@ export class TeamRegistrationsService {
 
     const keptIds = new Set<number>();
     const savedResults: TeamRegistrationOrmEntity[] = [];
+    const createdRegistrations: TeamRegistrationOrmEntity[] = [];
     const userId = user?.user_id?.toString() || user?.id?.toString();
     const userName = user?.user_name || user?.name;
 
@@ -339,8 +348,8 @@ export class TeamRegistrationsService {
         const categoryChanged = Number(prev.categoryId) !== Number(inc.categoryId);
         prev.categoryId = inc.categoryId;
         prev.groupName = inc.groupName ?? null;
-        prev.status = inc.status;
-        prev.paymentStatus = inc.paymentStatus;
+        if (inc.status) prev.status = inc.status;
+        if (inc.paymentStatus) prev.paymentStatus = inc.paymentStatus;
         prev.pointsPenalty = inc.pointsPenalty;
         prev.updatedBy = userId;
         prev.updateName = userName;
@@ -357,8 +366,8 @@ export class TeamRegistrationsService {
             categoryId: inc.categoryId,
             teamId: inc.teamId,
             groupName: inc.groupName,
-            status: inc.status,
-            paymentStatus: inc.paymentStatus,
+            status: inc.status ?? RegistrationStatus.PENDING,
+            paymentStatus: inc.paymentStatus ?? PaymentStatus.UNPAID,
             pointsPenalty: inc.pointsPenalty,
             createdBy: userId,
             createdName: userName,
@@ -366,6 +375,7 @@ export class TeamRegistrationsService {
         );
         keptIds.add(Number(created.id));
         savedResults.push(created);
+        createdRegistrations.push(created);
         await this.syncTeamCategoryHistory(inc.teamId, editionId, user, companyId, inc.categoryId);
       }
     }
@@ -376,10 +386,14 @@ export class TeamRegistrationsService {
       await this.repo.remove(toRemove);
     }
 
+    // Cada equipo inscrito genera su orden de pago: una línea por categoría y, en cada una, los conceptos que se cobran
+    const paymentOrders = await this.paymentOrders.generateForRegistrations(createdRegistrations, user, companyId);
+
     return {
       categoryEditionId: editionId,
       totalRegistered: savedResults.length,
       data: savedResults,
+      paymentOrders,
     };
   }
 

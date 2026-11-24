@@ -4,6 +4,7 @@ import { TeamRegistrationOrmEntity } from './team-registration.orm-entity';
 import { PlayerOrmEntity } from './player.orm-entity';
 import { PlayerClassificationOrmEntity } from './player-classification.orm-entity';
 import { StageOrmEntity } from './stage.orm-entity';
+import { DemarcationOrmEntity } from './demarcation.orm-entity';
 
 @Entity('tab_campeonato_player_registrations')
 @Unique(['teamRegistrationId', 'playerId'])
@@ -44,6 +45,14 @@ export class PlayerRegistrationOrmEntity {
   @ManyToOne(() => PlayerClassificationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'player_classification_id' })
   playerClassification: PlayerClassificationOrmEntity;
+
+  // Demarcación / posición en campo con la que el jugador queda inscrito (si no se elige, la del jugador)
+  @Column({ name: 'demarcation_id', type: 'int', nullable: true })
+  demarcationId: number;
+
+  @ManyToOne(() => DemarcationOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'demarcation_id' })
+  demarcation: DemarcationOrmEntity;
 
   @Column({ name: 'jersey_number', type: 'int' })
   jerseyNumber: number;

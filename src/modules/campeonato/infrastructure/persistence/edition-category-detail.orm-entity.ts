@@ -43,6 +43,10 @@ export class EditionCategoryDetailOrmEntity {
   @Column({ name: 'registration_fee', type: 'numeric', precision: 10, scale: 2, default: 0 })
   registrationFee: number;
 
+  // Garantía que se cobra al equipo por inscribirse en esta categoría
+  @Column({ name: 'guarantee_fee', type: 'numeric', precision: 10, scale: 2, default: 0 })
+  guaranteeFee: number;
+
   @Column({ name: 'max_players', type: 'int', default: 25 })
   maxPlayers: number;
 
@@ -57,6 +61,13 @@ export class EditionCategoryDetailOrmEntity {
 
   @Column({ name: 'stages', type: 'jsonb', nullable: true, default: () => "'[]'" })
   stages: any[];
+
+  // El campeonato se inicia por categoría y una sola vez: mientras sea nulo la categoría está pendiente de inicio
+  @Column({ name: 'started_at', type: 'timestamp', nullable: true })
+  startedAt: Date;
+
+  @Column({ name: 'started_name', type: 'varchar', nullable: true })
+  startedName: string;
 
   @Column({ name: 'created_name', type: 'varchar', nullable: true })
   createdName: string;

@@ -107,6 +107,10 @@ import { CompetitionTypesService } from './competition-types/application/competi
 import { CompetitionLapsService } from './competition-laps/application/competition-laps.service';
 import { TieBreakerCriteriaService } from './tie-breaker-criteria/application/tie-breaker-criteria.service';
 import { StageTemplatesService } from './stage-templates/application/stage-templates.service';
+import { TeamPaymentOrderOrmEntity } from './infrastructure/persistence/team-payment-order.orm-entity';
+import { TeamPaymentOrderDetailOrmEntity } from './infrastructure/persistence/team-payment-order-detail.orm-entity';
+import { TeamPaymentOrdersService } from './team-payment-orders/application/team-payment-orders.service';
+import { TeamPaymentOrdersController } from './team-payment-orders/presentation/team-payment-orders.controller';
 
 const entities = [
   PositionOrmEntity,
@@ -122,6 +126,8 @@ const entities = [
   StageOrmEntity,
   ScenaryOrmEntity,
   TeamRegistrationOrmEntity,
+  TeamPaymentOrderOrmEntity,
+  TeamPaymentOrderDetailOrmEntity,
   PlayerRegistrationOrmEntity,
   RefereeOrmEntity,
   VocalOrmEntity,
@@ -162,6 +168,7 @@ const controllers = [
   StagesController,
   ScenariesController,
   TeamRegistrationsController,
+  TeamPaymentOrdersController,
   PlayerRegistrationsController,
   RefereesController,
   RefereeGuildsController,
@@ -195,6 +202,7 @@ const providers = [
   StageFormatsService,
   ScenariesService,
   TeamRegistrationsService,
+  TeamPaymentOrdersService,
   PlayerRegistrationsService,
   RefereesService,
   RefereeGuildsService,

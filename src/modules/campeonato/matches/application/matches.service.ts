@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { CategoryEditionOrmEntity } from '../../infrastructure/persistence/category-edition.orm-entity';
 import { StageOrmEntity } from '../../infrastructure/persistence/stage.orm-entity';
 import { ScenaryOrmEntity } from '../../infrastructure/persistence/scenary.orm-entity';
 import { VocalOrmEntity } from '../../infrastructure/persistence/vocal.orm-entity';
@@ -9,8 +10,64 @@ import { MatchOrmEntity } from '../../infrastructure/persistence/match.orm-entit
 import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
 import { MatchEventOrmEntity } from '../../infrastructure/persistence/match-event.orm-entity';
 import { TeamRegistrationOrmEntity } from '../../infrastructure/persistence/team-registration.orm-entity';
-import { MatchStatus, MatchEventType } from '../../common/enum/campeonato.enum';
+import { MatchStatus, MatchEventType, MeetingType, EditionStatus, RegistrationStatus, StageStatus, TeamOrigin } from '../../common/enum/campeonato.enum';
 import { CreateMatchDto, GenerateFixtureDto, UpdateMatchDto } from './dto/match.dto';
+
+// Tipos de competencia cuyo fixture es todos contra todos
+const ROUND_ROBIN_CODES = ['TODOS_VS_TODOS', 'CUADRANGULAR'];
+
+// El fixture de una categoría se genera cuando todos sus equipos están aprobados (la aprobación se gestiona en otro módulo)
+const teamsBlockReason = (approvedCount: number, pendingCount: number): string | null => {
+  if (pendingCount > 0) return 'Hay ' + pendingCount + ' equipo(s) pendiente(s) de aprobación en la categoría; el fixture se genera cuando todos estén aprobados.';
+  if (approvedCount < 2) return 'Se requieren al menos 2 equipos aprobados en la categoría.';
+  return null;
+};
+
+// Por qué una etapa en proceso no puede generar su fixture (nulo si puede)
+const fixtureBlockReason = (stage: StageOrmEntity, approvedCount: number, pendingCount: number, matchesCount: number): string | null => {
+  if (matchesCount > 0) return 'La etapa ya tiene partidos generados.';
+  if (stage.teamOrigin === TeamOrigin.PREVIOUS_STAGE) return 'Sus equipos dependen de la clasificación de la etapa anterior; aún no se genera automáticamente.';
+  if (stage.competitionTypeCode && !ROUND_ROBIN_CODES.includes(stage.competitionTypeCode)) return `El tipo de competencia ${stage.competitionTypeCode} aún no genera el fixture automáticamente.`;
+  return teamsBlockReason(approvedCount, pendingCount);
+};
+
+// Todos contra todos (rotación de círculo). Con 2 vueltas o más, cada vuelta invierte las localías de la anterior.
+const buildRoundRobin = (teamIds: number[], laps: number) => {
+  const teams: (number | null)[] = [...teamIds];
+  if (teams.length % 2 !== 0) teams.push(null); // descanso
+  const size = teams.length;
+  const roundsPerLap = size - 1;
+  const firstLap: { round: number; home: number; away: number }[] = [];
+  const current = [...teams];
+
+  for (let round = 0; round < roundsPerLap; round++) {
+    for (let i = 0; i < size / 2; i++) {
+      const a = current[i];
+      const b = current[size - 1 - i];
+      if (a === null || b === null) continue;
+      const [home, away] = round % 2 === 0 ? [a, b] : [b, a];
+      firstLap.push({ round: round + 1, home, away });
+    }
+    const fixed = current[0];
+    const rest = current.slice(1);
+    rest.unshift(rest.pop()!);
+    current.splice(0, current.length, fixed, ...rest);
+  }
+
+  const matches: { roundNumber: number; home: number; away: number; meetingType: MeetingType }[] = [];
+  for (let lap = 1; lap <= laps; lap++) {
+    for (const match of firstLap) {
+      matches.push({
+        roundNumber: match.round + (lap - 1) * roundsPerLap,
+        home: lap % 2 === 1 ? match.home : match.away,
+        away: lap % 2 === 1 ? match.away : match.home,
+        meetingType: laps === 1 ? MeetingType.UNICO : lap % 2 === 1 ? MeetingType.IDA : MeetingType.VUELTA,
+      });
+    }
+  }
+
+  return { matches, roundsCount: roundsPerLap * laps };
+};
 
 @Injectable()
 export class MatchesService {
@@ -23,6 +80,10 @@ export class MatchesService {
     private readonly eventRepo: Repository<MatchEventOrmEntity>,
     @InjectRepository(TeamRegistrationOrmEntity)
     private readonly teamRegRepo: Repository<TeamRegistrationOrmEntity>,
+    @InjectRepository(CategoryEditionOrmEntity)
+    private readonly editionRepo: Repository<CategoryEditionOrmEntity>,
+    @InjectRepository(StageOrmEntity)
+    private readonly stageRepo: Repository<StageOrmEntity>,
   ) {}
 
   async list(companyId: number, query: { page?: number; limit?: number; search?: string; stageId?: string }) {
@@ -183,112 +244,144 @@ export class MatchesService {
     return { standings, topScorers, totalMatchesPlayed: matches.length };
   }
 
+  /**
+   * Lo que muestra el formulario del fixture: por cada campeonato iniciado, las etapas en proceso con su categoría,
+   * los equipos inscritos y si ya se puede generar su fixture.
+   */
+  async getFixtureOptions(companyId: number) {
+    const editions = await this.editionRepo
+      .createQueryBuilder('ce')
+      .where('ce.companyId = :companyId', { companyId })
+      .andWhere('ce.startedAt IS NOT NULL')
+      .andWhere('ce.status = :status', { status: EditionStatus.IN_PROGRESS })
+      .orderBy('ce.name', 'ASC')
+      .getMany();
+    if (editions.length === 0) return [];
+
+    const editionIds = editions.map((edition) => edition.id);
+    const stages = await this.stageRepo.find({
+      where: { categoryEditionId: In(editionIds), status: StageStatus.IN_PROGRESS },
+      relations: ['category'],
+      order: { stageOrder: 'ASC' },
+    });
+
+    const registrations = await this.teamRegRepo.find({ where: { categoryEditionId: In(editionIds) } });
+    const matchCounts = stages.length
+      ? await this.repo
+          .createQueryBuilder('m')
+          .select('m.stageId', 'stageId')
+          .addSelect('COUNT(*)', 'total')
+          .where('m.stageId IN (:...stageIds)', { stageIds: stages.map((stage) => stage.id) })
+          .groupBy('m.stageId')
+          .getRawMany<{ stageId: number; total: string }>()
+      : [];
+
+    return editions.map((edition) => ({
+      id: edition.id,
+      name: edition.name,
+      startedAt: edition.startedAt,
+      stages: stages
+        .filter((stage) => Number(stage.categoryEditionId) === Number(edition.id))
+        .map((stage) => {
+          const categoryRegistrations = registrations.filter((r) => Number(r.categoryEditionId) === Number(edition.id) && Number(r.categoryId) === Number(stage.categoryId));
+          const teamsCount = categoryRegistrations.filter((r) => r.status === RegistrationStatus.APPROVED).length;
+          const pendingTeamsCount = categoryRegistrations.filter((r) => r.status === RegistrationStatus.PENDING).length;
+          const matchesCount = Number(matchCounts.find((row) => Number(row.stageId) === Number(stage.id))?.total) || 0;
+          const reason = fixtureBlockReason(stage, teamsCount, pendingTeamsCount, matchesCount);
+          return {
+            id: stage.id,
+            name: stage.name,
+            stageOrder: stage.stageOrder,
+            categoryId: stage.categoryId,
+            categoryName: stage.category?.name ?? '',
+            competitionTypeCode: stage.competitionTypeCode,
+            numberOfLaps: stage.numberOfLaps,
+            teamsCount,
+            pendingTeamsCount,
+            matchesCount,
+            canGenerate: reason === null,
+            reason,
+          };
+        }),
+    }));
+  }
+
+  /**
+   * Genera los partidos (solo los encuentros: sin días, horarios ni canchas) de la etapa en proceso de cada categoría
+   * de las ediciones indicadas.
+   */
   async generateFixture(companyId: number, dto: GenerateFixtureDto, user: any) {
-    if (!dto.stageId) throw new BadRequestException('Debe indicar la etapa del campeonato');
-    const teamIds = [...new Set((dto.teamIds || []).map((id) => Number(id)))];
-    if (teamIds.length < 2) {
-      throw new BadRequestException('Se requieren al menos 2 equipos distintos para generar el fixture');
-    }
-    if (dto.startDate && Number.isNaN(new Date(dto.startDate).getTime())) {
-      throw new BadRequestException('La fecha de inicio del fixture no es válida');
-    }
+    const editionIds = [...new Set((dto.editionIds || []).map((id) => Number(id)))];
+    if (editionIds.length === 0) throw new BadRequestException('Seleccione al menos una edición del torneo');
 
-    // La etapa, el escenario y todos los equipos deben pertenecer a la empresa activa
-    await this.assertReferences({ stageId: dto.stageId, scenaryId: dto.scenaryId }, companyId);
-    const ownedTeams = await this.teamRepo.find({ where: { id: In(teamIds) } });
-    for (const teamId of teamIds) {
-      ensureCompanyScope(ownedTeams.find((t) => Number(t.id) === teamId), companyId, 'Equipo no encontrado');
+    const options = await this.getFixtureOptions(companyId);
+    const selected = options.filter((option) => editionIds.includes(Number(option.id)));
+    if (selected.length !== editionIds.length) {
+      throw new BadRequestException('Alguna de las ediciones seleccionadas no existe o no tiene el campeonato iniciado.');
     }
 
-    const teams: number[] = [...teamIds];
-    // Si la cantidad es impar, añadir null como descanso (BYE)
-    if (teams.length % 2 !== 0) {
-      teams.push(null as any);
-    }
+    const actor = { createdBy: user?.user_id?.toString() || user?.id?.toString(), createdName: user?.user_name || user?.name };
+    const results: { editionId: number; editionName: string; stageName: string; categoryName: string; generated: boolean; matchesCount: number; roundsCount: number; reason?: string }[] = [];
 
-    const n = teams.length;
-    const roundsCount = n - 1;
-    const matchesPerRound = n / 2;
-    const intervalDays = dto.intervalDays || 7;
-    const durationMin = dto.matchDurationMinutes || 90;
-    const baseDate = new Date(dto.startDate || new Date());
-    const numberOfLaps = Number(dto.numberOfLaps) === 2 ? 2 : 1;
+    await this.repo.manager.transaction(async (manager) => {
+      const matchRepo = manager.getRepository(MatchOrmEntity);
 
-    const createdMatches: MatchOrmEntity[] = [];
+      for (const edition of selected) {
+        for (const stage of edition.stages) {
+          const base = { editionId: edition.id, editionName: edition.name, stageName: stage.name, categoryName: stage.categoryName, generated: false, matchesCount: 0, roundsCount: 0 };
+          if (!stage.canGenerate) {
+            results.push({ ...base, reason: stage.reason ?? undefined });
+            continue;
+          }
+          // Se vuelve a comprobar dentro de la transacción: otra generación pudo crear los partidos mientras tanto
+          if ((await matchRepo.count({ where: { stageId: stage.id } })) > 0) {
+            results.push({ ...base, reason: 'La etapa ya tiene partidos generados.' });
+            continue;
+          }
 
-    // Algoritmo de Round-Robin (Rotación de círculo)
-    const currentTeams = [...teams];
-    for (let round = 0; round < roundsCount; round++) {
-      const roundDate = new Date(baseDate.getTime() + round * intervalDays * 24 * 60 * 60 * 1000);
+          // Se vuelve a comprobar con los datos actuales: una inscripción pudo quedar pendiente mientras tanto
+          const categoryRegistrations = await manager.getRepository(TeamRegistrationOrmEntity).find({ where: { categoryEditionId: edition.id, categoryId: stage.categoryId } });
+          const approved = categoryRegistrations.filter((r) => r.status === RegistrationStatus.APPROVED);
+          const teamsReason = teamsBlockReason(approved.length, categoryRegistrations.filter((r) => r.status === RegistrationStatus.PENDING).length);
+          if (teamsReason) {
+            results.push({ ...base, reason: teamsReason });
+            continue;
+          }
+          const { matches, roundsCount } = buildRoundRobin([...new Set(approved.map((r) => Number(r.teamId)))], Number(stage.numberOfLaps) || 1);
 
-      for (let i = 0; i < matchesPerRound; i++) {
-        const teamA = currentTeams[i];
-        const teamB = currentTeams[n - 1 - i];
-
-        if (!teamA || !teamB) continue; // Descanso
-
-        // Alternar local / visitante según la fecha
-        const [localId, awayId] = round % 2 === 0 ? [teamA, teamB] : [teamB, teamA];
-
-        const matchTime = new Date(roundDate.getTime() + i * durationMin * 60 * 1000);
-
-        const match = this.repo.create({
-          companyId,
-          stageId: Number(dto.stageId),
-          scenaryId: dto.scenaryId ? Number(dto.scenaryId) : null,
-          localTeamId: Number(localId),
-          awayTeamId: Number(awayId),
-          roundNumber: round + 1,
-          date: matchTime,
-          status: MatchStatus.SCHEDULED,
-          homeGoals: 0,
-          awayGoals: 0,
-          createdBy: user?.user_id?.toString() || user?.id?.toString(),
-          createdName: user?.user_name || user?.name,
-        });
-
-        createdMatches.push(match);
+          await matchRepo.save(
+            matches.map((match) =>
+              matchRepo.create({
+                companyId,
+                stageId: stage.id,
+                localTeamId: match.home,
+                awayTeamId: match.away,
+                roundNumber: match.roundNumber,
+                meetingType: match.meetingType,
+                status: MatchStatus.SCHEDULED,
+                homeGoals: 0,
+                awayGoals: 0,
+                ...actor,
+              }),
+            ),
+            { chunk: 200 },
+          );
+          results.push({ ...base, generated: true, matchesCount: matches.length, roundsCount });
+        }
       }
+    });
 
-      // Rotar: el primer elemento se queda fijo, los demás rotan en sentido horario
-      const fixed = currentTeams[0];
-      const rest = currentTeams.slice(1);
-      const last = rest.pop()!;
-      rest.unshift(last);
-      currentTeams.splice(0, currentTeams.length, fixed, ...rest);
+    const generated = results.filter((result) => result.generated);
+    if (generated.length === 0) {
+      throw new BadRequestException(`No se generó ningún fixture. ${results.map((r) => `${r.editionName} · ${r.categoryName} · ${r.stageName}: ${r.reason}`).join(' | ') || 'Las ediciones no tienen etapas en proceso.'}`);
     }
 
-    // Si se especificó 2 vueltas (Ida y Vuelta): generar los partidos de revancha invirtiendo localías
-    if (numberOfLaps === 2) {
-      const firstLapMatches = [...createdMatches];
-      for (const m of firstLapMatches) {
-        const returnRound = m.roundNumber + roundsCount;
-        const returnDate = new Date(m.date.getTime() + roundsCount * intervalDays * 24 * 60 * 60 * 1000);
-        const returnMatch = this.repo.create({
-          companyId,
-          stageId: Number(dto.stageId),
-          scenaryId: m.scenaryId,
-          localTeamId: m.awayTeamId,
-          awayTeamId: m.localTeamId,
-          roundNumber: returnRound,
-          date: returnDate,
-          status: MatchStatus.SCHEDULED,
-          homeGoals: 0,
-          awayGoals: 0,
-          createdBy: user?.user_id?.toString() || user?.id?.toString(),
-          createdName: user?.user_name || user?.name,
-        });
-        createdMatches.push(returnMatch);
-      }
-    }
-
-    const saved = await this.repo.save(createdMatches);
-    const totalRounds = numberOfLaps === 2 ? roundsCount * 2 : roundsCount;
+    const matchesCount = generated.reduce((total, result) => total + result.matchesCount, 0);
     return {
       success: true,
-      message: `Fixture generado exitosamente con ${saved.length} encuentros en ${totalRounds} jornadas (${numberOfLaps === 2 ? 'Ida y Vuelta' : 'Solo Ida'}).`,
-      matchesCount: saved.length,
-      roundsCount: totalRounds,
+      message: `Fixture generado: ${matchesCount} partido(s) en ${generated.length} etapa(s).`,
+      matchesCount,
+      results,
     };
   }
 

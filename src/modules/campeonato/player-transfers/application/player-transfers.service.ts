@@ -51,22 +51,52 @@ export class PlayerTransfersService {
   ) {}
 
   /**
-   * Crear solicitud de transferencia con detección automática del equipo de origen
+   * Crear la orden de transferencia (queda pendiente de firmas) con detección automática del equipo de origen
    */
   async createRequest(dto: CreatePlayerTransferDto, user: any, companyId: number) {
     const player = await this.playerRepo.findOne({ where: { id: dto.playerId } });
     if (!player) throw new NotFoundException('Jugador no encontrado en el sistema');
 
     // 0. Los ids del body deben pertenecer a la empresa activa
+    await assertPlayerInCompany(this.repo.manager, dto.playerId, companyId);
     await assertBelongsToCompany(this.repo.manager.getRepository(CategoryEditionOrmEntity), dto.editionId, companyId, 'Edición de torneo no encontrada');
     await assertBelongsToCompany(this.teamRepo, dto.destinationTeamId, companyId, 'Equipo de destino no encontrado');
     await assertBelongsToCompany(this.teamRepo, dto.passOwnerTeamId, companyId, 'Equipo dueño del pase no encontrado');
     await assertBelongsToCompany(this.repo.manager.getRepository(StageOrmEntity), dto.stageId, companyId, 'Etapa no encontrada');
 
+    // 1. La categoría debe ser una de las categorías de la edición
+    if (dto.categoryId) {
+      const editionCategory = await this.editionCategoryDetailRepo.findOne({ where: { editionId: Number(dto.editionId), categoryId: Number(dto.categoryId) } });
+      if (!editionCategory) throw new BadRequestException('La categoría seleccionada no pertenece a la edición del campeonato.');
+    }
+
+    // 2. Inscripción vigente del jugador (su club de origen) en la edición y, si se indica, en la categoría
+    const activeRegistrationQuery = this.playerRegistrationRepo
+      .createQueryBuilder('pr')
+      .leftJoinAndSelect('pr.teamRegistration', 'tr')
+      .leftJoinAndSelect('tr.team', 'team')
+      .where('pr.playerId = :playerId', { playerId: dto.playerId })
+      .andWhere('tr.categoryEditionId = :editionId', { editionId: dto.editionId })
+      .andWhere('(pr.companyId = :companyId OR pr.companyId IS NULL)', { companyId })
+      .andWhere('pr.status != :finalizedStatus', { finalizedStatus: PlayerRegistrationStatus.FINALIZED_BY_TRANSFER });
+    if (dto.categoryId) activeRegistrationQuery.andWhere('tr.categoryId = :categoryId', { categoryId: Number(dto.categoryId) });
+    const activeRegistration = await activeRegistrationQuery.getOne();
+
+    // Sin categoría (modal de jugadores) el jugador debe estar inscrito; con categoría (orden de transferencia) puede no tener club en ella.
+    if (!activeRegistration && !dto.categoryId) {
+      throw new BadRequestException(
+        `El jugador ${player.name} ${player.lastName} no cuenta con una inscripción vigente en ningún equipo de este campeonato. Para incorporarlo, debe registrar una inscripción regular.`,
+      );
+    }
+
+    const categoryId = dto.categoryId ? Number(dto.categoryId) : activeRegistration?.teamRegistration?.categoryId;
+    const originTeamId = activeRegistration?.teamRegistration.teamId;
+
+    // 3. Inscripción del equipo de destino en la edición y la categoría
     const destinationTeamRegistration = await this.teamRegistrationRepo.findOne({
       where: dto.destinationTeamRegistrationId
         ? { id: Number(dto.destinationTeamRegistrationId) }
-        : { teamId: Number(dto.destinationTeamId), categoryEditionId: Number(dto.editionId) },
+        : { teamId: Number(dto.destinationTeamId), categoryEditionId: Number(dto.editionId), ...(categoryId ? { categoryId } : {}) },
     });
     if (
       !destinationTeamRegistration ||
@@ -75,9 +105,12 @@ export class PlayerTransfersService {
     ) {
       throw new BadRequestException('El equipo de destino no cuenta con una inscripción en este campeonato.');
     }
+    if (categoryId && destinationTeamRegistration.categoryId && Number(destinationTeamRegistration.categoryId) !== Number(categoryId)) {
+      throw new BadRequestException('El equipo de destino no está inscrito en la categoría seleccionada.');
+    }
     ensureCompanyScope(destinationTeamRegistration, companyId, 'Inscripción del equipo de destino no encontrada');
 
-    // 1. Validar reglas de la edición de torneo
+    // 4. Validar reglas de la edición de torneo
     const config = await this.transferConfigRepo.findOne({ where: { editionId: dto.editionId } });
     if (config) {
       if (!config.transfersEnabled) {
@@ -101,35 +134,16 @@ export class PlayerTransfersService {
       });
       if (transfersCount >= (config.maxTransfersPerPlayer || 2)) {
         throw new BadRequestException(
-          `Límite alcanzado: El futbolista ya ha alcanzado el número máximo de transferencias permitidas (${config.maxTransfersPerPlayer}) para este campeonato.`,
+          `Límite alcanzado: El futbolista ya ha alcanzado el número máximo de transferencias permitidas (${config.maxTransfersPerPlayer || 2}) para este campeonato.`,
         );
       }
     }
 
-    // 2. Detectar AUTOMÁTICAMENTE la inscripción vigente activa del jugador en este campeonato
-    const activeRegistration = await this.playerRegistrationRepo
-      .createQueryBuilder('pr')
-      .leftJoinAndSelect('pr.teamRegistration', 'tr')
-      .leftJoinAndSelect('tr.team', 'team')
-      .where('pr.playerId = :playerId', { playerId: dto.playerId })
-      .andWhere('tr.categoryEditionId = :editionId', { editionId: dto.editionId })
-      .andWhere('(pr.companyId = :companyId OR pr.companyId IS NULL)', { companyId })
-      .andWhere('pr.status != :finalizedStatus', { finalizedStatus: PlayerRegistrationStatus.FINALIZED_BY_TRANSFER })
-      .getOne();
-
-    if (!activeRegistration) {
-      throw new BadRequestException(
-        `El jugador ${player.name} ${player.lastName} no cuenta con una inscripción vigente en ningún equipo de este campeonato. Para incorporarlo, debe registrar una inscripción regular.`,
-      );
-    }
-
-    const originTeamId = activeRegistration.teamRegistration.teamId;
-
-    if (originTeamId === dto.destinationTeamId) {
+    if (activeRegistration && originTeamId === dto.destinationTeamId) {
       throw new BadRequestException('El jugador ya pertenece y se encuentra inscrito en el equipo de destino seleccionado.');
     }
 
-    // 3. Validar que no exista una solicitud de transferencia pendiente en curso para este jugador
+    // 5. Validar que no exista una solicitud de transferencia pendiente en curso para este jugador
     const pendingTransfer = await this.repo.findOne({
       where: {
         playerId: dto.playerId,
@@ -141,21 +155,25 @@ export class PlayerTransfersService {
       throw new BadRequestException('Ya existe una solicitud de transferencia en proceso de aprobación para este jugador.');
     }
 
-    // 4. Crear la solicitud de transferencia
-    const requiresApprovals = config
-      ? config.requireOriginTeamApproval || config.requireDestinationTeamApproval || config.requireAdminApproval
-      : true;
-
-    const initialStatus = requiresApprovals ? TransferStatus.PENDING_APPROVAL : TransferStatus.APPROVED;
+    // 6. Firmas requeridas según la configuración: el club de origen solo firma si existe; el club destino firma al emitir la orden
+    const requiredRoles = [
+      ...((!config || config.requireOriginTeamApproval) && activeRegistration ? [TransferApprovalRole.ORIGIN_TEAM] : []),
+      ...(!config || config.requireDestinationTeamApproval ? [TransferApprovalRole.DESTINATION_TEAM] : []),
+      ...(!config || config.requireAdminApproval ? [TransferApprovalRole.ADMIN] : []),
+    ];
+    // La orden queda pendiente mientras falte alguna firma
+    const initialStatus = requiredRoles.some((role) => role !== TransferApprovalRole.DESTINATION_TEAM) ? TransferStatus.PENDING_APPROVAL : TransferStatus.APPROVED;
 
     const transfer = this.repo.create({
       ...dto,
+      categoryId,
       originTeamId,
-      originRegistrationId: activeRegistration.id,
+      originRegistrationId: activeRegistration?.id,
       companyId,
       status: initialStatus,
       requestDate: new Date(),
       transferDate: dto.transferDate ? new Date(dto.transferDate) : new Date(),
+      transferType: dto.transferType || (activeRegistration ? 'DEFINITIVA' : 'LIBRE'),
       passOwnerType: dto.passOwnerType || player.passOwnerType || 'PLAYER',
       passOwnerTeamId: dto.passOwnerType === 'TEAM' ? (dto.passOwnerTeamId || dto.destinationTeamId) : undefined,
       createdBy: user?.user_id?.toString() || user?.id?.toString(),
@@ -164,33 +182,20 @@ export class PlayerTransfersService {
 
     const savedTransfer = await this.repo.save(transfer);
 
-    // 5. Generar las aprobaciones requeridas según la configuración
-    const approvalsToCreate: Partial<PlayerTransferApprovalOrmEntity>[] = [];
-    if (!config || config.requireOriginTeamApproval) {
-      approvalsToCreate.push({
-        transferId: savedTransfer.id,
-        role: TransferApprovalRole.ORIGIN_TEAM,
-        status: TransferApprovalStatus.PENDING,
-      });
-    }
-    if (!config || config.requireDestinationTeamApproval) {
-      approvalsToCreate.push({
-        transferId: savedTransfer.id,
-        role: TransferApprovalRole.DESTINATION_TEAM,
-        status: TransferApprovalStatus.APPROVED, // El equipo que solicita aprueba automáticamente su petición
-        approverUserId: resolveUserId(user),
-        approverName: user?.user_name || user?.name,
-        actionDate: new Date(),
-        comments: 'Solicitud formal emitida por el club destino',
-      });
-    }
-    if (!config || config.requireAdminApproval) {
-      approvalsToCreate.push({
-        transferId: savedTransfer.id,
-        role: TransferApprovalRole.ADMIN,
-        status: TransferApprovalStatus.PENDING,
-      });
-    }
+    // 7. Generar las aprobaciones requeridas
+    const approvalsToCreate: Partial<PlayerTransferApprovalOrmEntity>[] = requiredRoles.map((role) =>
+      role === TransferApprovalRole.DESTINATION_TEAM
+        ? {
+            transferId: savedTransfer.id,
+            role,
+            status: TransferApprovalStatus.APPROVED, // El equipo que solicita aprueba automáticamente su petición
+            approverUserId: resolveUserId(user),
+            approverName: user?.user_name || user?.name,
+            actionDate: new Date(),
+            comments: 'Solicitud formal emitida por el club destino',
+          }
+        : { transferId: savedTransfer.id, role, status: TransferApprovalStatus.PENDING },
+    );
 
     if (approvalsToCreate.length > 0) {
       await this.approvalRepo.save(approvalsToCreate);
@@ -290,15 +295,16 @@ export class PlayerTransfersService {
         throw new BadRequestException('La transferencia debe contar con todas las aprobaciones requeridas antes de ejecutarse.');
       }
 
-      // 2. Confirmar que el jugador sigue inscrito y activo en el equipo de origen
-      const originReg = transfer.originRegistrationId
-        ? await playerRegRepo.findOne({ where: { id: transfer.originRegistrationId } })
-        : null;
-      if (!originReg || originReg.status === PlayerRegistrationStatus.FINALIZED_BY_TRANSFER) {
-        throw new BadRequestException('La inscripción de origen del futbolista ya no se encuentra activa.');
+      // 2. Si el jugador tenía club de origen, confirmar que sigue inscrito y activo en él
+      let originReg: PlayerRegistrationOrmEntity | null = null;
+      if (transfer.originRegistrationId) {
+        originReg = await playerRegRepo.findOne({ where: { id: transfer.originRegistrationId } });
+        if (!originReg || originReg.status === PlayerRegistrationStatus.FINALIZED_BY_TRANSFER) {
+          throw new BadRequestException('La inscripción de origen del futbolista ya no se encuentra activa.');
+        }
       }
 
-      // 3. Inscripción del equipo destino en esta edición. Se resuelve siempre por equipo + edición:
+      // 3. Inscripción del equipo destino en esta edición y categoría. Se resuelve siempre por equipo + edición (+ categoría):
       // transfer.destinationRegistrationId es la inscripción del JUGADOR en destino (se crea en el paso 6),
       // no un id de inscripción de equipo, y un where con id undefined devolvería la primera fila de la tabla.
       const targetTeamReg =
@@ -307,6 +313,7 @@ export class PlayerTransfersService {
               where: {
                 teamId: transfer.destinationTeamId,
                 categoryEditionId: transfer.editionId,
+                ...(transfer.categoryId ? { categoryId: transfer.categoryId } : {}),
               },
             })
           : null;
@@ -314,12 +321,19 @@ export class PlayerTransfersService {
         throw new BadRequestException('El equipo de destino no cuenta con una inscripción activa en este campeonato.');
       }
 
-      // 4. Validar cupos generales y cupos por clasificación en equipo destino
+      // La inscripción del jugador en el destino es única por equipo: una anterior finalizada se reincorpora y una vigente impide la transferencia
+      const destinationRegs = await playerRegRepo.find({ where: { teamRegistrationId: targetTeamReg.id } });
+      const previousDestinationReg = destinationRegs.find((r) => Number(r.playerId) === Number(transfer.playerId));
+      if (previousDestinationReg && previousDestinationReg.status !== PlayerRegistrationStatus.FINALIZED_BY_TRANSFER) {
+        throw new BadRequestException('El jugador ya se encuentra inscrito en el equipo de destino.');
+      }
+
+      // 4. Validar cupos generales y cupos por clasificación en equipo destino (de la categoría del equipo destino)
       const categoryDetails = await detailRepo.find({
         where: { editionId: transfer.editionId },
         relations: ['classifications', 'classifications.playerClassification'],
       });
-      const categoryDetail = categoryDetails[0] || null;
+      const categoryDetail = categoryDetails.find((d) => Number(d.categoryId) === Number(targetTeamReg.categoryId)) || categoryDetails[0] || null;
 
       if (categoryDetail && categoryDetail.maxPlayers > 0) {
         const currentTotal = await playerRegRepo
@@ -337,7 +351,7 @@ export class PlayerTransfersService {
       }
 
       // Validar cupo de clasificación
-      const classificationId = originReg.playerClassificationId;
+      const classificationId = originReg?.playerClassificationId ?? transfer.player?.playerClassificationId ?? null;
       if (categoryDetail && classificationId && categoryDetail.classifications?.length) {
         const classConfig = categoryDetail.classifications.find((c) => c.playerClassificationId === classificationId);
         if (classConfig && classConfig.maxPlayers > 0) {
@@ -357,40 +371,48 @@ export class PlayerTransfersService {
         }
       }
 
-      // 5. Finalizar la inscripción anterior
-      const previousStatus = originReg.status;
-      originReg.status = PlayerRegistrationStatus.FINALIZED_BY_TRANSFER;
-      originReg.updatedBy = user?.user_id?.toString() || user?.id?.toString();
-      originReg.updateName = user?.user_name || user?.name;
-      await playerRegRepo.save(originReg);
+      // 5. Finalizar la inscripción anterior (si la había)
+      if (originReg) {
+        const previousStatus = originReg.status;
+        originReg.status = PlayerRegistrationStatus.FINALIZED_BY_TRANSFER;
+        originReg.updatedBy = user?.user_id?.toString() || user?.id?.toString();
+        originReg.updateName = user?.user_name || user?.name;
+        await playerRegRepo.save(originReg);
 
-      await historyRepo.save({
-        playerRegistrationId: originReg.id,
-        playerId: transfer.playerId,
-        action: PlayerRegistrationHistoryAction.FINALIZED,
-        previousStatus,
-        newStatus: PlayerRegistrationStatus.FINALIZED_BY_TRANSFER,
-        performedById: resolveUserId(user),
-        performedByName: user?.user_name || user?.name,
-        comments: `Inscripción cerrada por transferencia hacia ${transfer.destinationTeam?.name || 'nuevo club'}`,
-      });
+        await historyRepo.save({
+          playerRegistrationId: originReg.id,
+          playerId: transfer.playerId,
+          action: PlayerRegistrationHistoryAction.FINALIZED,
+          previousStatus,
+          newStatus: PlayerRegistrationStatus.FINALIZED_BY_TRANSFER,
+          performedById: resolveUserId(user),
+          performedByName: user?.user_name || user?.name,
+          comments: `Inscripción cerrada por transferencia hacia ${transfer.destinationTeam?.name || 'nuevo club'}`,
+        });
+      }
 
-      // 6. Crear la nueva inscripción en el equipo de destino
-      const newRegistration = playerRegRepo.create({
-        teamRegistrationId: targetTeamReg.id,
-        stageId: transfer.stageId || originReg.stageId,
-        playerId: transfer.playerId,
+      // 6. Inscribir al jugador en el equipo de destino: conserva su dorsal si está libre y, si no, toma el primero disponible
+      const usedJerseys = new Set(destinationRegs.filter((r) => r.status !== PlayerRegistrationStatus.FINALIZED_BY_TRANSFER).map((r) => Number(r.jerseyNumber)));
+      let jerseyNumber = Number(originReg?.jerseyNumber) || 1;
+      while (usedJerseys.has(jerseyNumber)) jerseyNumber++;
+
+      const registrationData = {
+        stageId: transfer.stageId || originReg?.stageId,
         playerClassificationId: classificationId,
-        jerseyNumber: originReg.jerseyNumber || 1,
-        carnetCode: originReg.carnetCode,
+        demarcationId: originReg?.demarcationId ?? transfer.player?.demarcationId ?? undefined,
+        jerseyNumber,
+        carnetCode: originReg?.carnetCode || transfer.player?.code || `JUG-${String(transfer.playerId).padStart(5, '0')}`,
         status: PlayerRegistrationStatus.ELIGIBLE,
-        companyId: transfer.companyId,
         isCaptain: false,
         documents: transfer.documents || [],
-        createdBy: user?.user_id?.toString() || user?.id?.toString(),
-        createdName: user?.user_name || user?.name,
-      });
-      const savedNewReg = await playerRegRepo.save(newRegistration);
+      };
+      const actor = { createdBy: user?.user_id?.toString() || user?.id?.toString(), createdName: user?.user_name || user?.name };
+
+      const savedNewReg = await playerRegRepo.save(
+        previousDestinationReg
+          ? Object.assign(previousDestinationReg, registrationData, { updatedBy: actor.createdBy, updateName: actor.createdName })
+          : playerRegRepo.create({ ...registrationData, teamRegistrationId: targetTeamReg.id, playerId: transfer.playerId, companyId: transfer.companyId, ...actor }),
+      );
 
       await historyRepo.save({
         playerRegistrationId: savedNewReg.id,
@@ -439,6 +461,7 @@ export class PlayerTransfersService {
       .leftJoinAndSelect('pt.destinationTeam', 'destinationTeam')
       .leftJoinAndSelect('pt.passOwnerTeam', 'passOwnerTeam')
       .leftJoinAndSelect('pt.edition', 'edition')
+      .leftJoinAndSelect('pt.category', 'category')
       .leftJoinAndSelect('pt.stage', 'stage')
       .leftJoinAndSelect('pt.approvals', 'approvals');
 
@@ -447,6 +470,9 @@ export class PlayerTransfersService {
     }
     if (query.editionId) {
       qb.andWhere('pt.editionId = :editionId', { editionId: query.editionId });
+    }
+    if (query.categoryId) {
+      qb.andWhere('pt.categoryId = :categoryId', { categoryId: Number(query.categoryId) });
     }
     if (query.status) {
       qb.andWhere('pt.status = :status', { status: query.status });
@@ -482,6 +508,7 @@ export class PlayerTransfersService {
         'destinationTeam',
         'passOwnerTeam',
         'edition',
+        'category',
         'stage',
         'approvals',
       ],
@@ -532,7 +559,7 @@ export class PlayerTransfersService {
     const numPlayerId = Number(playerId);
     return this.repo.find({
       where: { playerId: numPlayerId, companyId },
-      relations: ['player', 'originTeam', 'destinationTeam', 'passOwnerTeam', 'edition', 'approvals'],
+      relations: ['player', 'originTeam', 'destinationTeam', 'passOwnerTeam', 'edition', 'category', 'approvals'],
       order: { createdAt: 'DESC' },
     });
   }

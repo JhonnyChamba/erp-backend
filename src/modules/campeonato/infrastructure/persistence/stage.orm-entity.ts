@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { TeamOrigin, StageFormat, IntersectionType } from '../../common/enum/campeonato.enum';
+import { TeamOrigin, StageFormat, IntersectionType, StageStatus } from '../../common/enum/campeonato.enum';
 import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
 import { CategoryOrmEntity } from './category.orm-entity';
 
@@ -82,6 +82,21 @@ export class StageOrmEntity {
 
   @Column({ name: 'allow_penalties', type: 'boolean', default: false })
   allowPenalties: boolean;
+
+  // PENDIENTE al generar el torneo; EN PROCESO cuando se inicia el campeonato
+  @Column({ type: 'varchar', length: 20, default: StageStatus.PENDING })
+  status: StageStatus;
+
+  @Column({ name: 'started_at', type: 'timestamp', nullable: true })
+  startedAt: Date;
+
+  // Código del tipo de competencia con el que se configuró la etapa en la edición (define cómo se genera el fixture)
+  @Column({ name: 'competition_type_code', type: 'varchar', length: 50, nullable: true })
+  competitionTypeCode: string;
+
+  // Etapa generada a partir de la configuración de etapas de una categoría de la edición
+  @Column({ name: 'from_edition', type: 'boolean', default: false })
+  fromEdition: boolean;
 
   @Column({ name: 'created_name', type: 'varchar', nullable: true })
   createdName: string;

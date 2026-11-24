@@ -31,6 +31,11 @@ export class MatchesController {
     return this.service.list(this.resolveCompanyId(req), query);
   }
 
+  @Get('fixture-options')
+  getFixtureOptions(@Req() req: any) {
+    return this.service.getFixtureOptions(this.resolveCompanyId(req));
+  }
+
   @Get('standings')
   getStandings(@Query() query: any, @Req() req: any) {
     return this.service.getStandings(this.resolveCompanyId(req), query);

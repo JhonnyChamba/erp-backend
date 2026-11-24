@@ -16,43 +16,12 @@ import {
 import { MatchStatus, MeetingType } from '../../../common/enum/campeonato.enum';
 
 export class GenerateFixtureDto {
-  @IsNotEmpty({ message: 'Debe indicar la etapa del campeonato' })
-  @Type(() => Number)
-  @IsInt()
-  stageId: number;
-
+  // Ediciones con el campeonato iniciado: se genera el fixture de la etapa en proceso de cada categoría
   @IsArray()
-  @ArrayMinSize(2, { message: 'Se requieren al menos 2 equipos para generar el fixture' })
+  @ArrayMinSize(1, { message: 'Seleccione al menos una edición del torneo' })
   @Type(() => Number)
   @IsInt({ each: true })
-  teamIds: number[];
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  scenaryId?: number;
-
-  @IsOptional()
-  @IsString()
-  startDate?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  matchDurationMinutes?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  intervalDays?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  numberOfLaps?: number;
+  editionIds: number[];
 }
 
 export class CreateMatchDto {

@@ -51,6 +51,13 @@ export enum TeamOrigin {
   PREVIOUS_STAGE = 'PREVIOUS_STAGE',
 }
 
+// Estado de una etapa del campeonato: nace PENDIENTE y pasa a EN PROCESO cuando se inicia el campeonato
+export enum StageStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+}
+
 export enum StageFormat {
   EVERYONE_AGAINST_EVERYONE = 'EVERYONE_AGAINST_EVERYONE',
   DIRECT_ELIMINATION = 'DIRECT_ELIMINATION',
@@ -185,4 +192,11 @@ export enum PaymentStatus {
   PARTIAL = 'PARTIAL',
   PAID = 'PAID',
   REFUNDED = 'REFUNDED',
+}
+
+// Estado de una orden de pago de inscripción de equipo
+export enum PaymentOrderStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED',
 }

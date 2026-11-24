@@ -56,6 +56,10 @@ export class EditionCategoryDetailItemDto {
   registrationFee?: number;
 
   @IsOptional()
+  @IsNumber()
+  guaranteeFee?: number;
+
+  @IsOptional()
   @IsInt()
   maxPlayers?: number;
 
