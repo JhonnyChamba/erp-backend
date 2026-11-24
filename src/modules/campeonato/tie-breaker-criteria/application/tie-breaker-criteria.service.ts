@@ -29,12 +29,21 @@ export class TieBreakerCriteriaService implements OnModuleInit {
     }
   }
 
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string }) {
+  async list(companyId: number, query: { page?: number; limit?: number; search?: string; status?: string; description?: string; code?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('tbc');
+    if (query.status === 'true' || query.status === 'false') {
+      qb.andWhere('tbc.isActive = :isActive', { isActive: query.status === 'true' });
+    }
+    if (query.description?.trim()) {
+      qb.andWhere('LOWER(tbc.description) LIKE :desc', { desc: `%${query.description.trim().toLowerCase()}%` });
+    }
+    if (query.code?.trim()) {
+      qb.andWhere('LOWER(tbc.code) LIKE :code', { code: `%${query.code.trim().toLowerCase()}%` });
+    }
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(tbc.description) LIKE :term OR LOWER(tbc.code) LIKE :term OR LOWER(tbc.observation) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,

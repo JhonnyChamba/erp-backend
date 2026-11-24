@@ -11,20 +11,28 @@ export class DemarcationsService {
     private readonly repo: Repository<DemarcationOrmEntity>,
   ) {}
 
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string }) {
+  async list(companyId: number, query: { page?: number; limit?: number; search?: string; zone?: string; name?: string; code?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
+    const limit = Math.max(1, Math.min(100, Number(query.limit) || 50));
     const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('d');
-    // Catálogo global
+    if (query.zone?.trim()) {
+      qb.andWhere('d.zone = :zone', { zone: query.zone.trim() });
+    }
+    if (query.name?.trim()) {
+      qb.andWhere('LOWER(d.name) LIKE :name', { name: `%${query.name.trim().toLowerCase()}%` });
+    }
+    if (query.code?.trim()) {
+      qb.andWhere('LOWER(d.code) LIKE :code', { code: `%${query.code.trim().toLowerCase()}%` });
+    }
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(d.name) LIKE :term OR LOWER(d.code) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,
       });
     }
 
-    qb.orderBy('d.order', 'ASC').addOrderBy('d.createdAt', 'DESC').skip(skip).take(limit);
+    qb.orderBy('d.name', 'ASC').skip(skip).take(limit);
     const [data, total] = await qb.getManyAndCount();
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

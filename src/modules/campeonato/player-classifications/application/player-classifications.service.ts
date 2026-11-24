@@ -20,13 +20,21 @@ export class PlayerClassificationsService {
     private readonly playerRepo: Repository<PlayerOrmEntity>,
   ) {}
 
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string }) {
+  async list(companyId: number, query: { page?: number; limit?: number; search?: string; status?: string; description?: string; code?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('pc');
-    // Catálogo global: no se filtra restrictivamente por empresa
+    if (query.status === 'true' || query.status === 'false') {
+      qb.andWhere('pc.isActive = :isActive', { isActive: query.status === 'true' });
+    }
+    if (query.description?.trim()) {
+      qb.andWhere('LOWER(pc.description) LIKE :desc', { desc: `%${query.description.trim().toLowerCase()}%` });
+    }
+    if (query.code?.trim()) {
+      qb.andWhere('LOWER(pc.code) LIKE :code', { code: `%${query.code.trim().toLowerCase()}%` });
+    }
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(pc.description) LIKE :term OR LOWER(pc.code) LIKE :term OR LOWER(pc.observation) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,

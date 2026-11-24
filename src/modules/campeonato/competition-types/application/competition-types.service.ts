@@ -28,12 +28,21 @@ export class CompetitionTypesService implements OnModuleInit {
     }
   }
 
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string }) {
+  async list(companyId: number, query: { page?: number; limit?: number; search?: string; status?: string; description?: string; code?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('ct');
+    if (query.status === 'true' || query.status === 'false') {
+      qb.andWhere('ct.isActive = :isActive', { isActive: query.status === 'true' });
+    }
+    if (query.description?.trim()) {
+      qb.andWhere('LOWER(ct.description) LIKE :desc', { desc: `%${query.description.trim().toLowerCase()}%` });
+    }
+    if (query.code?.trim()) {
+      qb.andWhere('LOWER(ct.code) LIKE :code', { code: `%${query.code.trim().toLowerCase()}%` });
+    }
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(ct.description) LIKE :term OR LOWER(ct.code) LIKE :term OR LOWER(ct.observation) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,

@@ -39,6 +39,9 @@ export abstract class ContactBaseOrmEntity {
 	@Column({ nullable: true })
 	created_by: number;
 
+	@Column({ nullable: true })
+	updated_by: number;
+
 	@CreateDateColumn({ type: 'timestamp' })
 	created_at: Date;
 

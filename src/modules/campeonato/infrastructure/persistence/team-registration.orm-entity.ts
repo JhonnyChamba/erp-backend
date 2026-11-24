@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { RegistrationStatus, PaymentStatus } from '../../common/enum/campeonato.enum';
 import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
+import { CategoryOrmEntity } from './category.orm-entity';
 import { TeamOrmEntity } from './team.orm-entity';
 
 @Entity('tab_campeonato_team_registrations')
@@ -21,6 +22,13 @@ export class TeamRegistrationOrmEntity {
   @ManyToOne(() => CategoryEditionOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_edition_id' })
   categoryEdition: CategoryEditionOrmEntity;
+
+  @Column({ name: 'category_id', type: 'int', nullable: true })
+  categoryId: number;
+
+  @ManyToOne(() => CategoryOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'category_id' })
+  category: CategoryOrmEntity;
 
   @Column({ name: 'team_id', type: 'int' })
   teamId: number;

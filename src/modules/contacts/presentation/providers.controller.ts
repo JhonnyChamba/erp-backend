@@ -22,12 +22,12 @@ export class ProvidersController {
 
 	@Post()
 	create(@Body() dto: ProviderDto, @Req() req: any) {
-		return this.contactsService.create('provider', dto, req.companyId, req.user?.user_id);
+		return this.contactsService.create('provider', dto, req.companyId, req.user?.user_id ?? req.user?.id);
 	}
 
 	@Patch(':id')
 	update(@Param('id', ParseIntPipe) id: number, @Body() dto: ProviderDto, @Req() req: any) {
-		return this.contactsService.update('provider', id, dto, req.companyId);
+		return this.contactsService.update('provider', id, dto, req.companyId, req.user?.user_id ?? req.user?.id);
 	}
 
 	@Patch(':id/toggle-status')

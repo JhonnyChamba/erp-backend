@@ -44,6 +44,47 @@ export function validarCedulaEcuador(cedula: string): boolean {
   const digitoVerificador = sum % 10 === 0 ? 0 : 10 - (sum % 10);
   return digitoVerificador === parseInt(cedula.charAt(9), 10);
 }
+
+export function validarRucEcuador(ruc: string): boolean {
+  if (!ruc || !/^\d{13}$/.test(ruc.trim())) return false;
+  const prov = parseInt(ruc.substring(0, 2), 10);
+  if (!((prov >= 1 && prov <= 24) || prov === 30)) return false;
+
+  const tercerDigito = parseInt(ruc.charAt(2), 10);
+
+  // 1. Persona natural (tercer dígito < 6)
+  if (tercerDigito < 6) {
+    return ruc.substring(10) !== '000' && validarCedulaEcuador(ruc.substring(0, 10));
+  }
+
+  // 2. Sociedades privadas / extranjeras (tercer dígito == 9)
+  if (tercerDigito === 9) {
+    if (ruc.substring(10) === '000') return false;
+    const coef = [4, 3, 2, 7, 6, 5, 4, 3, 2];
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(ruc.charAt(i), 10) * coef[i];
+    }
+    const mod = sum % 11;
+    const digitoVerificador = mod === 0 ? 0 : 11 - mod;
+    return digitoVerificador === parseInt(ruc.charAt(9), 10);
+  }
+
+  // 3. Entidades públicas (tercer dígito == 6)
+  if (tercerDigito === 6) {
+    if (ruc.substring(9) === '0000') return false;
+    const coef = [3, 2, 7, 6, 5, 4, 3, 2];
+    let sum = 0;
+    for (let i = 0; i < 8; i++) {
+      sum += parseInt(ruc.charAt(i), 10) * coef[i];
+    }
+    const mod = sum % 11;
+    const digitoVerificador = mod === 0 ? 0 : 11 - mod;
+    return digitoVerificador === parseInt(ruc.charAt(8), 10);
+  }
+
+  return false;
+}
 @Injectable()
 export class PlayersService {
   constructor(
@@ -89,38 +130,147 @@ export class PlayersService {
   }
 
   /**
-   * Consulta oficial de identidad / Registro Civil por cédula
+   * Consulta oficial de identidad / Registro Civil por cédula o SRI por RUC
    */
   async consultaRegistroCivil(identification: string, companyId?: number) {
     const ident = (identification || '').trim();
     if (!ident) {
-      throw new BadRequestException('El número de cédula es obligatorio');
+      throw new BadRequestException('El número de identificación es obligatorio');
     }
 
-    const isValid = validarCedulaEcuador(ident);
-    if (!isValid) {
-      throw new BadRequestException('El número ingresado no es una cédula ecuatoriana válida');
+    const isCedula = ident.length === 10 && /^\d{10}$/.test(ident);
+    const isRuc = ident.length === 13 && /^\d{13}$/.test(ident);
+
+    if (!isCedula && !isRuc) {
+      throw new BadRequestException('El documento ingresado debe ser una cédula (10 dígitos) o un RUC (13 dígitos)');
     }
+
+    if (isCedula && !validarCedulaEcuador(ident)) {
+      throw new BadRequestException('El número ingresado no es una cédula ecuatoriana válida según el Registro Civil');
+    }
+
+    if (isRuc && !validarRucEcuador(ident)) {
+      throw new BadRequestException('El número ingresado no es un RUC ecuatoriano válido según el SRI');
+    }
+
+    // Para RUC de persona natural, la cédula subyacente son los primeros 10 dígitos
+    const queryIdent = isRuc && parseInt(ident.charAt(2), 10) < 6 ? ident.substring(0, 10) : ident;
 
     // 1. Primero consultar en el padrón local (base de datos)
-    const local = await this.findGlobalByIdentification(ident, companyId);
+    const local = await this.findGlobalByIdentification(queryIdent, companyId);
     if (local.exists && local.player) {
       return {
         exists: true,
-        source: 'LOCAL_PADRON' as const,
-        isValidCedula: true,
-        player: local.player,
+        source: isRuc ? ('SRI / LOCAL' as const) : ('LOCAL_PADRON' as const),
+        isValidCedula: isCedula,
+        isValidRuc: isRuc,
+        player: {
+          ...local.player,
+          identification: ident,
+        },
         isLinkedToCurrentCompany: local.isLinkedToCurrentCompany,
       };
     }
 
-    // 2. Si no está en el padrón local, consultar proveedor externo (Registro Civil / EcuadorAPI)
+    // 2. Consultar directamente al Catastro Oficial del SRI (en línea, sin API key requerida)
+    const targetRuc = isRuc ? ident : `${ident}001`;
+    try {
+      const sriResp = await fetch(
+        `https://srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/ConsolidadoContribuyente/obtenerPorNumerosRuc?numeroRuc=${targetRuc}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json, text/plain, */*',
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+          signal: AbortSignal.timeout(6000),
+        },
+      );
+
+      if (sriResp.ok) {
+        const data = (await sriResp.json()) as any;
+        const contribuyente = Array.isArray(data) ? data[0] : data;
+        if (contribuyente && contribuyente.razonSocial) {
+          const razonSocial = String(contribuyente.razonSocial).trim();
+          let nombreComercial = String(contribuyente.nombreFantasiaComercial || contribuyente.nombreComercial || '').trim();
+          let direccion = '';
+
+          // Consultar dirección del establecimiento matriz
+          try {
+            const estResp = await fetch(
+              `https://srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/Establecimiento/consultarPorNumeroRuc?numeroRuc=${targetRuc}`,
+              {
+                method: 'GET',
+                headers: {
+                  Accept: 'application/json, text/plain, */*',
+                  'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                },
+                signal: AbortSignal.timeout(4000),
+              },
+            );
+            if (estResp.ok) {
+              const estData = (await estResp.json()) as any;
+              const estArray = Array.isArray(estData) ? estData : estData?.establecimientos || [];
+              if (estArray.length > 0) {
+                const mat = estArray.find((e: any) => e.matriz === 'SI' || e.numeroEstablecimiento === '001') || estArray[0];
+                if (mat) {
+                  direccion = mat.direccionCompleta || mat.calle || '';
+                  if (!nombreComercial && mat.nombreFantasiaComercial) {
+                    nombreComercial = mat.nombreFantasiaComercial.trim();
+                  }
+                }
+              }
+            }
+          } catch {
+            // Silencioso si falla la consulta secundaria de establecimiento
+          }
+
+          let name = razonSocial;
+          let lastName = '';
+          if (isCedula || (isRuc && parseInt(ident.charAt(2), 10) < 6)) {
+            const parts = razonSocial.split(/\s+/);
+            if (parts.length >= 4) {
+              lastName = `${parts[0]} ${parts[1]}`;
+              name = parts.slice(2).join(' ');
+            } else if (parts.length === 3) {
+              lastName = `${parts[0]} ${parts[1]}`;
+              name = parts[2];
+            } else if (parts.length === 2) {
+              lastName = parts[0];
+              name = parts[1];
+            }
+          }
+
+          return {
+            exists: true,
+            source: isRuc ? ('SRI' as const) : ('SRI / REGISTRO_CIVIL' as const),
+            isValidCedula: isCedula,
+            isValidRuc: isRuc,
+            player: {
+              identification: ident,
+              name,
+              lastName,
+              address: direccion,
+              phone: '',
+              email: '',
+            },
+            message: `Datos extraídos con éxito del SRI: ${razonSocial}`,
+          };
+        }
+      }
+    } catch (err) {
+      // Continuar con otros proveedores si SRI no responde
+    }
+
+    // 3. Si no está en SRI ni padrón local, consultar proveedor externo (Registro Civil / EcuadorAPI)
     const apiUrl = process.env.REGISTRO_CIVIL_API_URL || 'https://api.ecuadorapi.com/v1/cedula';
     const apiKey = process.env.REGISTRO_CIVIL_API_KEY || '';
 
     if (apiKey) {
       try {
-        const url = apiUrl.endsWith('/') ? `${apiUrl}${ident}` : `${apiUrl}/${ident}`;
+        const url = apiUrl.endsWith('/') ? `${apiUrl}${queryIdent}` : `${apiUrl}/${queryIdent}`;
         const resp = await fetch(url, {
           method: 'GET',
           headers: {
@@ -162,8 +312,9 @@ export class PlayersService {
 
           return {
             exists: true,
-            source: 'REGISTRO_CIVIL' as const,
-            isValidCedula: true,
+            source: isRuc ? ('SRI / REGISTRO_CIVIL' as const) : ('REGISTRO_CIVIL' as const),
+            isValidCedula: isCedula,
+            isValidRuc: isRuc,
             player: {
               identification: ident,
               name: name.trim(),
@@ -175,17 +326,32 @@ export class PlayersService {
           };
         }
       } catch (err) {
-        console.warn('Error al consultar proveedor externo de Registro Civil:', err);
+        console.warn('Error al consultar proveedor externo de Registro Civil / SRI:', err);
       }
     }
 
-    // 3. Si la cédula es válida pero no figura en registros previos
+    // 3. Si es RUC de sociedad válido pero no se encuentra en padrón externo
+    if (isRuc && parseInt(ident.charAt(2), 10) >= 6) {
+      return {
+        exists: true,
+        source: 'SRI' as const,
+        isValidCedula: false,
+        isValidRuc: true,
+        player: { identification: ident, name: 'Sociedad Verificada SRI' },
+        message: 'RUC de sociedad verificado por algoritmo oficial SRI.',
+      };
+    }
+
+    // 4. Si la cédula o RUC es válida según el algoritmo
     return {
       exists: false,
-      source: null,
-      isValidCedula: true,
+      source: isRuc ? ('SRI' as const) : null,
+      isValidCedula: isCedula,
+      isValidRuc: isRuc,
       player: { identification: ident },
-      message: 'Cédula válida. Puedes ingresar los datos del futbolista.',
+      message: isRuc
+        ? 'RUC válido según SRI. Puedes ingresar los datos del cliente.'
+        : 'Cédula válida según Registro Civil. Puedes ingresar los datos del cliente.',
     };
   }
 

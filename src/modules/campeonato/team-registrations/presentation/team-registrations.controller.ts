@@ -13,7 +13,11 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { TeamRegistrationsService } from '../application/team-registrations.service';
-import { CreateTeamRegistrationDto, UpdateTeamRegistrationDto } from '../application/dto/team-registration.dto';
+import {
+  CreateTeamRegistrationDto,
+  UpdateTeamRegistrationDto,
+  SyncEditionTeamRegistrationsDto,
+} from '../application/dto/team-registration.dto';
 
 @UseGuards(AuthGuard('jwt'), CompanyAccessGuard)
 @Controller('campeonato/team-registrations')
@@ -31,9 +35,20 @@ export class TeamRegistrationsController {
     return this.service.list(this.resolveCompanyId(req), query);
   }
 
+  // Debe declararse antes de ':id' para que 'grouped' no se interprete como un id.
+  @Get('grouped')
+  listByEdition(@Query() query: any, @Req() req: any) {
+    return this.service.listByEdition(this.resolveCompanyId(req), query);
+  }
+
   @Get(':id')
   get(@Param('id') id: string, @Req() req: any) {
     return this.service.get(id, this.resolveCompanyId(req));
+  }
+
+  @Post('sync-edition')
+  syncByEdition(@Body() dto: SyncEditionTeamRegistrationsDto, @Req() req: any) {
+    return this.service.syncByEdition(dto, req.user, this.resolveCompanyId(req));
   }
 
   @Post()

@@ -53,7 +53,7 @@ export class RefereesService {
    * Si query.global === 'true' o no hay companyId, lista de tab_campeonato_referees (padrón global).
    * Si hay companyId (por defecto), lista los árbitros asociados a esa empresa mediante tab_campeonato_company_referees.
    */
-  async list(companyId: number, query: { page?: number; limit?: number; search?: string; global?: string }) {
+  async list(companyId: number, query: { page?: number; limit?: number; search?: string; global?: string; status?: string; identification?: string; name?: string; lastName?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
@@ -62,6 +62,19 @@ export class RefereesService {
     if (isGlobal) {
       const qb = this.repo.createQueryBuilder('r')
         .leftJoinAndSelect('r.guild', 'guild');
+
+      if (query.status === 'true' || query.status === 'false') {
+        qb.andWhere('r.isActive = :isActive', { isActive: query.status === 'true' });
+      }
+      if (query.identification?.trim()) {
+        qb.andWhere('LOWER(r.identification) LIKE :ident', { ident: `%${query.identification.trim().toLowerCase()}%` });
+      }
+      if (query.name?.trim()) {
+        qb.andWhere('LOWER(r.name) LIKE :fname', { fname: `%${query.name.trim().toLowerCase()}%` });
+      }
+      if (query.lastName?.trim()) {
+        qb.andWhere('LOWER(r.lastName) LIKE :flast', { flast: `%${query.lastName.trim().toLowerCase()}%` });
+      }
 
       if (query.search?.trim()) {
         qb.andWhere('(LOWER(r.name) LIKE :term OR LOWER(r.lastName) LIKE :term OR LOWER(r.identification) LIKE :term)', {
@@ -79,6 +92,19 @@ export class RefereesService {
       .innerJoinAndSelect('cr.referee', 'r')
       .leftJoinAndSelect('r.guild', 'guild')
       .where('cr.companyId = :companyId', { companyId });
+
+    if (query.status === 'true' || query.status === 'false') {
+      qb.andWhere('cr.isActive = :isActive', { isActive: query.status === 'true' });
+    }
+    if (query.identification?.trim()) {
+      qb.andWhere('LOWER(r.identification) LIKE :ident', { ident: `%${query.identification.trim().toLowerCase()}%` });
+    }
+    if (query.name?.trim()) {
+      qb.andWhere('LOWER(r.name) LIKE :fname', { fname: `%${query.name.trim().toLowerCase()}%` });
+    }
+    if (query.lastName?.trim()) {
+      qb.andWhere('LOWER(r.lastName) LIKE :flast', { flast: `%${query.lastName.trim().toLowerCase()}%` });
+    }
 
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(r.name) LIKE :term OR LOWER(r.lastName) LIKE :term OR LOWER(r.identification) LIKE :term)', {

@@ -11,12 +11,21 @@ export class RefereeGuildsService {
     private readonly repo: Repository<RefereeGuildOrmEntity>,
   ) {}
 
-  async list(query: { page?: number; limit?: number; search?: string }) {
+  async list(query: { page?: number; limit?: number; search?: string; status?: string; description?: string; acronyms?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 50));
     const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('rg');
+    if (query.status === 'true' || query.status === 'false') {
+      qb.andWhere('rg.isActive = :isActive', { isActive: query.status === 'true' });
+    }
+    if (query.description?.trim()) {
+      qb.andWhere('LOWER(rg.description) LIKE :desc', { desc: `%${query.description.trim().toLowerCase()}%` });
+    }
+    if (query.acronyms?.trim()) {
+      qb.andWhere('LOWER(rg.acronyms) LIKE :acro', { acro: `%${query.acronyms.trim().toLowerCase()}%` });
+    }
     if (query.search?.trim()) {
       qb.andWhere('(LOWER(rg.description) LIKE :term OR LOWER(rg.acronyms) LIKE :term)', {
         term: `%${query.search.trim().toLowerCase()}%`,

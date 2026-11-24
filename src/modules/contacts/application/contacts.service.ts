@@ -113,7 +113,7 @@ export class ContactsService {
 		return this.toItem(kind, saved);
 	}
 
-	async update(kind: ContactKind, id: number, dto: CustomerDto | ProviderDto | SellerDto, companyId: number) {
+	async update(kind: ContactKind, id: number, dto: CustomerDto | ProviderDto | SellerDto, companyId: number, userId?: number) {
 		const entity = await this.findEntity(kind, id, companyId);
 		const data = this.trimStrings(dto);
 
@@ -128,7 +128,7 @@ export class ContactsService {
 		}
 
 		// company_id y created_at nunca se modifican desde el cliente (el DTO no los admite)
-		Object.assign(entity, data);
+		Object.assign(entity, data, userId ? { updated_by: userId } : {});
 		return this.toItem(kind, await this.repo(kind).save(entity));
 	}
 
