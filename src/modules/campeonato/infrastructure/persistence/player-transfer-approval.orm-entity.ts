@@ -7,6 +7,9 @@ export class PlayerTransferApprovalOrmEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ name: 'company_id', type: 'int', nullable: true })
+  companyId: number;
+
   @Column({ name: 'transfer_id', type: 'int' })
   transferId: number;
 

@@ -62,7 +62,8 @@ export class TeamRegistrationsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.service.remove(id, this.resolveCompanyId(req));
+  // `forcePlayers=true`: confirma que también se eliminen los jugadores inscritos de ese equipo
+  remove(@Param('id') id: string, @Query('forcePlayers') forcePlayers: string, @Req() req: any) {
+    return this.service.remove(id, this.resolveCompanyId(req), forcePlayers === 'true');
   }
 }

@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { CategoryEditionOrmEntity } from './category-edition.orm-entity';
 import { CategoryOrmEntity } from './category.orm-entity';
 import { EditionCategoryClassificationOrmEntity } from './edition-category-classification.orm-entity';
+import { EditionCategoryStageOrmEntity } from './edition-category-stage.orm-entity';
 
 @Entity('tab_campeonato_edition_category_details')
 export class EditionCategoryDetailOrmEntity {
@@ -50,6 +51,9 @@ export class EditionCategoryDetailOrmEntity {
   @Column({ name: 'max_players', type: 'int', default: 25 })
   maxPlayers: number;
 
+  @Column({ name: 'use_classifications', type: 'boolean', default: false })
+  useClassifications: boolean;
+
   @Column({ name: 'match_duration_minutes', type: 'int', default: 60 })
   matchDurationMinutes: number;
 
@@ -59,8 +63,16 @@ export class EditionCategoryDetailOrmEntity {
   @Column({ name: 'wait_between_matches_minutes', type: 'int', default: 10 })
   waitBetweenMatchesMinutes: number;
 
+  // Etapas configuradas para la categoría (subdetalle); cada una trae sus criterios de desempate
+  @OneToMany(() => EditionCategoryStageOrmEntity, (stage) => stage.categoryDetail)
+  stages: EditionCategoryStageOrmEntity[];
+
+  /**
+   * @deprecated Reemplazada por la tabla `tab_campeonato_edition_category_stages` (y sus criterios). Ya no se lee ni se escribe;
+   * la columna se conserva solo para que la migración copie lo que tenían las ediciones anteriores y luego se elimine.
+   */
   @Column({ name: 'stages', type: 'jsonb', nullable: true, default: () => "'[]'" })
-  stages: any[];
+  legacyStages: any[];
 
   // El campeonato se inicia por categoría y una sola vez: mientras sea nulo la categoría está pendiente de inicio
   @Column({ name: 'started_at', type: 'timestamp', nullable: true })

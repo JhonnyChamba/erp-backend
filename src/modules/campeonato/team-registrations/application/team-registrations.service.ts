@@ -1,19 +1,24 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { assertBelongsToCompany, ensureCompanyScope } from '../../common/company-scope.util';
 import { TeamRegistrationOrmEntity } from '../../infrastructure/persistence/team-registration.orm-entity';
 import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
 import { CategoryEditionOrmEntity } from '../../infrastructure/persistence/category-edition.orm-entity';
 import { CategoryOrmEntity } from '../../infrastructure/persistence/category.orm-entity';
 import { TeamCategoryHistoryOrmEntity } from '../../infrastructure/persistence/team-category-history.orm-entity';
+import { PlayerRegistrationOrmEntity } from '../../infrastructure/persistence/player-registration.orm-entity';
+import { TeamPaymentOrderOrmEntity } from '../../infrastructure/persistence/team-payment-order.orm-entity';
+import { TeamPaymentOrderDetailOrmEntity } from '../../infrastructure/persistence/team-payment-order-detail.orm-entity';
 import {
   CreateTeamRegistrationDto,
   UpdateTeamRegistrationDto,
   SyncEditionTeamRegistrationsDto,
 } from './dto/team-registration.dto';
-import { RegistrationStatus, PaymentStatus } from '../../common/enum/campeonato.enum';
+import { RegistrationStatus, PaymentStatus, PaymentOrderStatus } from '../../common/enum/campeonato.enum';
 import { TeamPaymentOrdersService } from '../../team-payment-orders/application/team-payment-orders.service';
+
+const UNIQUE_VIOLATION = '23505';
 
 @Injectable()
 export class TeamRegistrationsService {
@@ -89,6 +94,69 @@ export class TeamRegistrationsService {
       );
     } catch (err) {
       console.error('Error al sincronizar historial de categoría desde inscripción de equipo:', err);
+    }
+  }
+
+  /**
+   * Las categorías de una inscripción deben estar configuradas en la edición (su detalle de categorías o, en ediciones antiguas,
+   * su categoría única): de ahí salen la inscripción y la garantía que se cobran. Sin esto la orden de pago saldría en 0 sin avisar.
+   */
+  private async assertCategoriesInEdition(editionId: number, categoryIds: Array<number | null | undefined>) {
+    const edition = await this.editionRepo.findOne({ where: { id: editionId }, relations: ['categoriesDetail'] });
+    if (!edition) throw new BadRequestException('Edición de torneo no encontrada');
+
+    const allowed = new Set<number>(edition.categoriesDetail?.length ? edition.categoriesDetail.map((det) => Number(det.categoryId)) : edition.categoryId ? [Number(edition.categoryId)] : []);
+    if (allowed.size === 0) return;
+
+    const names = new Map<number, string>();
+    for (const det of edition.categoriesDetail ?? []) names.set(Number(det.categoryId), det.categoryDescription || `categoría ${det.categoryId}`);
+
+    for (const categoryId of categoryIds) {
+      if (!categoryId) throw new BadRequestException(`La edición "${edition.name}" tiene categorías configuradas: la inscripción debe indicar la categoría.`);
+      if (!allowed.has(Number(categoryId))) {
+        throw new BadRequestException(`La categoría ${categoryId} no está configurada en la edición "${edition.name}". Agrégala en el detalle de categorías de la edición antes de inscribir equipos.`);
+      }
+    }
+  }
+
+  /**
+   * Prepara el borrado de inscripciones de equipos dentro de la transacción de quien llama:
+   * - con una orden de pago ya pagada no se puede quitar la inscripción;
+   * - los jugadores inscritos se borran en cascada: solo se permite con la confirmación del usuario (`forcePlayers`);
+   * - las órdenes pendientes pierden la línea de la inscripción (se recalcula su total) y quedan canceladas si se quedan sin líneas.
+   */
+  private async releaseRegistrations(manager: EntityManager, registrations: TeamRegistrationOrmEntity[], forcePlayers: boolean) {
+    if (registrations.length === 0) return;
+    const ids = registrations.map((registration) => Number(registration.id));
+
+    const lines = await manager.getRepository(TeamPaymentOrderDetailOrmEntity).find({ where: { teamRegistrationId: In(ids) }, relations: ['order'] });
+
+    const paidOrders = [...new Set(lines.filter((line) => line.order?.status === PaymentOrderStatus.PAID).map((line) => line.order.id))];
+    if (paidOrders.length > 0) {
+      throw new BadRequestException(`No se pueden quitar inscripciones que tienen una orden de pago ya pagada (${paidOrders.length} orden(es)). Resuelve el pago antes de quitarlas.`);
+    }
+
+    const players = await manager.getRepository(PlayerRegistrationOrmEntity).count({ where: { teamRegistrationId: In(ids) } });
+    if (players > 0 && !forcePlayers) {
+      throw new ConflictException({ code: 'PLAYERS_WOULD_BE_DELETED', message: `Las inscripciones que se van a quitar tienen ${players} jugador(es) inscrito(s); al quitarlas también se eliminan. Confirma para continuar.`, players });
+    }
+
+    const orderRepo = manager.getRepository(TeamPaymentOrderOrmEntity);
+    const detailRepo = manager.getRepository(TeamPaymentOrderDetailOrmEntity);
+    const pendingOrderIds = [...new Set(lines.filter((line) => line.order?.status === PaymentOrderStatus.PENDING).map((line) => line.order.id))];
+
+    for (const orderId of pendingOrderIds) {
+      const removedLines = lines.filter((line) => line.order.id === orderId);
+      await detailRepo.remove(removedLines);
+
+      const remaining = await detailRepo.find({ where: { orderId } });
+      const order = await orderRepo.findOneOrFail({ where: { id: orderId } });
+      if (remaining.length === 0) {
+        order.status = PaymentOrderStatus.CANCELLED;
+      } else {
+        order.totalAmount = Math.round(remaining.reduce((total, line) => total + Number(line.subtotal || 0), 0) * 100) / 100;
+      }
+      await orderRepo.save(order);
     }
   }
 
@@ -249,24 +317,36 @@ export class TeamRegistrationsService {
   async create(dto: CreateTeamRegistrationDto, user: any, companyId: number) {
     await assertBelongsToCompany(this.teamRepo, dto.teamId, companyId, 'Equipo no encontrado');
     await assertBelongsToCompany(this.editionRepo, dto.categoryEditionId, companyId, 'Edición de torneo no encontrada');
-    const item = this.repo.create({
-      ...dto,
-      // Toda inscripción nueva queda pendiente de aprobación y de pago
-      status: dto.status ?? RegistrationStatus.PENDING,
-      paymentStatus: dto.paymentStatus ?? PaymentStatus.UNPAID,
-      companyId,
-      createdBy: user?.user_id?.toString() || user?.id?.toString(),
-      createdName: user?.user_name || user?.name,
-    });
-    const saved = await this.repo.save(item);
+    await this.assertCategoriesInEdition(Number(dto.categoryEditionId), [dto.categoryId]);
+
+    // La inscripción y su orden de pago se guardan juntas: si falla una, no queda la otra.
+    let result: Awaited<ReturnType<TeamPaymentOrdersService['generateForRegistrations']>> & { saved: TeamRegistrationOrmEntity };
+    try {
+      result = await this.repo.manager.transaction(async (manager) => {
+        const repo = manager.getRepository(TeamRegistrationOrmEntity);
+        const saved = await repo.save(
+          repo.create({
+            ...dto,
+            // Toda inscripción nueva queda pendiente de aprobación y de pago
+            status: dto.status ?? RegistrationStatus.PENDING,
+            paymentStatus: dto.paymentStatus ?? PaymentStatus.UNPAID,
+            companyId,
+            createdBy: user?.user_id?.toString() || user?.id?.toString(),
+            createdName: user?.user_name || user?.name,
+          }),
+        );
+        return { saved, ...(await this.paymentOrders.generateForRegistrations([saved], user, companyId, manager)) };
+      });
+    } catch (error) {
+      if (error?.code === UNIQUE_VIOLATION) throw new BadRequestException('El equipo ya está inscrito en esa categoría de la edición.');
+      throw error;
+    }
 
     if (dto.teamId && dto.categoryEditionId) {
       await this.syncTeamCategoryHistory(dto.teamId, dto.categoryEditionId, user, companyId, dto.categoryId);
     }
 
-    const paymentOrders = await this.paymentOrders.generateForRegistrations([saved], user, companyId);
-
-    return { ...(await this.get(saved.id, companyId)), paymentOrders };
+    return { ...(await this.get(result.saved.id, companyId)), paymentOrders: result.orders, paymentOrdersSkipped: result.skipped };
   }
 
   async syncByEdition(dto: SyncEditionTeamRegistrationsDto, user: any, companyId: number) {
@@ -312,88 +392,108 @@ export class TeamRegistrationsService {
       }
     }
 
-    // Obtener inscripciones actuales de esta edición para esta empresa
-    const existing = await this.repo.find({
-      where: { categoryEditionId: editionId, companyId },
-    });
+    await this.assertCategoriesInEdition(editionId, [...new Set(incomingItems.map((item) => item.categoryId))]);
 
-    const existingById = new Map<number, TeamRegistrationOrmEntity>();
-    const existingByCatAndTeam = new Map<string, TeamRegistrationOrmEntity>();
-    for (const ex of existing) {
-      existingById.set(Number(ex.id), ex);
-      if (ex.categoryId) {
-        existingByCatAndTeam.set(`${Number(ex.categoryId)}_${Number(ex.teamId)}`, ex);
-      }
-    }
-
-    const keptIds = new Set<number>();
-    const savedResults: TeamRegistrationOrmEntity[] = [];
-    const createdRegistrations: TeamRegistrationOrmEntity[] = [];
     const userId = user?.user_id?.toString() || user?.id?.toString();
     const userName = user?.user_name || user?.name;
 
-    for (const inc of incomingItems) {
-      const compositeKey = `${inc.categoryId}_${inc.teamId}`;
-      let prev =
-        (inc.id ? existingById.get(Number(inc.id)) : undefined) ||
-        existingByCatAndTeam.get(compositeKey) ||
-        existing.find((ex) => !ex.categoryId && Number(ex.teamId) === inc.teamId && !keptIds.has(Number(ex.id)));
+    // Altas, cambios, bajas y órdenes de pago en una sola transacción: o se guarda todo o no se guarda nada.
+    let outcome: { savedResults: TeamRegistrationOrmEntity[]; orders: TeamPaymentOrderOrmEntity[]; skipped: Awaited<ReturnType<TeamPaymentOrdersService['generateForRegistrations']>>['skipped']; historyJobs: Array<{ teamId: number; categoryId: number }> };
+    try {
+      outcome = await this.repo.manager.transaction(async (manager) => {
+        const repo = manager.getRepository(TeamRegistrationOrmEntity);
 
-      if (prev && keptIds.has(Number(prev.id))) {
-        prev = undefined;
-      }
+        // Obtener inscripciones actuales de esta edición para esta empresa
+        const existing = await repo.find({ where: { categoryEditionId: editionId, companyId } });
 
-      if (prev) {
-        keptIds.add(Number(prev.id));
-        const categoryChanged = Number(prev.categoryId) !== Number(inc.categoryId);
-        prev.categoryId = inc.categoryId;
-        prev.groupName = inc.groupName ?? null;
-        if (inc.status) prev.status = inc.status;
-        if (inc.paymentStatus) prev.paymentStatus = inc.paymentStatus;
-        prev.pointsPenalty = inc.pointsPenalty;
-        prev.updatedBy = userId;
-        prev.updateName = userName;
-        const updated = await this.repo.save(prev);
-        savedResults.push(updated);
-        if (categoryChanged) {
-          await this.syncTeamCategoryHistory(inc.teamId, editionId, user, companyId, inc.categoryId);
+        const existingById = new Map<number, TeamRegistrationOrmEntity>();
+        const existingByCatAndTeam = new Map<string, TeamRegistrationOrmEntity>();
+        for (const ex of existing) {
+          existingById.set(Number(ex.id), ex);
+          if (ex.categoryId) {
+            existingByCatAndTeam.set(`${Number(ex.categoryId)}_${Number(ex.teamId)}`, ex);
+          }
         }
-      } else {
-        const created = await this.repo.save(
-          this.repo.create({
-            companyId,
-            categoryEditionId: editionId,
-            categoryId: inc.categoryId,
-            teamId: inc.teamId,
-            groupName: inc.groupName,
-            status: inc.status ?? RegistrationStatus.PENDING,
-            paymentStatus: inc.paymentStatus ?? PaymentStatus.UNPAID,
-            pointsPenalty: inc.pointsPenalty,
-            createdBy: userId,
-            createdName: userName,
-          }),
-        );
-        keptIds.add(Number(created.id));
-        savedResults.push(created);
-        createdRegistrations.push(created);
-        await this.syncTeamCategoryHistory(inc.teamId, editionId, user, companyId, inc.categoryId);
-      }
+
+        const keptIds = new Set<number>();
+        const savedResults: TeamRegistrationOrmEntity[] = [];
+        const createdRegistrations: TeamRegistrationOrmEntity[] = [];
+        // El historial de categorías se registra después de confirmar la transacción (si falla no debe deshacer la inscripción)
+        const historyJobs: Array<{ teamId: number; categoryId: number }> = [];
+
+        for (const inc of incomingItems) {
+          const compositeKey = `${inc.categoryId}_${inc.teamId}`;
+          let prev =
+            (inc.id ? existingById.get(Number(inc.id)) : undefined) ||
+            existingByCatAndTeam.get(compositeKey) ||
+            existing.find((ex) => !ex.categoryId && Number(ex.teamId) === inc.teamId && !keptIds.has(Number(ex.id)));
+
+          if (prev && keptIds.has(Number(prev.id))) {
+            prev = undefined;
+          }
+
+          if (prev) {
+            keptIds.add(Number(prev.id));
+            const categoryChanged = Number(prev.categoryId) !== Number(inc.categoryId);
+            prev.categoryId = inc.categoryId;
+            prev.groupName = inc.groupName ?? null;
+            if (inc.status) prev.status = inc.status;
+            if (inc.paymentStatus) prev.paymentStatus = inc.paymentStatus;
+            prev.pointsPenalty = inc.pointsPenalty;
+            prev.updatedBy = userId;
+            prev.updateName = userName;
+            const updated = await repo.save(prev);
+            savedResults.push(updated);
+            if (categoryChanged) historyJobs.push({ teamId: inc.teamId, categoryId: inc.categoryId });
+          } else {
+            const created = await repo.save(
+              repo.create({
+                companyId,
+                categoryEditionId: editionId,
+                categoryId: inc.categoryId,
+                teamId: inc.teamId,
+                groupName: inc.groupName,
+                status: inc.status ?? RegistrationStatus.PENDING,
+                paymentStatus: inc.paymentStatus ?? PaymentStatus.UNPAID,
+                pointsPenalty: inc.pointsPenalty,
+                createdBy: userId,
+                createdName: userName,
+              }),
+            );
+            keptIds.add(Number(created.id));
+            savedResults.push(created);
+            createdRegistrations.push(created);
+            historyJobs.push({ teamId: inc.teamId, categoryId: inc.categoryId });
+          }
+        }
+
+        // Eliminar inscripciones que fueron quitadas de la edición (con sus órdenes pendientes y, si el usuario lo confirma, sus jugadores)
+        const toRemove = existing.filter((ex) => !keptIds.has(Number(ex.id)));
+        if (toRemove.length > 0) {
+          await this.releaseRegistrations(manager, toRemove, dto.forceRemovePlayers === true);
+          await repo.remove(toRemove);
+        }
+
+        // Cada equipo inscrito genera su orden de pago: una línea por categoría y, en cada una, los conceptos que se cobran
+        const { orders, skipped } = await this.paymentOrders.generateForRegistrations(createdRegistrations, user, companyId, manager);
+
+        return { savedResults, orders, skipped, historyJobs };
+      });
+    } catch (error) {
+      if (error?.code === UNIQUE_VIOLATION) throw new BadRequestException('Un equipo ya está inscrito en esa categoría de la edición.');
+      throw error;
     }
 
-    // Eliminar inscripciones que fueron quitadas de la edición
-    const toRemove = existing.filter((ex) => !keptIds.has(Number(ex.id)));
-    if (toRemove.length > 0) {
-      await this.repo.remove(toRemove);
+    for (const job of outcome.historyJobs) {
+      await this.syncTeamCategoryHistory(job.teamId, editionId, user, companyId, job.categoryId);
     }
-
-    // Cada equipo inscrito genera su orden de pago: una línea por categoría y, en cada una, los conceptos que se cobran
-    const paymentOrders = await this.paymentOrders.generateForRegistrations(createdRegistrations, user, companyId);
 
     return {
       categoryEditionId: editionId,
-      totalRegistered: savedResults.length,
-      data: savedResults,
-      paymentOrders,
+      totalRegistered: outcome.savedResults.length,
+      data: outcome.savedResults,
+      paymentOrders: outcome.orders,
+      paymentOrdersSkipped: outcome.skipped,
     };
   }
 
@@ -405,11 +505,20 @@ export class TeamRegistrationsService {
     if (dto.categoryEditionId) {
       await assertBelongsToCompany(this.editionRepo, dto.categoryEditionId, companyId, 'Edición de torneo no encontrada');
     }
+    if (dto.categoryId || dto.categoryEditionId) {
+      await this.assertCategoriesInEdition(Number(dto.categoryEditionId || item.categoryEditionId), [dto.categoryId || item.categoryId]);
+    }
     Object.assign(item, dto, {
       updatedBy: user?.user_id?.toString() || user?.id?.toString(),
       updateName: user?.user_name || user?.name,
     });
-    const saved = await this.repo.save(item);
+    let saved: TeamRegistrationOrmEntity;
+    try {
+      saved = await this.repo.save(item);
+    } catch (error) {
+      if (error?.code === UNIQUE_VIOLATION) throw new BadRequestException('El equipo ya está inscrito en esa categoría de la edición.');
+      throw error;
+    }
 
     const targetTeamId = dto.teamId || item.teamId;
     const targetEditionId = dto.categoryEditionId || item.categoryEditionId;
@@ -421,8 +530,11 @@ export class TeamRegistrationsService {
     return this.get(saved.id, companyId);
   }
 
-  async remove(id: string | number, companyId: number) {
+  async remove(id: string | number, companyId: number, forcePlayers = false) {
     const item = await this.get(id, companyId, true);
-    return this.repo.remove(item);
+    return this.repo.manager.transaction(async (manager) => {
+      await this.releaseRegistrations(manager, [item], forcePlayers);
+      return manager.getRepository(TeamRegistrationOrmEntity).remove(item);
+    });
   }
 }

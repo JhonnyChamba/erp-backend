@@ -221,7 +221,7 @@ export class AppointmentsService {
 
 			if (rows.length > 0) {
 				const itemRepo = manager.getRepository(AppointmentItemOrmEntity);
-				await itemRepo.save(rows.map((item) => itemRepo.create({ ...item, appointment_id: savedApt.id })));
+				await itemRepo.save(rows.map((item) => itemRepo.create({ ...item, company_id: companyId, appointment_id: savedApt.id })));
 			}
 
 			return savedApt.id;
@@ -271,7 +271,7 @@ export class AppointmentsService {
 				// Replace items
 				await itemRepo.delete({ appointment_id: apt.id });
 				if (rows.length > 0) {
-					await itemRepo.save(rows.map((item) => itemRepo.create({ ...item, appointment_id: apt.id })));
+					await itemRepo.save(rows.map((item) => itemRepo.create({ ...item, company_id: companyId, appointment_id: apt.id })));
 				}
 
 				apt.subtotal = Math.round(subtotal * 100) / 100;

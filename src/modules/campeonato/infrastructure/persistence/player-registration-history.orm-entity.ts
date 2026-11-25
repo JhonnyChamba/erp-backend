@@ -8,6 +8,9 @@ export class PlayerRegistrationHistoryOrmEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ name: 'company_id', type: 'int', nullable: true })
+  companyId: number;
+
   @Column({ name: 'player_registration_id', type: 'int', nullable: true })
   playerRegistrationId: number;
 

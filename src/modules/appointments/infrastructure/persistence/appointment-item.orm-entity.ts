@@ -13,6 +13,9 @@ export class AppointmentItemOrmEntity {
 	@PrimaryGeneratedColumn()
 	id: number;
 
+	@Column({ name: 'company_id', type: 'int', nullable: true })
+	company_id: number;
+
 	@Column({ name: 'appointment_id', type: 'int' })
 	appointment_id: number;
 

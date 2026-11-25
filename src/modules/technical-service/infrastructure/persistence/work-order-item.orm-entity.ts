@@ -12,6 +12,9 @@ export class WorkOrderItemOrmEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ name: 'company_id', type: 'int', nullable: true })
+  company_id: number;
+
   @Column({ name: 'work_order_id', type: 'int' })
   work_order_id: number;
 

@@ -31,9 +31,15 @@ export class CategoryEditionsController {
     return this.service.list(this.resolveCompanyId(req), query);
   }
 
+  // Qué se eliminaría junto con la edición (para confirmarlo antes de borrar)
+  @Get(':id/deletion-summary')
+  deletionSummary(@Param('id') id: string, @Req() req: any) {
+    return this.service.deletionSummary(id, this.resolveCompanyId(req));
+  }
+
   @Get(':id')
   get(@Param('id') id: string, @Req() req: any) {
-    return this.service.get(id, this.resolveCompanyId(req));
+    return this.service.getForm(id, this.resolveCompanyId(req));
   }
 
   @Post()

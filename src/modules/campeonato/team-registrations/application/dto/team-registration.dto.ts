@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -132,4 +133,9 @@ export class SyncEditionTeamRegistrationsDto {
   @ValidateNested({ each: true })
   @Type(() => BulkCategoryRegistrationGroupDto)
   categories: BulkCategoryRegistrationGroupDto[];
+
+  // Quitar inscripciones con jugadores inscritos borra también a esos jugadores: solo se hace si el usuario lo confirma.
+  @IsOptional()
+  @IsBoolean()
+  forceRemovePlayers?: boolean;
 }

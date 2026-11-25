@@ -16,6 +16,8 @@ import { CategoryOrmEntity } from './infrastructure/persistence/category.orm-ent
 import { CategoryEditionOrmEntity } from './infrastructure/persistence/category-edition.orm-entity';
 import { EditionCategoryDetailOrmEntity } from './infrastructure/persistence/edition-category-detail.orm-entity';
 import { EditionCategoryClassificationOrmEntity } from './infrastructure/persistence/edition-category-classification.orm-entity';
+import { EditionCategoryStageOrmEntity } from './infrastructure/persistence/edition-category-stage.orm-entity';
+import { EditionStageTieBreakerOrmEntity } from './infrastructure/persistence/edition-stage-tie-breaker.orm-entity';
 import { StageOrmEntity } from './infrastructure/persistence/stage.orm-entity';
 import { ScenaryOrmEntity } from './infrastructure/persistence/scenary.orm-entity';
 import { TeamRegistrationOrmEntity } from './infrastructure/persistence/team-registration.orm-entity';
@@ -44,7 +46,6 @@ import { CompetitionLapOrmEntity } from './infrastructure/persistence/competitio
 import { TieBreakerCriterionOrmEntity } from './infrastructure/persistence/tie-breaker-criterion.orm-entity';
 import { StageTemplateOrmEntity } from './infrastructure/persistence/stage-template.orm-entity';
 import { StageTemplateDetailOrmEntity } from './infrastructure/persistence/stage-template-detail.orm-entity';
-import { EditionScenaryOrmEntity } from './infrastructure/persistence/edition-scenary.orm-entity';
 
 // Controladores de cada apartado
 import { PositionsController } from './positions/presentation/positions.controller';
@@ -123,6 +124,8 @@ const entities = [
   CategoryEditionOrmEntity,
   EditionCategoryDetailOrmEntity,
   EditionCategoryClassificationOrmEntity,
+  EditionCategoryStageOrmEntity,
+  EditionStageTieBreakerOrmEntity,
   StageOrmEntity,
   ScenaryOrmEntity,
   TeamRegistrationOrmEntity,
@@ -153,7 +156,6 @@ const entities = [
   TieBreakerCriterionOrmEntity,
   StageTemplateOrmEntity,
   StageTemplateDetailOrmEntity,
-  EditionScenaryOrmEntity,
   ModuleOrmEntity,
   subModulesOrmEntity,
 ];

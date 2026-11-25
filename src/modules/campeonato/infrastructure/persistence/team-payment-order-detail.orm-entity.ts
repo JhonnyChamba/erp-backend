@@ -22,6 +22,9 @@ export class TeamPaymentOrderDetailOrmEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ name: 'company_id', type: 'int', nullable: true })
+  companyId: number;
+
   @Column({ name: 'order_id', type: 'int' })
   orderId: number;
 

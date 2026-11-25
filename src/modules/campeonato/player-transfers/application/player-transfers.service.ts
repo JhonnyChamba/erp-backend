@@ -186,6 +186,7 @@ export class PlayerTransfersService {
     const approvalsToCreate: Partial<PlayerTransferApprovalOrmEntity>[] = requiredRoles.map((role) =>
       role === TransferApprovalRole.DESTINATION_TEAM
         ? {
+            companyId: savedTransfer.companyId,
             transferId: savedTransfer.id,
             role,
             status: TransferApprovalStatus.APPROVED, // El equipo que solicita aprueba automáticamente su petición
@@ -194,7 +195,7 @@ export class PlayerTransfersService {
             actionDate: new Date(),
             comments: 'Solicitud formal emitida por el club destino',
           }
-        : { transferId: savedTransfer.id, role, status: TransferApprovalStatus.PENDING },
+        : { companyId: savedTransfer.companyId, transferId: savedTransfer.id, role, status: TransferApprovalStatus.PENDING },
     );
 
     if (approvalsToCreate.length > 0) {
@@ -225,6 +226,7 @@ export class PlayerTransfersService {
     let approval = transfer.approvals.find((a) => a.role === dto.role);
     if (!approval) {
       approval = this.approvalRepo.create({
+        companyId: transfer.companyId,
         transferId: transfer.id,
         role: dto.role,
       });
@@ -380,6 +382,7 @@ export class PlayerTransfersService {
         await playerRegRepo.save(originReg);
 
         await historyRepo.save({
+          companyId: transfer.companyId,
           playerRegistrationId: originReg.id,
           playerId: transfer.playerId,
           action: PlayerRegistrationHistoryAction.FINALIZED,
@@ -415,6 +418,7 @@ export class PlayerTransfersService {
       );
 
       await historyRepo.save({
+        companyId: transfer.companyId,
         playerRegistrationId: savedNewReg.id,
         playerId: transfer.playerId,
         action: PlayerRegistrationHistoryAction.TRANSFERRED,

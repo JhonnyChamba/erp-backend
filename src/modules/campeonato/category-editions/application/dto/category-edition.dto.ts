@@ -14,6 +14,79 @@ import {
 import { Type } from 'class-transformer';
 import { EditionStatus } from '../../../common/enum/campeonato.enum';
 
+export class EditionCategoryStageCriterionDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  criterionId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  id?: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsString()
+  observation?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  order?: number;
+}
+
+export class EditionCategoryStageItemDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  stageOrder?: number;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  competitionTypeId?: number;
+
+  @IsOptional()
+  @IsString()
+  competitionTypeDescription?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  competitionLapId?: number;
+
+  @IsOptional()
+  @IsString()
+  competitionLapDescription?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EditionCategoryStageCriterionDto)
+  tieBreakerCriteria?: EditionCategoryStageCriterionDto[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  tieBreakerCriterionId?: number;
+
+  @IsOptional()
+  @IsString()
+  tieBreakerCriterionDescription?: string;
+}
+
 export class EditionCategoryClassificationItemDto {
   @IsNotEmpty({ message: 'El ID de clasificación es obligatorio' })
   @Type(() => Number)
@@ -64,6 +137,10 @@ export class EditionCategoryDetailItemDto {
   maxPlayers?: number;
 
   @IsOptional()
+  @IsBoolean()
+  useClassifications?: boolean;
+
+  @IsOptional()
   @IsInt()
   matchDurationMinutes?: number;
 
@@ -83,7 +160,9 @@ export class EditionCategoryDetailItemDto {
 
   @IsOptional()
   @IsArray()
-  stages?: any[];
+  @ValidateNested({ each: true })
+  @Type(() => EditionCategoryStageItemDto)
+  stages?: EditionCategoryStageItemDto[];
 }
 
 export class CreateCategoryEditionDto {

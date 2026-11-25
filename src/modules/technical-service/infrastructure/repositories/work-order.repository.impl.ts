@@ -157,6 +157,7 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
     if (items && items.length > 0) {
       const itemEntities = items.map((i) =>
         itemRepo.create({
+          company_id: entity.companyId,
           work_order_id: saved.id,
           item_type: i.itemType,
           description: i.description,
@@ -331,6 +332,7 @@ export class WorkOrderRepositoryImpl implements WorkOrderRepository {
         if (items.length > 0) {
           const itemEntities = items.map((i) =>
             itemRepo.create({
+              company_id: entity.companyId,
               work_order_id: entity.id!,
               item_type: i.itemType,
               description: i.description,

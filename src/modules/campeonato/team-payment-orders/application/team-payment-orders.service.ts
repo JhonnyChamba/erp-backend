@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { ensureCompanyScope } from '../../common/company-scope.util';
 import { PaymentConcept, PaymentOrderStatus } from '../../common/enum/campeonato.enum';
 import { TeamPaymentOrderOrmEntity } from '../../infrastructure/persistence/team-payment-order.orm-entity';
@@ -12,6 +12,13 @@ import { CategoryOrmEntity } from '../../infrastructure/persistence/category.orm
 import { TeamOrmEntity } from '../../infrastructure/persistence/team.orm-entity';
 
 const round2 = (value: unknown): number => Math.round((Number(value) || 0) * 100) / 100;
+
+/** Equipo para el que no se generó orden de pago y el motivo. */
+export interface SkippedPaymentOrder {
+  teamId: number;
+  teamName: string;
+  reason: string;
+}
 
 @Injectable()
 export class TeamPaymentOrdersService {
@@ -33,20 +40,32 @@ export class TeamPaymentOrdersService {
   /**
    * Genera las órdenes de pago de las inscripciones nuevas: una orden por equipo y edición, con una línea por cada
    * categoría inscrita y, en cada línea, dos conceptos: la inscripción y la garantía de esa categoría.
-   * Una orden sin valor a cobrar no se genera.
+   * Una orden sin valor a cobrar no se genera: se devuelve en `skipped` con el motivo para avisar al usuario.
+   * Con `manager` escribe dentro de la transacción de quien la llama.
    */
-  async generateForRegistrations(registrations: TeamRegistrationOrmEntity[], user: any, companyId: number): Promise<TeamPaymentOrderOrmEntity[]> {
-    if (registrations.length === 0) return [];
+  async generateForRegistrations(
+    registrations: TeamRegistrationOrmEntity[],
+    user: any,
+    companyId: number,
+    manager?: EntityManager,
+  ): Promise<{ orders: TeamPaymentOrderOrmEntity[]; skipped: SkippedPaymentOrder[] }> {
+    const orders: TeamPaymentOrderOrmEntity[] = [];
+    const skipped: SkippedPaymentOrder[] = [];
+    if (registrations.length === 0) return { orders, skipped };
+
+    const db = manager ?? this.repo.manager;
+    const orderRepo = db.getRepository(TeamPaymentOrderOrmEntity);
+    const orderDetailRepo = db.getRepository(TeamPaymentOrderDetailOrmEntity);
 
     const editionIds = [...new Set(registrations.map((r) => Number(r.categoryEditionId)))];
     const teamIds = [...new Set(registrations.map((r) => Number(r.teamId)))];
     const categoryIds = [...new Set(registrations.map((r) => Number(r.categoryId)).filter(Boolean))];
 
     const [editions, editionDetails, categories, teams] = await Promise.all([
-      this.editionRepo.find({ where: { id: In(editionIds) } }),
-      this.editionDetailRepo.find({ where: { editionId: In(editionIds) } }),
-      categoryIds.length ? this.categoryRepo.find({ where: { id: In(categoryIds) } }) : Promise.resolve([] as CategoryOrmEntity[]),
-      this.teamRepo.find({ where: { id: In(teamIds) } }),
+      db.getRepository(CategoryEditionOrmEntity).find({ where: { id: In(editionIds) } }),
+      db.getRepository(EditionCategoryDetailOrmEntity).find({ where: { editionId: In(editionIds) } }),
+      categoryIds.length ? db.getRepository(CategoryOrmEntity).find({ where: { id: In(categoryIds) } }) : Promise.resolve([] as CategoryOrmEntity[]),
+      db.getRepository(TeamOrmEntity).find({ where: { id: In(teamIds) } }),
     ]);
 
     const actor = { createdBy: user?.user_id?.toString() || user?.id?.toString(), createdName: user?.user_name || user?.name };
@@ -56,12 +75,14 @@ export class TeamPaymentOrdersService {
       groups.set(key, [...(groups.get(key) ?? []), registration]);
     }
 
-    const orders: TeamPaymentOrderOrmEntity[] = [];
     for (const [key, teamRegistrations] of groups) {
       const [editionId, teamId] = key.split('_').map(Number);
       const edition = editions.find((item) => Number(item.id) === editionId);
       const team = teams.find((item) => Number(item.id) === teamId);
-      if (!edition || !team) continue;
+      if (!edition || !team) {
+        skipped.push({ teamId, teamName: team?.name ?? `Equipo ${teamId}`, reason: 'No se encontró la edición o el equipo para generar la orden de pago.' });
+        continue;
+      }
 
       const lines = teamRegistrations.map((registration) => {
         const category = categories.find((item) => Number(item.id) === Number(registration.categoryId));
@@ -80,10 +101,17 @@ export class TeamPaymentOrdersService {
       });
 
       const totalAmount = round2(lines.reduce((total, line) => total + line.subtotal, 0));
-      if (totalAmount <= 0) continue;
+      if (totalAmount <= 0) {
+        skipped.push({
+          teamId,
+          teamName: team.name,
+          reason: `No se generó orden de pago: la inscripción y la garantía de ${lines.map((line) => `"${line.categoryName}"`).join(', ')} están en 0 en la edición "${edition.name}".`,
+        });
+        continue;
+      }
 
-      const order = await this.repo.save(
-        this.repo.create({
+      const order = await orderRepo.save(
+        orderRepo.create({
           companyId,
           categoryEditionId: editionId,
           editionName: edition.name,
@@ -94,9 +122,10 @@ export class TeamPaymentOrdersService {
           ...actor,
         }),
       );
-      order.details = await this.detailRepo.save(
+      order.details = await orderDetailRepo.save(
         lines.map((line) =>
-          this.detailRepo.create({
+          orderDetailRepo.create({
+            companyId,
             orderId: order.id,
             teamRegistrationId: line.registration.id,
             categoryId: line.registration.categoryId ?? undefined,
@@ -109,7 +138,7 @@ export class TeamPaymentOrdersService {
       orders.push(order);
     }
 
-    return orders;
+    return { orders, skipped };
   }
 
   async list(companyId: number, query: { page?: number; limit?: number; search?: string; status?: string; categoryEditionId?: number; teamId?: number }) {

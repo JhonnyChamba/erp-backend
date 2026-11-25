@@ -742,6 +742,7 @@ export class PlayerRegistrationsService {
 
             if (reactivated) {
               await historyRunnerRepo.save({
+                companyId,
                 playerRegistrationId: prev.id,
                 playerId: prev.playerId,
                 action: PlayerRegistrationHistoryAction.REACTIVATED,
@@ -772,6 +773,7 @@ export class PlayerRegistrationsService {
             totalSaved++;
 
             await historyRunnerRepo.save({
+              companyId,
               playerRegistrationId: created.id,
               playerId: created.playerId,
               action: PlayerRegistrationHistoryAction.CREATED,
@@ -865,6 +867,7 @@ export class PlayerRegistrationsService {
 
     // Registrar historial de auditoría
     await this.historyRepo.save({
+      companyId,
       playerRegistrationId: saved.id,
       playerId: saved.playerId,
       action: PlayerRegistrationHistoryAction.CREATED,
@@ -967,6 +970,7 @@ export class PlayerRegistrationsService {
         createdRecords.push(saved);
 
         await historyRunnerRepo.save({
+          companyId: saved.companyId,
           playerRegistrationId: saved.id,
           playerId: saved.playerId,
           action: PlayerRegistrationHistoryAction.MASS_CREATED,
@@ -1028,6 +1032,7 @@ export class PlayerRegistrationsService {
 
     if (dto.status && dto.status !== previousStatus) {
       await this.historyRepo.save({
+        companyId: saved.companyId,
         playerRegistrationId: saved.id,
         playerId: saved.playerId,
         action: PlayerRegistrationHistoryAction.STATUS_CHANGE,
@@ -1066,6 +1071,7 @@ export class PlayerRegistrationsService {
     }
 
     await this.historyRepo.save({
+      companyId: saved.companyId,
       playerRegistrationId: saved.id,
       playerId: saved.playerId,
       action,

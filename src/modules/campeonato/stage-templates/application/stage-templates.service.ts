@@ -92,6 +92,7 @@ export class StageTemplatesService {
     if (dto.details && dto.details.length > 0) {
       const detailsToSave = dto.details.map((d, index) => {
         return this.detailRepo.create({
+          companyId: savedTemplate.companyId,
           stageTemplateId: savedTemplate.id,
           stageOrder: Number(d.stageOrder) || index + 1,
           name: d.name.trim(),
@@ -134,6 +135,7 @@ export class StageTemplatesService {
       if (dto.details && dto.details.length > 0) {
         const detailsToSave = dto.details.map((d, index) => {
           return this.detailRepo.create({
+            companyId: template.companyId,
             stageTemplateId: numId,
             stageOrder: Number(d.stageOrder) || index + 1,
             name: d.name.trim(),
