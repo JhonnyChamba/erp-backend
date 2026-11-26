@@ -1,16 +1,13 @@
-const path = require('path');
-require('reflect-metadata');
-require('pg');
-require('argon2');
-require('class-validator');
-require('class-transformer');
-
 let appHandler = null;
 
 function getHandler() {
   if (!appHandler) {
-    const mainPath = path.resolve(__dirname, '../dist/main');
-    const mainModule = require(mainPath);
+    require('reflect-metadata');
+    require('pg');
+    require('argon2');
+    require('class-validator');
+    require('class-transformer');
+    const mainModule = require('../dist/main');
     appHandler = mainModule.default || mainModule;
   }
   return appHandler;
