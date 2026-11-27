@@ -17,7 +17,8 @@ export class CategoriesService {
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const qb = this.repo.createQueryBuilder('c');
+    const qb = this.repo.createQueryBuilder('c')
+      .leftJoinAndSelect('c.divisionGroup', 'divisionGroup');
     if (companyId) {
       qb.andWhere('(c.companyId = :companyId OR c.companyId IS NULL)', { companyId });
     }
@@ -33,7 +34,10 @@ export class CategoriesService {
   }
 
   async get(id: string | number, companyId: number, write = false) {
-    const item = await this.repo.findOne({ where: { id: Number(id) } });
+    const item = await this.repo.findOne({
+      where: { id: Number(id) },
+      relations: ['divisionGroup'],
+    });
     return ensureCompanyScope(item, companyId, 'Categoría no encontrada', write);
   }
 

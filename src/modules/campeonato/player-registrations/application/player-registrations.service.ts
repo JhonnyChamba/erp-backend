@@ -416,7 +416,7 @@ export class PlayerRegistrationsService {
           'Categoría';
         const categoryAcronyms =
           tr.category?.acronyms || matchedDetail?.category?.acronyms || '';
-        const gender = tr.category?.gender || matchedDetail?.category?.gender || 'MALE';
+        const gender = 'MALE';
         const maxPlayers = Number(matchedDetail?.maxPlayers) || 25;
 
         const allowedClassifications = (matchedDetail?.classifications || []).map((c) => ({

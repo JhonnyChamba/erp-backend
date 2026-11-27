@@ -112,6 +112,11 @@ import { TeamPaymentOrderOrmEntity } from './infrastructure/persistence/team-pay
 import { TeamPaymentOrderDetailOrmEntity } from './infrastructure/persistence/team-payment-order-detail.orm-entity';
 import { TeamPaymentOrdersService } from './team-payment-orders/application/team-payment-orders.service';
 import { TeamPaymentOrdersController } from './team-payment-orders/presentation/team-payment-orders.controller';
+import { DivisionGroupOrmEntity } from './division-groups/infrastructure/persistence/division-group.orm-entity';
+import { DivisionGroupRepository } from './division-groups/domain/repositories/division-group.repository';
+import { DivisionGroupRepositoryImpl } from './division-groups/infrastructure/repositories/division-group.repository.impl';
+import { DivisionGroupsService } from './division-groups/application/division-groups.service';
+import { DivisionGroupsController } from './division-groups/presentation/division-groups.controller';
 
 const entities = [
   PositionOrmEntity,
@@ -156,6 +161,7 @@ const entities = [
   TieBreakerCriterionOrmEntity,
   StageTemplateOrmEntity,
   StageTemplateDetailOrmEntity,
+  DivisionGroupOrmEntity,
   ModuleOrmEntity,
   subModulesOrmEntity,
 ];
@@ -191,6 +197,7 @@ const controllers = [
   CompetitionLapsController,
   TieBreakerCriteriaController,
   StageTemplatesController,
+  DivisionGroupsController,
 ];
 
 const providers = [
@@ -224,6 +231,11 @@ const providers = [
   CompetitionLapsService,
   TieBreakerCriteriaService,
   StageTemplatesService,
+  {
+    provide: DivisionGroupRepository,
+    useClass: DivisionGroupRepositoryImpl,
+  },
+  DivisionGroupsService,
 ];
 
 @Module({

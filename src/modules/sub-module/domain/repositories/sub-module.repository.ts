@@ -8,4 +8,5 @@ export abstract class subModulesRepository {
   }>;
   abstract findById(id: number, moduleId: number): Promise<subModules | null>;
   abstract update(subModule: subModules): Promise<subModules>;
+  abstract reorder(moduleId: number, ids: number[]): Promise<void>;
 }

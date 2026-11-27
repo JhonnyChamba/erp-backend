@@ -1,12 +1,11 @@
+import { Type } from 'class-transformer';
 import {
-  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
-import { Gender } from '../../../common/enum/campeonato.enum';
 
 export class CreateCategoryDto {
   @IsNotEmpty({ message: 'El nombre de la categoría es obligatorio' })
@@ -29,16 +28,17 @@ export class CreateCategoryDto {
   code?: string;
 
   @IsOptional()
-  @IsEnum(Gender)
-  gender?: Gender;
-
-  @IsOptional()
   @IsInt()
   minAge?: number;
 
   @IsOptional()
   @IsInt()
   maxAge?: number;
+
+  @IsNotEmpty({ message: 'El grupo de división es obligatorio' })
+  @Type(() => Number)
+  @IsInt({ message: 'El grupo de división debe ser válido' })
+  divisionGroupId: number;
 }
 
 export class UpdateCategoryDto {
@@ -62,14 +62,15 @@ export class UpdateCategoryDto {
   code?: string;
 
   @IsOptional()
-  @IsEnum(Gender)
-  gender?: Gender;
-
-  @IsOptional()
   @IsInt()
   minAge?: number;
 
   @IsOptional()
   @IsInt()
   maxAge?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El grupo de división debe ser válido' })
+  divisionGroupId?: number;
 }

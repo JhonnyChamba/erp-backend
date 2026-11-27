@@ -1,6 +1,7 @@
 import { subModulesRepository } from '../../domain/repositories/sub-module.repository';
 import { subModulesOrmEntity } from '../persistence/sub-module.orm-entity';
 import { subModules } from '../../domain/entities/sub-module.entity';
+import { AccessControlService } from 'src/auth/access-control.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
@@ -124,6 +125,19 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 		});
 
 		return this.toDomain(updated);
+	}
+
+	// Asigna order_index 1..n según la posición de cada id, todo o nada
+	async reorder(moduleId: number, ids: number[]): Promise<void> {
+		await this.repo.manager.transaction(async (manager) => {
+			const repo = manager.getRepository(subModulesOrmEntity);
+			for (let index = 0; index < ids.length; index++) {
+				await repo.update({ id: ids[index], module: { id: moduleId }, deleted: false }, { order_index: index + 1 });
+			}
+		});
+
+		// El menú de accesos se guarda en caché unos segundos: se limpia para que el nuevo orden se vea de inmediato
+		AccessControlService.clearCache();
 	}
 
 	private toDomain(entity: subModulesOrmEntity): subModules {

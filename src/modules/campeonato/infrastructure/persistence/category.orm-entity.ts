@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Gender } from '../../common/enum/campeonato.enum';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { DivisionGroupOrmEntity } from '../../division-groups/infrastructure/persistence/division-group.orm-entity';
 
 @Entity('tab_campeonato_categories')
 export class CategoryOrmEntity {
@@ -24,14 +24,18 @@ export class CategoryOrmEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   code: string;
 
-  @Column({ type: 'enum', enum: Gender, default: Gender.MALE })
-  gender: Gender;
-
   @Column({ name: 'min_age', type: 'int', nullable: true })
   minAge: number;
 
   @Column({ name: 'max_age', type: 'int', nullable: true })
   maxAge: number;
+
+  @Column({ name: 'division_group_id', type: 'int', nullable: true })
+  divisionGroupId: number;
+
+  @ManyToOne(() => DivisionGroupOrmEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'division_group_id' })
+  divisionGroup: DivisionGroupOrmEntity;
 
   @Column({ name: 'created_name', type: 'varchar', nullable: true })
   createdName: string;

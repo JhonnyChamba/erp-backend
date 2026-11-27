@@ -5,6 +5,8 @@ import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from
 import { ListsubModulesUseCase } from "../application/use-cases/list-sub-module.use-case";
 import { GetsubModulesUseCase } from "../application/use-cases/get-sub-module.use-case";
 import { CreatesubModulesDto } from "../application/dto/create-sub-module.dto";
+import { ReordersubModulesUseCase } from "../application/use-cases/reorder-sub-module.use-case";
+import { ReorderSubModulesDto } from "../application/dto/reorder-sub-module.dto";
 import { UpdatesubModulesDto } from "../application/dto/update-sub-module.dto";
 import { ListsubModulesDto } from "../application/dto/list-sub-module.dto";
 import { AuthGuard } from "@nestjs/passport";
@@ -19,6 +21,7 @@ export class subModulesController {
 		private readonly listUseCase: ListsubModulesUseCase,
 		private readonly getUseCase: GetsubModulesUseCase,
 		private readonly updateUseCase: UpdatesubModulesUseCase,
+		private readonly reorderUseCase: ReordersubModulesUseCase,
 	) { }
 
 	@UseGuards(SuperAdminGuard)
@@ -35,6 +38,13 @@ export class subModulesController {
 	@Get(':id')
 	get(@Param('id') id: number, @Req() req: any) {
 		return this.getUseCase.execute(Number(id), req.moduleId);
+	}
+
+	// Va antes de ':id' para que 'reorder' no se tome como un id
+	@UseGuards(SuperAdminGuard)
+	@Patch('reorder')
+	reorder(@Body() dto: ReorderSubModulesDto) {
+		return this.reorderUseCase.execute(dto);
 	}
 
 	@UseGuards(SuperAdminGuard)
