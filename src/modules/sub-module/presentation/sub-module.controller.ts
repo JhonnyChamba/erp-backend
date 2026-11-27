@@ -1,7 +1,8 @@
 import { CompanyAccessGuard } from 'src/auth/guards/company-access.guard';
 import { CreatesubModulesUseCase } from "../application/use-cases/create-sub-module.use-case";
 import { UpdatesubModulesUseCase } from "../application/use-cases/update-sub-module.use-case";
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { DeletesubModulesUseCase } from "../application/use-cases/delete-sub-module.use-case";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ListsubModulesUseCase } from "../application/use-cases/list-sub-module.use-case";
 import { GetsubModulesUseCase } from "../application/use-cases/get-sub-module.use-case";
 import { CreatesubModulesDto } from "../application/dto/create-sub-module.dto";
@@ -22,6 +23,7 @@ export class subModulesController {
 		private readonly getUseCase: GetsubModulesUseCase,
 		private readonly updateUseCase: UpdatesubModulesUseCase,
 		private readonly reorderUseCase: ReordersubModulesUseCase,
+		private readonly deleteUseCase: DeletesubModulesUseCase,
 	) { }
 
 	@UseGuards(SuperAdminGuard)
@@ -51,5 +53,11 @@ export class subModulesController {
 	@Patch(':id')
 	update(@Param('id') id: number, @Body() dto: UpdatesubModulesDto, @Req() req: any) {
 		return this.updateUseCase.execute(Number(id), dto.moduleId ?? req.moduleId, dto);
+	}
+
+	@UseGuards(SuperAdminGuard)
+	@Delete(':id')
+	remove(@Param('id') id: number) {
+		return this.deleteUseCase.execute(Number(id));
 	}
 }

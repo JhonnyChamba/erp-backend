@@ -140,6 +140,11 @@ export class subModulesRepositoryImpl implements subModulesRepository {
 		AccessControlService.clearCache();
 	}
 
+	async softDelete(id: number): Promise<void> {
+		await this.repo.update({ id, deleted: false }, { deleted: true, enabled: false });
+		AccessControlService.clearCache();
+	}
+
 	private toDomain(entity: subModulesOrmEntity): subModules {
 		const sm = new subModules(
 			entity.id,

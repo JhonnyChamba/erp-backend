@@ -1,5 +1,6 @@
 import { CreatesubModulesUseCase } from "./application/use-cases/create-sub-module.use-case";
 import { UpdatesubModulesUseCase } from "./application/use-cases/update-sub-module.use-case";
+import { DeletesubModulesUseCase } from "./application/use-cases/delete-sub-module.use-case";
 import { subModulesRepositoryImpl } from "./infrastructure/repositories/sub-module.repository.impl";
 import { ReordersubModulesUseCase } from "./application/use-cases/reorder-sub-module.use-case";
 import { ListsubModulesUseCase } from "./application/use-cases/list-sub-module.use-case";
@@ -20,6 +21,7 @@ import { ModuleModule } from "../module/module.module";
 		GetsubModulesUseCase,
 		UpdatesubModulesUseCase,
 		ReordersubModulesUseCase,
+		DeletesubModulesUseCase,
 		{
 			provide: subModulesRepository,
 			useClass: subModulesRepositoryImpl,
